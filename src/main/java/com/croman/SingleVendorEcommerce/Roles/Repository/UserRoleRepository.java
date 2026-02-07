@@ -4,6 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.croman.SingleVendorEcommerce.Roles.UserRole;
 
-public interface RoleTypeRepository extends JpaRepository<UserRole, Long>{
+public interface UserRoleRepository extends JpaRepository<UserRole, Long>{
 
 }
