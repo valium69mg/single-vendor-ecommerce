@@ -33,7 +33,7 @@ public class UserService {
 			boolean emailExists = existsByEmail(dto.getEmail());
 			
 			if (emailExists) {
-				throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+				throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 			}
 			
