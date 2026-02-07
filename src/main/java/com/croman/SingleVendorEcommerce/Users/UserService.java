@@ -13,6 +13,7 @@ import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
 import com.croman.SingleVendorEcommerce.Users.Repository.UserRepository;
 import com.croman.SingleVendorEcommerce.Users.Utils.PasswordUtils;
+import com.croman.SingleVendorEcommerce.Users.Utils.LocaleUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +30,7 @@ public class UserService {
 
 			if (existsByEmail(dto.getEmail())) {
 				throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("email_exists", Locale.of("es")));
+						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 			}
 			
 			User newUser = create(dto);
@@ -40,7 +41,7 @@ public class UserService {
 			throw e;
 		} catch (Exception e) {
 			throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-					messageService.getMessage("email_exists", Locale.of("es")));
+					messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 		}
 	}
 

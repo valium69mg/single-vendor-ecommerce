@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.croman.SingleVendorEcommerce.DTO.ApiResponse;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
+import com.croman.SingleVendorEcommerce.Users.Utils.LocaleUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +27,7 @@ public class UserController {
 	@PostMapping("/v1/register")
 	private ResponseEntity<Object> createUser(@RequestBody CreateUserDTO dto) {
 		userService.register(dto);
-		ApiResponse response = ApiResponse.builder().message(messageService.getMessage("user_created", Locale.of("es")))
+		ApiResponse response = ApiResponse.builder().message(messageService.getMessage("user_created", LocaleUtils.getDefaultLocale()))
 				.build();
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
