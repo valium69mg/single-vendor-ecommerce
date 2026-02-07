@@ -37,8 +37,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
 				SecurityContextHolder.getContext().setAuthentication(authentication);
+			} else {
+				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				response.setContentType("application/json");
+				response.getWriter().write("{\"status\":401,\"error\":\"UNAUTHORIZED\"}");
+				return;
 			}
-		}
+		} 
 		filterChain.doFilter(request, response);
 	}
 }
