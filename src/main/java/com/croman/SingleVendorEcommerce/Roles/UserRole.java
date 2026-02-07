@@ -23,8 +23,8 @@ public class UserRole {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "user_role_id")
+    private Long userRoleId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role_type", nullable = false, length = 50)
