@@ -43,7 +43,7 @@ public class UserService {
 
 	private User create(CreateUserDTO dto) {
 		return User.builder().email(dto.getEmail()).password(PasswordUtils.hashPassword(dto.getPassword()))
-				.updated_at(LocalDateTime.now()).createdAt(LocalDateTime.now()).build();
+				.updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true).isValidated(true).build();
 	}
 
 	private boolean existsByEmail(String email) {
