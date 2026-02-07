@@ -4,6 +4,8 @@ import java.util.Locale;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +33,14 @@ public class UserController {
 				.build();
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
+	}
+	
+	@DeleteMapping("v1/{email}")
+	private ResponseEntity<Object> deleteUser(@PathVariable String email) {
+		userService.deleteUserByEmail(email);
+		ApiResponse response = ApiResponse.builder().message(messageService.getMessage("user_deleted", LocaleUtils.getDefaultLocale()))
+				.build();
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
 }

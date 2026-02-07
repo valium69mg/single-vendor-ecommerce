@@ -9,5 +9,7 @@ import com.croman.SingleVendorEcommerce.Users.Entity.User;
 public interface UserRepository extends JpaRepository<User, Integer> {
 	
 	boolean existsByEmail(String email);
+
+	void deleteByEmail(String email);
 	
 }
