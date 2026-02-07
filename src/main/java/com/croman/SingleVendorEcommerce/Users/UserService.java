@@ -28,7 +28,9 @@ public class UserService {
 	public void register(CreateUserDTO dto) {
 		try {
 
-			if (existsByEmail(dto.getEmail())) {
+			boolean emailExists = existsByEmail(dto.getEmail());
+			
+			if (emailExists) {
 				throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 			}
@@ -41,13 +43,14 @@ public class UserService {
 			throw e;
 		} catch (Exception e) {
 			throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-					messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
+					e.getMessage());
 		}
 	}
 
 	private User create(CreateUserDTO dto) {
 		return User.builder().email(dto.getEmail()).password(PasswordUtils.hashPassword(dto.getPassword()))
-				.updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true).isValidated(true).build();
+				.username(dto.getEmail()).updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true)
+				.isValidated(true).build();
 	}
 
 	private boolean existsByEmail(String email) {
