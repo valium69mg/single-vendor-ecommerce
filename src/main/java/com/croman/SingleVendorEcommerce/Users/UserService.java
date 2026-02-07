@@ -12,6 +12,8 @@ import com.croman.SingleVendorEcommerce.General.DateTimeUtils;
 import com.croman.SingleVendorEcommerce.General.EnvironmentUtils;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
+import com.croman.SingleVendorEcommerce.Roles.RoleType;
+import com.croman.SingleVendorEcommerce.Roles.RolesService;
 import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
 import com.croman.SingleVendorEcommerce.Users.DTO.UserDTO;
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
 
 	private final UserRepository userRepository;
+	private final RolesService rolesService;
 	private final MessageService messageService;
 	private final EnvironmentUtils environmentUtils;
 
@@ -54,7 +57,7 @@ public class UserService {
 	private User create(CreateUserDTO dto) {
 		return User.builder().email(dto.getEmail()).password(PasswordUtils.hashPassword(dto.getPassword()))
 				.username(dto.getEmail()).updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true)
-				.isValidated(true).build();
+				.isValidated(true).userRole(rolesService.getUserRoleByRoleType(RoleType.USER)).build();
 	}
 
 	public boolean existsByEmail(String email) {
