@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.persistence.*;
+
 @Entity
 @Data
 @Builder
@@ -19,11 +21,13 @@ import lombok.NoArgsConstructor;
 @Table(name = "user_roles")
 public class UserRole {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
-	
-	
-	
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_type", nullable = false, length = 50)
+    private RoleType roleType;
 }
+

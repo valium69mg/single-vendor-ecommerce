@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.UUID;
 
+import com.croman.SingleVendorEcommerce.Roles.UserRole;
+
 @Entity
 @Data
 @Builder
@@ -43,5 +45,9 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
    
+    @ManyToOne
+    @JoinColumn(name = "user_role_id")
+    private UserRole userRole;
+
     
 }
