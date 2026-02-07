@@ -10,6 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
+import com.croman.SingleVendorEcommerce.Users.Entity.User;
+import com.croman.SingleVendorEcommerce.Users.Repository.UserRepository;
+import com.croman.SingleVendorEcommerce.Users.Utils.PasswordUtils;
 
 import lombok.RequiredArgsConstructor;
 

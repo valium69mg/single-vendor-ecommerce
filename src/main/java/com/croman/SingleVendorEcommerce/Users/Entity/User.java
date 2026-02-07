@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce.Users;
+package com.croman.SingleVendorEcommerce.Users.Entity;
 
 import java.time.LocalDateTime;
 
