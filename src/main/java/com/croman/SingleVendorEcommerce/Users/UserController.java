@@ -32,7 +32,7 @@ public class UserController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 	
-	@DeleteMapping("v1/{email}")
+	@DeleteMapping("/v1/{email}")
 	private ResponseEntity<Object> deleteUser(@Valid @Email(message = "Must be an email") @PathVariable String email) {
 		userService.deleteUserByEmail(email);
 		ApiResponse response = apiResponseService.getApiResponseMessage("user_deleted", HttpStatus.ACCEPTED);

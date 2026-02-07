@@ -1,19 +1,22 @@
 package com.croman.SingleVendorEcommerce.Users;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
+import com.croman.SingleVendorEcommerce.General.DateTimeUtils;
 import com.croman.SingleVendorEcommerce.General.EnvironmentUtils;
+import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
+import com.croman.SingleVendorEcommerce.Users.DTO.UserDTO;
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
 import com.croman.SingleVendorEcommerce.Users.Repository.UserRepository;
 import com.croman.SingleVendorEcommerce.Users.Utils.PasswordUtils;
-import com.croman.SingleVendorEcommerce.Users.Utils.LocaleUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -54,7 +57,7 @@ public class UserService {
 				.isValidated(true).build();
 	}
 
-	private boolean existsByEmail(String email) {
+	public boolean existsByEmail(String email) {
 		return userRepository.existsByEmail(email);
 	}
 	
@@ -85,4 +88,47 @@ public class UserService {
 					e.getMessage());
 		}
 	}
+	
+	public UserDTO getUserDTOByEmail(String email) {
+		Optional<User> userOpt = userRepository.findByEmail(email);
+		if (userOpt.isEmpty()) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+		}
+		return mapUserToUserDTO(userOpt.get());
+	}
+	
+	private UserDTO mapUserToUserDTO(User user) {
+		return UserDTO.builder().userId(user.getUserId().toString()).username(user.getUsername()).lastLogin(
+				user.getLastLogin() != null ? user.getLastLogin().format(DateTimeUtils.getDateTimeFormatter()) : null)
+				.createdAt(user.getCreatedAt().format(DateTimeUtils.getDateTimeFormatter()))
+				.updatedAt(user.getUpdatedAt().format(DateTimeUtils.getDateTimeFormatter()))
+				.isValidated(user.isValidated()).isActive(user.isActive()).build();
+	}
+	
+	public boolean passwordCorrect(String email, String rawPassword) {
+		String hashedPassword = getHashedPasswordByEmail(email);
+		return PasswordUtils.matches(rawPassword, hashedPassword);
+	}
+	
+	private String getHashedPasswordByEmail(String email) {
+		Optional<String> hashedPasswordOpt = userRepository.getHashedPasswordByEmail(email);
+		if (hashedPasswordOpt.isPresent()) {
+			return hashedPasswordOpt.get();
+		}
+		throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+				messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+	}
+	
+	@Transactional
+	public void updateLastLogin(String email) {
+		LocalDateTime now = LocalDateTime.now();
+		Optional<User> userOpt = userRepository.findByEmail(email);
+		if (userOpt.isEmpty()) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+		}
+		userRepository.updateLastLogin(email, now);
+	}
+	
 }

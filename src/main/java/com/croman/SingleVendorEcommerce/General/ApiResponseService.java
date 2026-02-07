@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 
 import com.croman.SingleVendorEcommerce.DTO.ApiResponse;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
-import com.croman.SingleVendorEcommerce.Users.Utils.LocaleUtils;
 
 import lombok.RequiredArgsConstructor;
 
