@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ApiResponse {
 
+	private int status;
 	private String message;
 	
 }

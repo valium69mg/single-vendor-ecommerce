@@ -30,7 +30,7 @@ public class UserController {
 	private ResponseEntity<Object> createUser(@RequestBody CreateUserDTO dto) {
 		userService.register(dto);
 		ApiResponse response = ApiResponse.builder().message(messageService.getMessage("user_created", LocaleUtils.getDefaultLocale()))
-				.build();
+				.status(HttpStatus.CREATED.value()).build();
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
 	}
@@ -39,8 +39,8 @@ public class UserController {
 	private ResponseEntity<Object> deleteUser(@PathVariable String email) {
 		userService.deleteUserByEmail(email);
 		ApiResponse response = ApiResponse.builder().message(messageService.getMessage("user_deleted", LocaleUtils.getDefaultLocale()))
-				.build();
-		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+				.status(HttpStatus.ACCEPTED.value()).build();
+		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 	}
 
 }
