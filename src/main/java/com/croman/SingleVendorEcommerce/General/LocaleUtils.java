@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce.Users.Utils;
+package com.croman.SingleVendorEcommerce.General;
 
 import java.util.Locale;
 
