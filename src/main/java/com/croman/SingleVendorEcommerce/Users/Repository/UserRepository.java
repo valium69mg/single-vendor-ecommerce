@@ -2,6 +2,7 @@ package com.croman.SingleVendorEcommerce.Users.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Integer> {
+public interface UserRepository extends JpaRepository<User, UUID> {
 
 	boolean existsByEmail(String email);
 
