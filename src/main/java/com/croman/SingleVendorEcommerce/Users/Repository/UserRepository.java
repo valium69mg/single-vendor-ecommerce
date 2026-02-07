@@ -1,6 +1,7 @@
 package com.croman.SingleVendorEcommerce.Users.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.croman.SingleVendorEcommerce.Roles.RoleType;
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
 
 @Repository
@@ -27,4 +29,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	@Modifying
 	@Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.email = :email")
 	int updateLastLogin(@Param("email") String email, @Param("lastLogin") LocalDateTime lastLogin);
+	
+	
+	List<User> findAllByUserRole_RoleType(RoleType roleType);
+
 }

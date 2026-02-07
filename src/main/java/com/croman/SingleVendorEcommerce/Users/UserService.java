@@ -55,9 +55,10 @@ public class UserService {
 	}
 
 	private User create(CreateUserDTO dto) {
+		RoleType roleType =  adminPresent() ? RoleType.USER : RoleType.ADMIN;
 		return User.builder().email(dto.getEmail()).password(PasswordUtils.hashPassword(dto.getPassword()))
 				.username(dto.getEmail()).updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true)
-				.isValidated(true).userRole(rolesService.getUserRoleByRoleType(RoleType.USER)).build();
+				.isValidated(true).userRole(rolesService.getUserRoleByRoleType(roleType)).build();
 	}
 
 	public boolean existsByEmail(String email) {
@@ -132,6 +133,10 @@ public class UserService {
 					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
 		}
 		userRepository.updateLastLogin(email, now);
+	}
+	
+	private boolean adminPresent() {
+		return !userRepository.findAllByUserRole_RoleType(RoleType.ADMIN).isEmpty();
 	}
 	
 }
