@@ -12,12 +12,12 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/products")
+@RequestMapping("/api/v1/products/")
 public class ProductsController {
 
 	private final CategoryService categoryService;
 	
-	@GetMapping("/v1/products/categories")
+	@GetMapping("categories")
 	public ResponseEntity<Object> getCategories() {
 		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getCategories(LocaleUtils.APP_DEFAULT_LANG));
 	}
