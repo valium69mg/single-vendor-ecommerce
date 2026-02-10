@@ -1,11 +1,20 @@
 package com.croman.SingleVendorEcommerce.Auth.Entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
 
 @Entity
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "login_attempts")
 public class LoginAttempt {
 
@@ -28,6 +37,6 @@ public class LoginAttempt {
     private Boolean successful;
 
     @Column(name = "attempted_at", nullable = false)
-    private LocalDateTime attemptedAt = LocalDateTime.now();
+    private LocalDateTime attemptedAt;
 
 }

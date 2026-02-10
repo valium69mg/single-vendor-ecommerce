@@ -139,4 +139,13 @@ public class UserService {
 		return !userRepository.findAllByUserRole_RoleType(RoleType.ADMIN).isEmpty();
 	}
 	
+	public User getUserByEmail(String email) {
+		Optional<User> userOpt = userRepository.findByEmail(email);
+		if (userOpt.isPresent()) {
+			return userOpt.get();
+		}
+		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+	}
+	
 }

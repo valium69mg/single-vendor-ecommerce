@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.SingleVendorEcommerce.Auth.DTO.LoginDTO;
+import com.croman.SingleVendorEcommerce.DTO.LoginContextDTO;
+import com.croman.SingleVendorEcommerce.General.HttpUtils;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -20,8 +23,10 @@ public class AuthController {
 	private final AuthService authService;
 	
 	@PostMapping("/v1/login")
-	public ResponseEntity<Object> login(@Valid @RequestBody LoginDTO loginDTO) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(authService.login(loginDTO));
+	public ResponseEntity<Object> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+		String ip = HttpUtils.getClientIp(request);
+		LoginContextDTO loginContextDTO = LoginContextDTO.builder().ip(ip).loginDTO(loginDTO).build();
+		return ResponseEntity.status(HttpStatus.CREATED).body(authService.login(loginContextDTO));
 	}
 	
 }
