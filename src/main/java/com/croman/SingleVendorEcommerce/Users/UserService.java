@@ -3,6 +3,7 @@ package com.croman.SingleVendorEcommerce.Users;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +43,7 @@ public class UserService {
 						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 			}
 			
-			User newUser = create(dto);
+			User newUser = create(dto, RoleType.USER);
 			
 			userRepository.save(newUser);
 
@@ -54,8 +55,8 @@ public class UserService {
 		}
 	}
 
-	private User create(CreateUserDTO dto) {
-		RoleType roleType =  adminPresent() ? RoleType.USER : RoleType.ADMIN;
+	private User create(CreateUserDTO dto, RoleType roleType) {
+		roleType = roleType != null ? roleType : RoleType.USER;
 		return User.builder().email(dto.getEmail()).password(PasswordUtils.hashPassword(dto.getPassword()))
 				.username(dto.getEmail()).updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true)
 				.isValidated(true).userRole(rolesService.getUserRoleByRoleType(roleType)).build();
@@ -133,6 +134,34 @@ public class UserService {
 					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
 		}
 		userRepository.updateLastLogin(email, now);
+	}
+
+	@Transactional
+	public void createSiteAdmin(CreateUserDTO dto) {
+		try {
+			
+			if (adminPresent()) {
+				throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+						messageService.getMessage("admin_exists", LocaleUtils.getDefaultLocale()));
+			}
+			
+			boolean emailExists = existsByEmail(dto.getEmail());
+
+			if (emailExists) {
+				throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
+			}
+
+			User newUser = create(dto, RoleType.ADMIN);
+			
+			userRepository.save(newUser);
+
+		} catch (ApiServiceException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage());
+		}
+
 	}
 	
 	private boolean adminPresent() {

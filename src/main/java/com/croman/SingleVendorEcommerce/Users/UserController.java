@@ -38,5 +38,12 @@ public class UserController {
 		ApiResponse response = apiResponseService.getApiResponseMessage("user_deleted", HttpStatus.ACCEPTED);
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 	}
+	
+	@PostMapping("/v1/admin/register")
+	private ResponseEntity<Object> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
+		userService.createSiteAdmin(dto);
+		ApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
 
 }
