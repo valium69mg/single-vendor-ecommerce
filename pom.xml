@@ -135,6 +135,7 @@
 	</dependencyManagement>
 
 	<build>
+	    <finalName>single-vendor-ecommerce</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
