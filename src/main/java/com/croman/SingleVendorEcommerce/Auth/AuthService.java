@@ -29,6 +29,8 @@ public class AuthService {
 	private final MessageService messageService;
 	private final UserService userService;
 	private final LoginAttemptRepository loginAttemptRepository;
+	private static final Integer MAX_LOGGIN_ATTEMPTS = 5;
+	private static final Integer LOCKOUT_WINDOW_HOURS = 1;
 	
 	public LoginResponseDTO login(LoginContextDTO loginContextDTO) {
 		try {
@@ -43,6 +45,8 @@ public class AuthService {
 				throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 						messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
 			}
+					
+			validateTooManyFailedAttempts(email);
 
 			String rawPassword = loginDTO.getPassword();
 
@@ -81,5 +85,13 @@ public class AuthService {
 		loginAttemptRepository.save(loginAttempt);
 	}
 	
+	private void validateTooManyFailedAttempts(String email) {
+		LocalDateTime cutoff = LocalDateTime.now().minusHours(LOCKOUT_WINDOW_HOURS);
+		long failedAttempts = loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(email, cutoff);
+		if (failedAttempts >= MAX_LOGGIN_ATTEMPTS) {
+			throw new ApiServiceException(HttpStatus.LOCKED.value(),
+					messageService.getMessage("account_locked", LocaleUtils.getDefaultLocale()));
+		}
+	}
 	
 }
