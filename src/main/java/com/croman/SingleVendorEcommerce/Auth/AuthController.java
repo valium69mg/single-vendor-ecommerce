@@ -17,12 +17,12 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
 	private final AuthService authService;
 	
-	@PostMapping("/v1/login")
+	@PostMapping("login")
 	public ResponseEntity<Object> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
 		String ip = HttpUtils.getClientIp(request);
 		LoginContextDTO loginContextDTO = LoginContextDTO.builder().ip(ip).loginDTO(loginDTO).build();
