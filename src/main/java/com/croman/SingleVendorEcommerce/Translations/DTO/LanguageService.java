@@ -30,7 +30,7 @@ public class LanguageService {
 	}
 
 	public Language getDefaultLanguage() {
-		Optional<Language> languageOpt = languageRepository.findByName(LocaleUtils.ES);
+		Optional<Language> languageOpt = languageRepository.findByName(LocaleUtils.APP_DEFAULT_LANG);
 		if (languageOpt.isPresent()) {
 			return languageOpt.get();
 		}
