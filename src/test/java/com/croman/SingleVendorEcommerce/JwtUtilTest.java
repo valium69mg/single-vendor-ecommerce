@@ -17,7 +17,7 @@ class JwtUtilTest {
     @Test
     void testGenerateAndExtractUsername() {
         String username = "testuser";
-        String token = jwtUtil.generateToken(username);
+        String token = jwtUtil.generateToken(username, "ADMIN");
 
         assertNotNull(token);
         assertEquals(username, jwtUtil.extractUsername(token));
@@ -25,7 +25,7 @@ class JwtUtilTest {
 
     @Test
     void testValidateToken_validToken() {
-        String token = jwtUtil.generateToken("validuser");
+        String token = jwtUtil.generateToken("validuser", "ADMIN");
         assertTrue(jwtUtil.validateToken(token));
     }
 
@@ -38,7 +38,7 @@ class JwtUtilTest {
     @Test
     void testTokenExpiration() throws InterruptedException {
         JwtUtil shortLivedJwtUtil = new JwtUtil("anothersecretkeyanothersecretkey", 1); // 1 ms
-        String token = shortLivedJwtUtil.generateToken("expiringuser");
+        String token = shortLivedJwtUtil.generateToken("expiringuser", "USER");
 
         Thread.sleep(10); 
         assertFalse(shortLivedJwtUtil.validateToken(token));

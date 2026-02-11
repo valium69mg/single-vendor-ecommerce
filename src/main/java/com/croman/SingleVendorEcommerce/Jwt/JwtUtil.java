@@ -19,10 +19,14 @@ public class JwtUtil {
 		this.expirationMs = expirationMs;
 	}
 
-	public String generateToken(String username) {
-		return Jwts.builder().setSubject(username).setIssuedAt(new Date())
-				.setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-				.signWith(secretKey, SignatureAlgorithm.HS256).compact();
+	public String generateToken(String username, String role) {
+	    return Jwts.builder()
+	            .setSubject(username)
+	            .claim("role", role)
+	            .setIssuedAt(new Date())
+	            .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+	            .signWith(secretKey, SignatureAlgorithm.HS256)
+	            .compact();
 	}
 
 	public String extractUsername(String token) {
@@ -37,4 +41,10 @@ public class JwtUtil {
 			return false;
 		}
 	}
+	
+	public String extractRole(String token) {
+		return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody().get("role",
+				String.class);
+	}
+	
 }

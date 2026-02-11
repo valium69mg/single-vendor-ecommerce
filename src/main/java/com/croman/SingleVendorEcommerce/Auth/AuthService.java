@@ -60,7 +60,9 @@ public class AuthService {
 			
 			userService.updateLastLogin(email);
 
-			String token = jwtUtil.generateToken(email);
+			String role = userService.getUserRoleNameByEmail(email);
+			
+			String token = jwtUtil.generateToken(email, role);
 
 			UserDTO userDTO = userService.getUserDTOByEmail(email);
 			

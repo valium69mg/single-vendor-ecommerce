@@ -39,7 +39,7 @@ public class UserController {
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 	}
 	
-	@PostMapping("admin/register")
+	@PostMapping("register/admin")
 	private ResponseEntity<Object> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
 		userService.createSiteAdmin(dto);
 		ApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);

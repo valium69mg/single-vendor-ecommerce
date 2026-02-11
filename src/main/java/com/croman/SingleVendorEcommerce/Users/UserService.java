@@ -177,4 +177,13 @@ public class UserService {
 				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
 	}
 	
+	public String getUserRoleNameByEmail(String email) {
+		Optional<User> userOpt = userRepository.findByEmail(email);
+		if (userOpt.isPresent()) {
+			return userOpt.get().getUserRole().getRoleType().toString();
+		}
+		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+	}
+	
 }

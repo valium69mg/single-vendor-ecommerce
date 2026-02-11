@@ -48,7 +48,7 @@ class AuthServiceTest {
         when(loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(anyString(), any(LocalDateTime.class)))
                 .thenReturn(0L);
         when(userService.passwordCorrect("user@example.com", "secret")).thenReturn(true);
-        when(jwtUtil.generateToken("user@example.com")).thenReturn("jwt-token");
+        when(jwtUtil.generateToken("user@example.com", "ADMIN")).thenReturn("jwt-token");
         when(userService.getUserDTOByEmail("user@example.com"))
                 .thenReturn(UserDTO.builder().userId("123").build());
         when(userService.getUserByEmail("user@example.com")).thenReturn(new User());
