@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.croman.SingleVendorEcommerce.Roles.DTO.RoleType;
+
 import jakarta.persistence.*;
 
 @Entity

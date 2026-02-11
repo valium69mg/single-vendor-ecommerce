@@ -14,9 +14,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
-import com.croman.SingleVendorEcommerce.Roles.RoleType;
 import com.croman.SingleVendorEcommerce.Roles.RolesService;
 import com.croman.SingleVendorEcommerce.Roles.UserRole;
+import com.croman.SingleVendorEcommerce.Roles.DTO.RoleType;
 import com.croman.SingleVendorEcommerce.Users.UserService;
 import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
 import com.croman.SingleVendorEcommerce.Users.DTO.UserDTO;

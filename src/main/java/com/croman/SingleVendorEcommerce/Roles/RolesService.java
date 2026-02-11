@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
+import com.croman.SingleVendorEcommerce.Roles.DTO.RoleType;
 import com.croman.SingleVendorEcommerce.Roles.Repository.UserRoleRepository;
 
 import lombok.RequiredArgsConstructor;

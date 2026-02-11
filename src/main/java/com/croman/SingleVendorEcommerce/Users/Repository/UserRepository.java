@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.croman.SingleVendorEcommerce.Roles.RoleType;
+import com.croman.SingleVendorEcommerce.Roles.DTO.RoleType;
 import com.croman.SingleVendorEcommerce.Users.Entity.User;
 
 @Repository
