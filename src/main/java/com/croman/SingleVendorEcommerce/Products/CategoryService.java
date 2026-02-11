@@ -10,8 +10,8 @@ import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.Entity.Category;
 import com.croman.SingleVendorEcommerce.Products.Repository.CategoryRepository;
-import com.croman.SingleVendorEcommerce.Translations.DTO.LanguageService;
-import com.croman.SingleVendorEcommerce.Translations.DTO.TranslationService;
+import com.croman.SingleVendorEcommerce.Translations.LanguageService;
+import com.croman.SingleVendorEcommerce.Translations.TranslationService;
 import com.croman.SingleVendorEcommerce.Translations.DTO.TranslatorPropertyType;
 import com.croman.SingleVendorEcommerce.Translations.Entity.Language;
 

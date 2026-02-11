@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce.Translations.DTO;
+package com.croman.SingleVendorEcommerce.Translations;
 
 import java.util.Optional;
 
