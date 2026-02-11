@@ -12,7 +12,7 @@ import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Translations.DTO.TranslatorPropertyType;
 import com.croman.SingleVendorEcommerce.Translations.Entity.Language;
 import com.croman.SingleVendorEcommerce.Translations.Entity.Translation;
-import com.croman.SingleVendorEcommerce.Translations.Repository.Entity.TranslationsRepository;
+import com.croman.SingleVendorEcommerce.Translations.Repository.TranslationsRepository;
 
 import lombok.RequiredArgsConstructor;
 

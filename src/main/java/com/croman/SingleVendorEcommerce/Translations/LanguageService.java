@@ -9,7 +9,7 @@ import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Translations.Entity.Language;
-import com.croman.SingleVendorEcommerce.Translations.Repository.Entity.LanguageRepository;
+import com.croman.SingleVendorEcommerce.Translations.Repository.LanguageRepository;
 
 import lombok.RequiredArgsConstructor;
 

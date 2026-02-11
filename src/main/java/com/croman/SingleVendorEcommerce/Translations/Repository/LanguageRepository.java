@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce.Translations.Repository.Entity;
+package com.croman.SingleVendorEcommerce.Translations.Repository;
 
 import java.util.Optional;
 
