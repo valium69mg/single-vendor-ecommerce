@@ -13,11 +13,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.croman.SingleVendorEcommerce.Auth.AuthService;
+import com.croman.SingleVendorEcommerce.Auth.DTO.LoginContextDTO;
 import com.croman.SingleVendorEcommerce.Auth.DTO.LoginDTO;
 import com.croman.SingleVendorEcommerce.Auth.DTO.LoginResponseDTO;
 import com.croman.SingleVendorEcommerce.Auth.Entity.LoginAttempt;
 import com.croman.SingleVendorEcommerce.Auth.Repository.LoginAttemptRepository;
-import com.croman.SingleVendorEcommerce.DTO.LoginContextDTO;
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.Jwt.JwtUtil;
 import com.croman.SingleVendorEcommerce.Message.MessageService;

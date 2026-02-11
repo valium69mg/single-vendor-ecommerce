@@ -1,6 +1,4 @@
-package com.croman.SingleVendorEcommerce.DTO;
-
-import com.croman.SingleVendorEcommerce.Auth.DTO.LoginDTO;
+package com.croman.SingleVendorEcommerce.Auth.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
