@@ -68,7 +68,8 @@ public class AuthService {
 			
 			registerLoginAttempt(loginContextDTO, true);
 			
-			return LoginResponseDTO.builder().email(email).userId(userDTO.getUserId()).token(token).build();
+			return LoginResponseDTO.builder().email(email).userId(userDTO.getUserId()).token(token)
+					.role(role).build();
 
 		} catch (ApiServiceException e) {
 			throw e;

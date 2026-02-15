@@ -48,6 +48,8 @@ class AuthServiceTest {
         when(loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(anyString(), any(LocalDateTime.class)))
                 .thenReturn(0L);
         when(userService.passwordCorrect("user@example.com", "secret")).thenReturn(true);
+        doNothing().when(userService).updateLastLogin("user@example.com");
+        when(userService.getUserRoleNameByEmail("user@example.com")).thenReturn("ADMIN");
         when(jwtUtil.generateToken("user@example.com", "ADMIN")).thenReturn("jwt-token");
         when(userService.getUserDTOByEmail("user@example.com"))
                 .thenReturn(UserDTO.builder().userId("123").build());
@@ -57,6 +59,7 @@ class AuthServiceTest {
 
         assertEquals("user@example.com", response.getEmail());
         assertEquals("jwt-token", response.getToken());
+        verify(userService, times(1)).updateLastLogin("user@example.com");
         verify(loginAttemptRepository).save(any(LoginAttempt.class));
     }
 
