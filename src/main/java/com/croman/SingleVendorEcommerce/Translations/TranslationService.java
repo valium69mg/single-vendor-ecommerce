@@ -52,5 +52,21 @@ public class TranslationService {
 
 		return translationsMap;
 	}
+	
+	public void createTranslation(Integer registerId, String languageName, TranslatorPropertyType type,
+			String translation) {
+		
+		Language language = languageService.getLanguageByName(languageName);
+		
+		Optional<Translation> translationOpt = translationsRepository
+				.findByRegisterIdAndLanguageAndTranslatorPropertyType(registerId, language, type);
+
+		if (translationOpt.isPresent()) {
+			return;
+		}
+			
+		translationsRepository.save(Translation.builder().registerId(registerId).translation(translation)
+				.language(language).translatorPropertyType(type).build());
+	}
 
 }
