@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.General.PaginationUtils;
+import com.croman.SingleVendorEcommerce.Products.DTO.BrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
+import com.croman.SingleVendorEcommerce.Products.DTO.MaterialDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,12 +34,12 @@ public class ProductsController {
 	}
 
 	@GetMapping("materials")
-	public ResponseEntity<Object> getMaterials() {
+	public ResponseEntity<List<MaterialDTO>> getMaterials() {
 		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG));
 	}
 
 	@GetMapping("brands")
-	public ResponseEntity<Object> getBrands() {
+	public ResponseEntity<List<BrandDTO>> getBrands() {
 		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands());
 	}
 

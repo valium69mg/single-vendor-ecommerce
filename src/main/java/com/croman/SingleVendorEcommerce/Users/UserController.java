@@ -26,21 +26,21 @@ public class UserController {
 	private final ApiResponseService apiResponseService;
 
 	@PostMapping("register")
-	private ResponseEntity<Object> createUser(@Valid @RequestBody CreateUserDTO dto) {
+	private ResponseEntity<ApiResponse> createUser(@Valid @RequestBody CreateUserDTO dto) {
 		userService.register(dto);
 		ApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 	
 	@DeleteMapping("{email}")
-	private ResponseEntity<Object> deleteUser(@Valid @Email(message = "Must be an email") @PathVariable String email) {
+	private ResponseEntity<ApiResponse> deleteUser(@Valid @Email(message = "Must be an email") @PathVariable String email) {
 		userService.deleteUserByEmail(email);
 		ApiResponse response = apiResponseService.getApiResponseMessage("user_deleted", HttpStatus.ACCEPTED);
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 	}
 	
 	@PostMapping("register/admin")
-	private ResponseEntity<Object> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
+	private ResponseEntity<ApiResponse> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
 		userService.createSiteAdmin(dto);
 		ApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
