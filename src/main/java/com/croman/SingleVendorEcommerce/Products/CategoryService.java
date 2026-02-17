@@ -5,12 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
+import com.croman.SingleVendorEcommerce.General.PaginationUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
@@ -19,11 +22,12 @@ import com.croman.SingleVendorEcommerce.Products.Repository.CategoryRepository;
 import com.croman.SingleVendorEcommerce.Translations.LanguageService;
 import com.croman.SingleVendorEcommerce.Translations.TranslationService;
 import com.croman.SingleVendorEcommerce.Translations.DTO.TranslatorPropertyType;
-import com.croman.SingleVendorEcommerce.Translations.Entity.Language;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CategoryService {
 
@@ -31,11 +35,12 @@ public class CategoryService {
 	private final TranslationService translationService;
 	private final MessageService messageService;
 
-	public List<CategoryDTO> getCategories(String languageName) {
-
+	public List<CategoryDTO> getCategories(String languageName, int page, int size) {
+	
+		Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
 		
-		List<Category> allCategories = categoryRepository.findAll();
-
+		List<Category> allCategories = categoryRepository.findAll(pageable).getContent();
+		
 		HashMap<Integer, String> batchTranslateHashMap = null;
 		
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
