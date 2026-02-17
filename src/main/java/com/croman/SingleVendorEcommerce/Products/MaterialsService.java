@@ -5,12 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
+import com.croman.SingleVendorEcommerce.General.PaginationUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateMaterialDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.MaterialDTO;
@@ -29,9 +31,11 @@ public class MaterialsService {
 	private final TranslationService translationService;
 	private final MessageService messageService;
 	
-	public List<MaterialDTO> getMaterials(String languageName) {
+	public List<MaterialDTO> getMaterials(String languageName, int page, int size) {
 		
-		List<Material> allMaterials = materialRepository.findAll();
+		Pageable pageable = PaginationUtils.getPageable(page, size, "materialId");
+		
+		List<Material> allMaterials = materialRepository.findAll(pageable).getContent();
 
 		HashMap<Integer, String> batchTranslateHashMap = null;
 		

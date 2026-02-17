@@ -34,13 +34,16 @@ public class ProductsController {
 	}
 
 	@GetMapping("materials")
-	public ResponseEntity<List<MaterialDTO>> getMaterials() {
-		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG));
+	public ResponseEntity<List<MaterialDTO>> getMaterials(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG,
+				page, size));
 	}
 
 	@GetMapping("brands")
-	public ResponseEntity<List<BrandDTO>> getBrands() {
-		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands());
+	public ResponseEntity<List<BrandDTO>> getBrands(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands(page, size));
 	}
 
 }
