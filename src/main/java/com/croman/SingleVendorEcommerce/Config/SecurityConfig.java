@@ -12,6 +12,10 @@ import com.croman.SingleVendorEcommerce.Jwt.JwtAuthenticationFilter;
 public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	
+	private static final String[] SWAGGER_WHITELIST = { "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs",
+			"/v3/api-docs/**", "/v3/api-docs.yaml" };
+
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -21,6 +25,8 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(SWAGGER_WHITELIST)
+						.permitAll()
 						.requestMatchers("/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin")
 						.permitAll()
 						.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
