@@ -15,6 +15,7 @@ import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.General.PaginationUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
+import com.croman.SingleVendorEcommerce.Products.DTO.CategoryByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.Entity.Category;
@@ -58,11 +59,31 @@ public class CategoryService {
 
 		return categoryDTOs;
 	}
+	
+	public CategoryByIdDTO getCategoryById(Long categoryId) {
+
+		Category category = categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage("category_not_found", LocaleUtils.getDefaultLocale())));
+		
+		HashMap<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
+				TranslatorPropertyType.CATEGORY, List.of(category.getCategoryId()));
+		
+		return mapCategoryToByIdDTO(category, batchTranslateHashMap);
+
+	}
 
 	private CategoryDTO mapCategoryToDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
 		Integer key = category.getCategoryId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
 		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name).build();
+	}
+	
+	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
+		Integer key = category.getCategoryId().intValue();
+		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
+		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).englishName(category.getName())
+				.spanishName(spanishName).build();
 	}
 	
 	@Transactional
