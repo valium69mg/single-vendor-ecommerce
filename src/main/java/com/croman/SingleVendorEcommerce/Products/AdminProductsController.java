@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.SingleVendorEcommerce.DTO.ApiResponse;
 import com.croman.SingleVendorEcommerce.General.ApiResponseService;
+import com.croman.SingleVendorEcommerce.Products.DTO.CreateBrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateMaterialDTO;
 
@@ -21,6 +22,7 @@ public class AdminProductsController {
 	
 	private final CategoryService categoryService;
 	private final MaterialsService materialsService;
+	private final BrandsService brandsService;
 	private final ApiResponseService apiResponseService;
 
 	@PostMapping("categories")
@@ -35,6 +37,13 @@ public class AdminProductsController {
 		materialsService.createMaterial(createMaterialDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("material_created", HttpStatus.CREATED));
+	}
+	
+	@PostMapping("brands")
+	public ResponseEntity<ApiResponse> createBrand(@RequestBody CreateBrandDTO createBrandDTO) {
+		brandsService.createBrand(createBrandDTO);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(apiResponseService.getApiResponseMessage("brand_created", HttpStatus.CREATED));
 	}
 	
 }
