@@ -17,6 +17,7 @@ public class ProductsController {
 
 	private final CategoryService categoryService;
 	private final MaterialsService materialsService;
+	private final BrandsService brandsService;
 	
 	@GetMapping("categories")
 	public ResponseEntity<Object> getCategories() {
@@ -26,6 +27,11 @@ public class ProductsController {
 	@GetMapping("materials")
 	public ResponseEntity<Object> getMaterials() {
 		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG));
+	}
+	
+	@GetMapping("brands")
+	public ResponseEntity<Object> getBrands() {
+		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands());
 	}
 
 }
