@@ -1,6 +1,7 @@
 package com.croman.SingleVendorEcommerce.Translations;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -37,12 +38,16 @@ public class TranslationService {
 				messageService.getMessage("translation_not_found", LocaleUtils.getDefaultLocale()));
 	}
 
-	public HashMap<Integer, String> batchTranslate(String languageName, TranslatorPropertyType type) {
+	public HashMap<Integer, String> batchTranslate(String languageName, TranslatorPropertyType type,
+			List<Long> registerIds) {
 		Language language = languageService.getLanguageByName(languageName);
 
 		HashMap<Integer, String> translationsMap = new HashMap<>();
 
-		translationsRepository.findByLanguageAndTranslatorPropertyType(language, type)
+		List<Integer> registerIdsToInt = registerIds.stream().map(id -> id.intValue())
+				.distinct().toList();
+		
+		translationsRepository.findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(language, type, registerIdsToInt)
 				.forEach(t -> translationsMap.put(t.getRegisterId(), t.getTranslation()));
 
 		if (translationsMap.isEmpty()) {

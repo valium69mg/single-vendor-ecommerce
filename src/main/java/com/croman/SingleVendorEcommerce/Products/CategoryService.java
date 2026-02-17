@@ -33,13 +33,17 @@ public class CategoryService {
 
 	public List<CategoryDTO> getCategories(String languageName) {
 
-		HashMap<Integer, String> batchTranslateHashMap = null;
-
-		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
-			batchTranslateHashMap = translationService.batchTranslate(languageName, TranslatorPropertyType.CATEGORY);
-		}
-
+		
 		List<Category> allCategories = categoryRepository.findAll();
+
+		HashMap<Integer, String> batchTranslateHashMap = null;
+		
+		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
+			List<Long> categoryIds = allCategories.stream().map(Category::getCategoryId).distinct()
+					.toList();
+			batchTranslateHashMap = translationService.batchTranslate(languageName, TranslatorPropertyType.CATEGORY,
+					categoryIds);
+		}
 
 		List<CategoryDTO> categoryDTOs = new ArrayList<>();
 

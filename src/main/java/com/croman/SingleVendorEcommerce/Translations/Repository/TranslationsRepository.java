@@ -14,6 +14,7 @@ public interface TranslationsRepository extends JpaRepository<Translation, Long>
 	Optional<Translation> findByRegisterIdAndLanguageAndTranslatorPropertyType(Integer registerId, 
 			Language language, TranslatorPropertyType translatorPropertyType);
 	
-	List<Translation> findByLanguageAndTranslatorPropertyType(Language language, TranslatorPropertyType type);
+	List<Translation> findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(Language language,
+			TranslatorPropertyType type, List<Integer> registerIds);
 
 }

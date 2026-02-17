@@ -30,14 +30,18 @@ public class MaterialsService {
 	private final MessageService messageService;
 	
 	public List<MaterialDTO> getMaterials(String languageName) {
+		
+		List<Material> allMaterials = materialRepository.findAll();
 
 		HashMap<Integer, String> batchTranslateHashMap = null;
-
+		
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
-			batchTranslateHashMap = translationService.batchTranslate(languageName, TranslatorPropertyType.MATERIAL);
+			List<Long> materialIds = allMaterials.stream().map(Material::getMaterialId)
+					.distinct().toList();
+			batchTranslateHashMap = translationService.batchTranslate(languageName, TranslatorPropertyType.MATERIAL,
+					materialIds);
 		}
 
-		List<Material> allMaterials = materialRepository.findAll();
 		List<MaterialDTO> materialDTOs = new ArrayList<>();
 
 		for (Material material : allMaterials) {
