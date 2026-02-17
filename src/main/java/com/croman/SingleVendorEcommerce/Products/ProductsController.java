@@ -16,10 +16,16 @@ import lombok.RequiredArgsConstructor;
 public class ProductsController {
 
 	private final CategoryService categoryService;
+	private final MaterialsService materialsService;
 	
 	@GetMapping("categories")
 	public ResponseEntity<Object> getCategories() {
 		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getCategories(LocaleUtils.APP_DEFAULT_LANG));
 	}
 	
+	@GetMapping("materials")
+	public ResponseEntity<Object> getMaterials() {
+		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG));
+	}
+
 }
