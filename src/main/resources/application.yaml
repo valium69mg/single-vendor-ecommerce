@@ -31,5 +31,9 @@ spring:
     baseline-on-migrate: true
     schemas: public
 
+storage:
+  local:
+    base-path: "C:/Users/carlo/appfiles"
+
 server:
   port: 8080
