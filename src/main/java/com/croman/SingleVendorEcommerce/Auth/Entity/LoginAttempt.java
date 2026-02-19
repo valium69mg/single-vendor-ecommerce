@@ -23,7 +23,7 @@ public class LoginAttempt {
     @Column(name = "login_attempt_id")
     private Long loginAttemptId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
