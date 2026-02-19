@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.General.PaginationUtils;
+import com.croman.SingleVendorEcommerce.Products.DTO.AttributesDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.BrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
@@ -27,6 +28,7 @@ public class ProductsController {
 	private final CategoryService categoryService;
 	private final MaterialsService materialsService;
 	private final BrandsService brandsService;
+	private final AttributesService attributesService;
 
 	@GetMapping("categories")
 	public ResponseEntity<List<CategoryDTO>> getCategories(@RequestParam(defaultValue = "0") int page,
@@ -51,6 +53,13 @@ public class ProductsController {
 	public ResponseEntity<List<BrandDTO>> getBrands(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "50") int size) {
 		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands(page, size));
+	}
+	
+	@GetMapping("attributes")
+	public ResponseEntity<List<AttributesDTO>> getAttributes(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(attributesService.getAttributes(LocaleUtils.APP_DEFAULT_LANG, page, size));
 	}
 
 }

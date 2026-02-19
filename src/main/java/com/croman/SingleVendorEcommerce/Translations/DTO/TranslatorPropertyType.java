@@ -2,6 +2,6 @@ package com.croman.SingleVendorEcommerce.Translations.DTO;
 
 public enum TranslatorPropertyType {
 
-	CATEGORY, MATERIAL;
+	CATEGORY, MATERIAL, ATTRIBUTE;
 	
 }
