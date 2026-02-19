@@ -46,20 +46,48 @@ public class AttributesService {
 
 		List<AttributeValue> allAttributeValues = attributeValueRepository.findByAttributeIdIn(attributeIds);
 
+		Map<Attribute, Set<AttributeValue>> valuesByAttribute = getValuesByAttribute(attributes, allAttributeValues);
+
+		HashMap<Integer, String> batchAttributeTranslateHashMap = getAttributeBatchTranslateHashMap(languageName,
+				attributeIds);
+
+		HashMap<Integer, String> batchAttributeValueTranslateHashMap = getAttributeValuesBatchTranslateHashMap(
+				languageName, allAttributeValues);
+
+		List<AttributesDTO> attributesDTOs = new ArrayList<>();
+		
+		for (Map.Entry<Attribute, Set<AttributeValue>> entry : valuesByAttribute.entrySet()) {
+			attributesDTOs.add(mapAttributeToAttributeDTO(entry.getKey(), entry.getValue(),
+					batchAttributeTranslateHashMap, batchAttributeValueTranslateHashMap));
+		}
+
+		return attributesDTOs;
+	}
+	
+	private Map<Attribute, Set<AttributeValue>> getValuesByAttribute(List<Attribute> attributes,
+			List<AttributeValue> allAttributeValues) {
 		Map<Attribute, Set<AttributeValue>> valuesByAttribute = new LinkedHashMap<>();
+
 		for (Attribute attribute : attributes) {
 			valuesByAttribute.put(attribute, new LinkedHashSet<>());
 		}
 		for (AttributeValue av : allAttributeValues) {
 			valuesByAttribute.get(av.getAttribute()).add(av);
 		}
-
+		return valuesByAttribute;
+	}
+	
+	private HashMap<Integer, String> getAttributeBatchTranslateHashMap(String languageName, List<Long> attributeIds) {
 		HashMap<Integer, String> batchAttributeTranslateHashMap = null;
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
 			batchAttributeTranslateHashMap = translationService.batchTranslate(languageName,
 					TranslatorPropertyType.ATTRIBUTE, attributeIds);
 		}
-
+		return batchAttributeTranslateHashMap;
+	}
+	
+	private HashMap<Integer, String> getAttributeValuesBatchTranslateHashMap(String languageName,
+			List<AttributeValue> allAttributeValues) {
 		HashMap<Integer, String> batchAttributeValueTranslateHashMap = null;
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
 			List<Long> colorAttributeValueIds = allAttributeValues.stream()
@@ -71,14 +99,7 @@ public class AttributesService {
 						TranslatorPropertyType.COLOR, colorAttributeValueIds);
 			}
 		}
-
-		List<AttributesDTO> attributesDTOs = new ArrayList<>();
-		for (Map.Entry<Attribute, Set<AttributeValue>> entry : valuesByAttribute.entrySet()) {
-			attributesDTOs.add(mapAttributeToAttributeDTO(entry.getKey(), entry.getValue(),
-					batchAttributeTranslateHashMap, batchAttributeValueTranslateHashMap));
-		}
-
-		return attributesDTOs;
+		return batchAttributeValueTranslateHashMap;
 	}
 
 	private AttributesDTO mapAttributeToAttributeDTO(Attribute attribute, Set<AttributeValue> values,
