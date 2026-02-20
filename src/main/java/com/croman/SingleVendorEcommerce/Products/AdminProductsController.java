@@ -40,7 +40,7 @@ public class AdminProductsController {
 			@RequestBody UpdateCategoryDTO updateCategoryDTO) {
 		categoryService.updateCategory(id, updateCategoryDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.CREATED));
+				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.OK));
 	}
 	
 	@PostMapping("materials")
