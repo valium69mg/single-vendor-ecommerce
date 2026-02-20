@@ -2,6 +2,8 @@ package com.croman.SingleVendorEcommerce.Products;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +14,7 @@ import com.croman.SingleVendorEcommerce.General.ApiResponseService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateBrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateMaterialDTO;
+import com.croman.SingleVendorEcommerce.Products.DTO.UpdateCategoryDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +33,14 @@ public class AdminProductsController {
 		categoryService.createCategoryDTO(createCategoryDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("category_created", HttpStatus.CREATED));
+	}
+	
+	@PatchMapping("categories/{id}")
+	public ResponseEntity<ApiResponse> patchCategory(@PathVariable long id, 
+			@RequestBody UpdateCategoryDTO updateCategoryDTO) {
+		categoryService.updateCategory(id, updateCategoryDTO);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.CREATED));
 	}
 	
 	@PostMapping("materials")

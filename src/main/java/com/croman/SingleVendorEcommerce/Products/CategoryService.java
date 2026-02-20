@@ -18,6 +18,7 @@ import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
+import com.croman.SingleVendorEcommerce.Products.DTO.UpdateCategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.Entity.Category;
 import com.croman.SingleVendorEcommerce.Products.Repository.CategoryRepository;
 import com.croman.SingleVendorEcommerce.Translations.LanguageService;
@@ -106,6 +107,32 @@ public class CategoryService {
 				TranslatorPropertyType.CATEGORY, spanishName);
 		
 		
+	}
+	
+	@Transactional
+	public void updateCategory(Long categoryId, UpdateCategoryDTO updateCategoryDTO) {
+		String englishName = updateCategoryDTO.getEnglishName();
+		String spanishName = updateCategoryDTO.getSpanishName();
+
+		if (englishName == null && spanishName == null) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("missing_language_names", LocaleUtils.getDefaultLocale()));
+		}
+
+		Category category = categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage("category_not_found", LocaleUtils.getDefaultLocale())));
+
+		if (englishName != null) {
+			category.setName(englishName);
+			categoryRepository.save(category);
+		}
+
+		if (spanishName != null) {
+			translationService.updateTranslation(categoryId.intValue(), LocaleUtils.ES, TranslatorPropertyType.CATEGORY,
+					spanishName);
+		}
+
 	}
 
 }

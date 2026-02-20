@@ -73,5 +73,27 @@ public class TranslationService {
 		translationsRepository.save(Translation.builder().registerId(registerId).translation(translation)
 				.language(language).translatorPropertyType(type).build());
 	}
+	
+	public void updateTranslation(Integer registerId, String languageName, TranslatorPropertyType type,
+			String translation) {
+
+		Language language = languageService.getLanguageByName(languageName);
+
+		Optional<Translation> translationOpt = translationsRepository
+				.findByRegisterIdAndLanguageAndTranslatorPropertyType(registerId, language, type);
+
+		Translation existingTranslation = null;
+
+		if (translationOpt.isPresent()) {
+			existingTranslation = translationOpt.get();
+			existingTranslation.setTranslation(translation);
+		} else {
+			existingTranslation = Translation.builder().registerId(registerId).translation(translation)
+					.language(language).translatorPropertyType(type).build();
+		}
+
+		translationsRepository.save(existingTranslation);
+
+	}
 
 }
