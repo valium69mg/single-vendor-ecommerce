@@ -2,6 +2,7 @@ package com.croman.SingleVendorEcommerce.Products;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +42,13 @@ public class AdminProductsController {
 		categoryService.updateCategory(id, updateCategoryDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.OK));
+	}
+	
+	@DeleteMapping("categories/{id}")
+	public ResponseEntity<ApiResponse> deleteCategory(@PathVariable long id) {
+		categoryService.deleteCategory(id);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(apiResponseService.getApiResponseMessage("category_deleted", HttpStatus.NO_CONTENT));
 	}
 	
 	@PostMapping("materials")

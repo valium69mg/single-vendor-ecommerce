@@ -95,5 +95,18 @@ public class TranslationService {
 		translationsRepository.save(existingTranslation);
 
 	}
+	
+	public void deleteTranslation(Integer registerId, String languageName, TranslatorPropertyType type) {
+		
+		Language language = languageService.getLanguageByName(languageName);
+
+		Optional<Translation> translationOpt = translationsRepository
+				.findByRegisterIdAndLanguageAndTranslatorPropertyType(registerId, language, type);
+		
+		if (translationOpt.isPresent()) {
+			translationsRepository.delete(translationOpt.get());
+		}
+		
+	}
 
 }

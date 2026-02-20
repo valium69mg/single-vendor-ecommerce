@@ -134,5 +134,19 @@ public class CategoryService {
 		}
 
 	}
+	
+	@Transactional
+	public void deleteCategory(Long categoryId) {
+		Category category = categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage("category_not_found", LocaleUtils.getDefaultLocale())));
+		
+		/* TODO: Validate if there are no products related to this category */
+
+		translationService.deleteTranslation(categoryId.intValue(), LocaleUtils.ES, TranslatorPropertyType.CATEGORY);
+
+		categoryRepository.delete(category);
+
+	}
 
 }
