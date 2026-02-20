@@ -12,9 +12,11 @@ import com.croman.SingleVendorEcommerce.Auth.DTO.LoginDTO;
 import com.croman.SingleVendorEcommerce.Auth.DTO.LoginResponseDTO;
 import com.croman.SingleVendorEcommerce.General.HttpUtils;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,10 +26,13 @@ public class AuthController {
 	private final AuthService authService;
 	
 	@PostMapping("login")
+	@Operation(summary = "Register a new user", responses = {
+			@ApiResponse(responseCode = "200", description = "Logged in successfully"),
+			@ApiResponse(responseCode = "400", description = "Invalid credentials") })
 	public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
 		String ip = HttpUtils.getClientIp(request);
 		LoginContextDTO loginContextDTO = LoginContextDTO.builder().ip(ip).loginDTO(loginDTO).build();
-		return ResponseEntity.status(HttpStatus.CREATED).body(authService.login(loginContextDTO));
+		return ResponseEntity.status(HttpStatus.OK).body(authService.login(loginContextDTO));
 	}
 	
 }

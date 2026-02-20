@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.croman.SingleVendorEcommerce.DTO.ApiResponse;
+import com.croman.SingleVendorEcommerce.DTO.DefaultApiResponse;
 import com.croman.SingleVendorEcommerce.General.ApiResponseService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateBrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
@@ -30,36 +30,36 @@ public class AdminProductsController {
 	private final ApiResponseService apiResponseService;
 
 	@PostMapping("categories")
-	public ResponseEntity<ApiResponse> createCategory(@RequestBody CreateCategoryDTO createCategoryDTO) {
+	public ResponseEntity<DefaultApiResponse> createCategory(@RequestBody CreateCategoryDTO createCategoryDTO) {
 		categoryService.createCategoryDTO(createCategoryDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("category_created", HttpStatus.CREATED));
 	}
 	
 	@PatchMapping("categories/{id}")
-	public ResponseEntity<ApiResponse> patchCategory(@PathVariable long id, 
+	public ResponseEntity<DefaultApiResponse> patchCategory(@PathVariable long id, 
 			@RequestBody UpdateCategoryDTO updateCategoryDTO) {
 		categoryService.updateCategory(id, updateCategoryDTO);
-		return ResponseEntity.status(HttpStatus.CREATED)
+		return ResponseEntity.status(HttpStatus.OK)
 				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.OK));
 	}
 	
 	@DeleteMapping("categories/{id}")
-	public ResponseEntity<ApiResponse> deleteCategory(@PathVariable long id) {
+	public ResponseEntity<DefaultApiResponse> deleteCategory(@PathVariable long id) {
 		categoryService.deleteCategory(id);
-		return ResponseEntity.status(HttpStatus.CREATED)
+		return ResponseEntity.status(HttpStatus.NO_CONTENT)
 				.body(apiResponseService.getApiResponseMessage("category_deleted", HttpStatus.NO_CONTENT));
 	}
 	
 	@PostMapping("materials")
-	public ResponseEntity<ApiResponse> createMaterial(@RequestBody CreateMaterialDTO createMaterialDTO) {
+	public ResponseEntity<DefaultApiResponse> createMaterial(@RequestBody CreateMaterialDTO createMaterialDTO) {
 		materialsService.createMaterial(createMaterialDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("material_created", HttpStatus.CREATED));
 	}
 	
 	@PostMapping("brands")
-	public ResponseEntity<ApiResponse> createBrand(@RequestBody CreateBrandDTO createBrandDTO) {
+	public ResponseEntity<DefaultApiResponse> createBrand(@RequestBody CreateBrandDTO createBrandDTO) {
 		brandsService.createBrand(createBrandDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("brand_created", HttpStatus.CREATED));

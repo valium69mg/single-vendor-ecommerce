@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.croman.SingleVendorEcommerce.DTO.ApiResponse;
+import com.croman.SingleVendorEcommerce.DTO.DefaultApiResponse;
 import com.croman.SingleVendorEcommerce.General.ApiResponseService;
 import com.croman.SingleVendorEcommerce.Users.DTO.CreateUserDTO;
 
@@ -26,23 +26,23 @@ public class UserController {
 	private final ApiResponseService apiResponseService;
 
 	@PostMapping("register")
-	private ResponseEntity<ApiResponse> createUser(@Valid @RequestBody CreateUserDTO dto) {
+	private ResponseEntity<DefaultApiResponse> createUser(@Valid @RequestBody CreateUserDTO dto) {
 		userService.register(dto);
-		ApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
+		DefaultApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 	
 	@DeleteMapping("{email}")
-	private ResponseEntity<ApiResponse> deleteUser(@Valid @Email(message = "Must be an email") @PathVariable String email) {
+	private ResponseEntity<DefaultApiResponse> deleteUser(@Valid @Email(message = "Must be an email") @PathVariable String email) {
 		userService.deleteUserByEmail(email);
-		ApiResponse response = apiResponseService.getApiResponseMessage("user_deleted", HttpStatus.ACCEPTED);
-		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+		DefaultApiResponse response = apiResponseService.getApiResponseMessage("user_deleted", HttpStatus.NO_CONTENT);
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
 	}
 	
 	@PostMapping("register/admin")
-	private ResponseEntity<ApiResponse> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
+	private ResponseEntity<DefaultApiResponse> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
 		userService.createSiteAdmin(dto);
-		ApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
+		DefaultApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
