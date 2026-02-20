@@ -56,7 +56,7 @@ public class AdminProductsController {
 	}
 	
 	@PatchMapping("categories/{id}")
-	@Operation(summary = "Create category", responses = {
+	@Operation(summary = "Update category", responses = {
 		    @ApiResponse(
 		        responseCode = "200", 
 		        description = "Category updated successfully",
