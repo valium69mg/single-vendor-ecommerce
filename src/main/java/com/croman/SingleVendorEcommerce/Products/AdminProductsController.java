@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.croman.SingleVendorEcommerce.Auth.DTO.LoginResponseDTO;
 import com.croman.SingleVendorEcommerce.DTO.DefaultApiResponse;
 import com.croman.SingleVendorEcommerce.General.ApiResponseService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateBrandDTO;
@@ -17,6 +18,10 @@ import com.croman.SingleVendorEcommerce.Products.DTO.CreateCategoryDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateMaterialDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.UpdateCategoryDTO;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -30,6 +35,20 @@ public class AdminProductsController {
 	private final ApiResponseService apiResponseService;
 
 	@PostMapping("categories")
+	@Operation(summary = "Create category", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Category created successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
 	public ResponseEntity<DefaultApiResponse> createCategory(@RequestBody CreateCategoryDTO createCategoryDTO) {
 		categoryService.createCategoryDTO(createCategoryDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
@@ -37,6 +56,20 @@ public class AdminProductsController {
 	}
 	
 	@PatchMapping("categories/{id}")
+	@Operation(summary = "Create category", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Category updated successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
 	public ResponseEntity<DefaultApiResponse> patchCategory(@PathVariable long id, 
 			@RequestBody UpdateCategoryDTO updateCategoryDTO) {
 		categoryService.updateCategory(id, updateCategoryDTO);
@@ -45,6 +78,20 @@ public class AdminProductsController {
 	}
 	
 	@DeleteMapping("categories/{id}")
+	@Operation(summary = "Delete category", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Category deleted successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Category not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
 	public ResponseEntity<DefaultApiResponse> deleteCategory(@PathVariable long id) {
 		categoryService.deleteCategory(id);
 		return ResponseEntity.status(HttpStatus.NO_CONTENT)
@@ -52,6 +99,20 @@ public class AdminProductsController {
 	}
 	
 	@PostMapping("materials")
+	@Operation(summary = "Create material", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Material created successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
 	public ResponseEntity<DefaultApiResponse> createMaterial(@RequestBody CreateMaterialDTO createMaterialDTO) {
 		materialsService.createMaterial(createMaterialDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
@@ -59,6 +120,20 @@ public class AdminProductsController {
 	}
 	
 	@PostMapping("brands")
+	@Operation(summary = "Create brand", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Brand created successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
 	public ResponseEntity<DefaultApiResponse> createBrand(@RequestBody CreateBrandDTO createBrandDTO) {
 		brandsService.createBrand(createBrandDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
