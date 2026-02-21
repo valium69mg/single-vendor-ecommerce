@@ -33,7 +33,7 @@ spring:
 
 storage:
   local:
-    base-path: "C:/Users/carlo/appfiles"
+    base-path: "${FILE_DIRECTORY}"
 
 server:
   port: 8080

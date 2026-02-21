@@ -15,6 +15,7 @@ import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.General.PaginationUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateMaterialDTO;
+import com.croman.SingleVendorEcommerce.Products.DTO.MaterialByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.MaterialDTO;
 import com.croman.SingleVendorEcommerce.Products.Entity.Material;
 import com.croman.SingleVendorEcommerce.Products.Repository.MaterialRepository;
@@ -60,6 +61,26 @@ public class MaterialsService {
 		Integer key = material.getMaterialId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : material.getName();
 		return MaterialDTO.builder().materialId(material.getMaterialId()).name(name).build();
+	}
+	
+	public MaterialByIdDTO getMaterialById(Long materialId) {
+		
+		Material material = materialRepository.findById(materialId).orElseThrow(
+				() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(), messageService.getMessage("material_not_found", 
+						LocaleUtils.getDefaultLocale())));
+		
+		HashMap<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
+				TranslatorPropertyType.MATERIAL, List.of(material.getMaterialId()));
+	
+		return mapMaterialToMaterialByIdDTO(material, batchTranslateHashMap);
+		
+	}
+	
+	private MaterialByIdDTO mapMaterialToMaterialByIdDTO(Material material, HashMap<Integer, String> batchTranslateHashMap) {
+		Integer key = material.getMaterialId().intValue();
+		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : material.getName();
+		return MaterialByIdDTO.builder().materialId(material.getMaterialId()).englishName(material.getName())
+		.spanishName(spanishName).build();
 	}
 	
 	@Transactional
