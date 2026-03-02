@@ -1,21 +1,32 @@
 spring:
   profiles:
-    active: dev
+    active: "${SPRING_PROFILES_ACTIVE:dev}"
 
   logging:
     level:
-      org.springframework.security: DEBUG
-      org.flywaydb: DEBUG
-      org.springframework.boot.autoconfigure.flyway: DEBUG
+      org.springframework.security: {"${SPRING_SECURITY_LOGGING_LEVEL:INFO}"}
+      org.flywaydb: "${FLYWAY_LOGGING_LEVEL:INFO}"
+      com.croman.SingleVendorEcommerce: "${APP_LOGGING_LEVEL:DEBUG}"
 
   application:
     name: SingleVendorEcommerce
 
+
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:single_vendor_ecommerce}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:postgres}}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.postgresql.Driver}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT_MS:60000}          # 60s
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}   # 30s
+      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}        # 30m
+      pool-name: ${DB_POOL_NAME:SingleVendorPool}
+      auto-commit: ${DB_AUTO_COMMIT:true}
+      schema: ${DB_SCHEMA:public}
+
 
   jpa:
     hibernate:
@@ -36,4 +47,4 @@ storage:
     base-path: "C:/Users/carlo/appfiles"
 
 server:
-  port: 8080
+  port: "${SERVER_PORT:8080}"
