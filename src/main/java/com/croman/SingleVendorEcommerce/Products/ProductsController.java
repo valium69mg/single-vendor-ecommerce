@@ -16,6 +16,7 @@ import com.croman.SingleVendorEcommerce.Products.DTO.AttributesDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.BrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
+import com.croman.SingleVendorEcommerce.Products.DTO.MaterialByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.MaterialDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -94,7 +95,33 @@ public class ProductsController {
 		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG,
 				page, size));
 	}
-
+	
+	@GetMapping("materials/{id}")
+	@Operation(
+		    summary = "Get material by id",
+		    responses = {
+		        @ApiResponse(
+		            responseCode = "200",
+		            description = "Content successfully returned",
+		            content = @Content(
+		                mediaType = "application/json",
+		                schema = @Schema(implementation = MaterialByIdDTO.class)
+		            )
+		        ),
+		        @ApiResponse(
+		            responseCode = "404",
+		            description = "Material not found",
+		            content = @Content(
+		                mediaType = "application/json",
+		                schema = @Schema(implementation = DefaultApiResponse.class)
+		            )
+		        )
+		    }
+		)
+	public ResponseEntity<MaterialByIdDTO> getMaterialById(@PathVariable long id) {
+		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterialById(id));
+	}
+	
 	@GetMapping("brands")
 	@Operation(summary = "Get brands by offset pagination", responses = {
 		    @ApiResponse(
