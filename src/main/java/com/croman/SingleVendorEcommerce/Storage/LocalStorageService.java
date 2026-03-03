@@ -18,7 +18,7 @@ public class LocalStorageService implements StorageService {
     @Getter
     private Path basePath;
 
-    @Value("${storage.local.base-path}")
+    @Value("${FILE_DIRECTORY}")
     private String basePathValue;
 
     @PostConstruct
