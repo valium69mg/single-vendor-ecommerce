@@ -287,6 +287,45 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "products/categories",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{jwt-token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"spanishName\": \"Videojuegos y Consolas\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/api/v1/admin/products/categories/10",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "products",
+                    "categories",
+                    "10"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
@@ -409,6 +448,35 @@
                       "key": "size",
                       "value": "1"
                     }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "products/brands/id",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{jwt-token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/api/v1/products/brands/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "api",
+                    "v1",
+                    "products",
+                    "brands",
+                    "1"
                   ]
                 }
               },

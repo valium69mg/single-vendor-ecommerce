@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.croman.SingleVendorEcommerce.DTO.DefaultApiResponse;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.Products.DTO.AttributesDTO;
+import com.croman.SingleVendorEcommerce.Products.DTO.BrandByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.BrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CategoryDTO;
@@ -136,6 +137,21 @@ public class ProductsController {
 	public ResponseEntity<List<BrandDTO>> getBrands(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "50") int size) {
 		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands(page, size));
+	}
+	
+	@GetMapping("brands/{id}")
+	@Operation(summary = "Get brand by id", responses = {
+		    @ApiResponse(
+		        responseCode = "200",
+		        description = "Content successfully returned",
+		        content = @Content(
+		            mediaType = "application/json",
+		            array = @ArraySchema(schema = @Schema(implementation = BrandByIdDTO.class))
+		        )
+		    )
+		})
+	public ResponseEntity<BrandByIdDTO> getBrand(@PathVariable long id) {
+		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrandById(id));
 	}
 	
 	@GetMapping("attributes")

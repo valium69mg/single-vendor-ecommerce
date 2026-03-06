@@ -14,6 +14,7 @@ import com.croman.SingleVendorEcommerce.Exceptions.ApiServiceException;
 import com.croman.SingleVendorEcommerce.General.LocaleUtils;
 import com.croman.SingleVendorEcommerce.General.PaginationUtils;
 import com.croman.SingleVendorEcommerce.Message.MessageService;
+import com.croman.SingleVendorEcommerce.Products.DTO.BrandByIdDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.BrandDTO;
 import com.croman.SingleVendorEcommerce.Products.DTO.CreateBrandDTO;
 import com.croman.SingleVendorEcommerce.Products.Entity.Brand;
@@ -41,6 +42,18 @@ public class BrandsService {
 	
 	private BrandDTO mapBrandToBrandDTO(Brand brand) {
 		return BrandDTO.builder().brandId(brand.getBrandId())
+				.name(brand.getName()).build();
+	}
+	
+	public BrandByIdDTO getBrandById(long brandId) {
+		Brand brand = brandRepository.findById(brandId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage("brand_does_not_exists", LocaleUtils.getDefaultLocale())));
+		return mapBrandTBrandByIdDTO(brand);
+	}
+	
+	private BrandByIdDTO mapBrandTBrandByIdDTO(Brand brand){
+		return BrandByIdDTO.builder().brandId(brand.getBrandId())
 				.name(brand.getName()).build();
 	}
 	
