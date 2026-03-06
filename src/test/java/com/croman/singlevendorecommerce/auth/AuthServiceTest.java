@@ -12,18 +12,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.croman.singlevendorecommerce.Auth.AuthService;
-import com.croman.singlevendorecommerce.Auth.DTO.LoginContextDTO;
-import com.croman.singlevendorecommerce.Auth.DTO.LoginDTO;
-import com.croman.singlevendorecommerce.Auth.DTO.LoginResponseDTO;
-import com.croman.singlevendorecommerce.Auth.Entity.LoginAttempt;
-import com.croman.singlevendorecommerce.Auth.Repository.LoginAttemptRepository;
-import com.croman.singlevendorecommerce.Exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.Jwt.JwtUtil;
-import com.croman.singlevendorecommerce.Message.MessageService;
-import com.croman.singlevendorecommerce.Users.UserService;
-import com.croman.singlevendorecommerce.Users.DTO.UserDTO;
-import com.croman.singlevendorecommerce.Users.Entity.User;
+import com.croman.singlevendorecommerce.auth.AuthService;
+import com.croman.singlevendorecommerce.auth.dto.LoginContextDTO;
+import com.croman.singlevendorecommerce.auth.dto.LoginDTO;
+import com.croman.singlevendorecommerce.auth.dto.LoginResponseDTO;
+import com.croman.singlevendorecommerce.auth.entity.LoginAttempt;
+import com.croman.singlevendorecommerce.auth.repository.LoginAttemptRepository;
+import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.jwt.JwtUtil;
+import com.croman.singlevendorecommerce.message.MessageService;
+import com.croman.singlevendorecommerce.users.UserService;
+import com.croman.singlevendorecommerce.users.dto.UserDTO;
+import com.croman.singlevendorecommerce.users.entity.User;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {

@@ -11,12 +11,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.croman.singlevendorecommerce.Exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.Message.MessageService;
-import com.croman.singlevendorecommerce.Roles.RolesService;
-import com.croman.singlevendorecommerce.Roles.UserRole;
-import com.croman.singlevendorecommerce.Roles.DTO.RoleType;
-import com.croman.singlevendorecommerce.Roles.Repository.UserRoleRepository;
+import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.message.MessageService;
+import com.croman.singlevendorecommerce.roles.RolesService;
+import com.croman.singlevendorecommerce.roles.UserRole;
+import com.croman.singlevendorecommerce.roles.dto.RoleType;
+import com.croman.singlevendorecommerce.roles.repository.UserRoleRepository;
 
 @ExtendWith(MockitoExtension.class)
 class RolesServiceTest {

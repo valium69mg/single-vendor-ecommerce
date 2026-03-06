@@ -12,18 +12,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.croman.singlevendorecommerce.Exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.General.EnvironmentUtils;
-import com.croman.singlevendorecommerce.Message.MessageService;
-import com.croman.singlevendorecommerce.Roles.RolesService;
-import com.croman.singlevendorecommerce.Roles.UserRole;
-import com.croman.singlevendorecommerce.Roles.DTO.RoleType;
-import com.croman.singlevendorecommerce.Users.UserService;
-import com.croman.singlevendorecommerce.Users.DTO.CreateUserDTO;
-import com.croman.singlevendorecommerce.Users.DTO.UserDTO;
-import com.croman.singlevendorecommerce.Users.Entity.User;
-import com.croman.singlevendorecommerce.Users.Repository.UserRepository;
-import com.croman.singlevendorecommerce.Users.Utils.PasswordUtils;
+import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.general.EnvironmentUtils;
+import com.croman.singlevendorecommerce.message.MessageService;
+import com.croman.singlevendorecommerce.roles.RolesService;
+import com.croman.singlevendorecommerce.roles.UserRole;
+import com.croman.singlevendorecommerce.roles.dto.RoleType;
+import com.croman.singlevendorecommerce.users.UserService;
+import com.croman.singlevendorecommerce.users.dto.CreateUserDTO;
+import com.croman.singlevendorecommerce.users.dto.UserDTO;
+import com.croman.singlevendorecommerce.users.entity.User;
+import com.croman.singlevendorecommerce.users.repository.UserRepository;
+import com.croman.singlevendorecommerce.users.utils.PasswordUtils;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {

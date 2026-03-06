@@ -1,0 +1,129 @@
+package com.croman.singlevendorecommerce.products;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import com.croman.singlevendorecommerce.general.LocaleUtils;
+import com.croman.singlevendorecommerce.general.PaginationUtils;
+import com.croman.singlevendorecommerce.message.MessageService;
+import com.croman.singlevendorecommerce.products.dto.AttributeType;
+import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
+import com.croman.singlevendorecommerce.products.entity.Attribute;
+import com.croman.singlevendorecommerce.products.entity.AttributeValue;
+import com.croman.singlevendorecommerce.products.entity.Category;
+import com.croman.singlevendorecommerce.products.repository.AttributeRepository;
+import com.croman.singlevendorecommerce.products.repository.AttributeValueRepository;
+import com.croman.singlevendorecommerce.translations.TranslationService;
+import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
+
+import io.jsonwebtoken.lang.Collections;
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AttributesService {
+
+	private final AttributeRepository attributeRepository;
+	private final AttributeValueRepository attributeValueRepository;
+	private final TranslationService translationService;
+
+	public List<AttributesDTO> getAttributes(String languageName, int page, int size) {
+
+		Pageable pageable = PaginationUtils.getPageable(page, size, "attributeId");
+
+		List<Attribute> attributes = attributeRepository.findAll(pageable).getContent();
+
+		List<Long> attributeIds = attributes.stream().map(Attribute::getAttributeId).toList();
+
+		List<AttributeValue> allAttributeValues = attributeValueRepository.findByAttributeIdIn(attributeIds);
+
+		Map<Attribute, Set<AttributeValue>> valuesByAttribute = getValuesByAttribute(attributes, allAttributeValues);
+
+		HashMap<Integer, String> batchAttributeTranslateHashMap = getAttributeBatchTranslateHashMap(languageName,
+				attributeIds);
+
+		HashMap<Integer, String> batchAttributeValueTranslateHashMap = getAttributeValuesBatchTranslateHashMap(
+				languageName, allAttributeValues);
+
+		List<AttributesDTO> attributesDTOs = new ArrayList<>();
+		
+		for (Map.Entry<Attribute, Set<AttributeValue>> entry : valuesByAttribute.entrySet()) {
+			attributesDTOs.add(mapAttributeToAttributeDTO(entry.getKey(), entry.getValue(),
+					batchAttributeTranslateHashMap, batchAttributeValueTranslateHashMap));
+		}
+
+		return attributesDTOs;
+	}
+	
+	private Map<Attribute, Set<AttributeValue>> getValuesByAttribute(List<Attribute> attributes,
+			List<AttributeValue> allAttributeValues) {
+		Map<Attribute, Set<AttributeValue>> valuesByAttribute = new LinkedHashMap<>();
+
+		for (Attribute attribute : attributes) {
+			valuesByAttribute.put(attribute, new LinkedHashSet<>());
+		}
+		for (AttributeValue av : allAttributeValues) {
+			valuesByAttribute.get(av.getAttribute()).add(av);
+		}
+		return valuesByAttribute;
+	}
+	
+	private HashMap<Integer, String> getAttributeBatchTranslateHashMap(String languageName, List<Long> attributeIds) {
+		HashMap<Integer, String> batchAttributeTranslateHashMap = null;
+		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
+			batchAttributeTranslateHashMap = translationService.batchTranslate(languageName,
+					TranslatorPropertyType.ATTRIBUTE, attributeIds);
+		}
+		return batchAttributeTranslateHashMap;
+	}
+	
+	private HashMap<Integer, String> getAttributeValuesBatchTranslateHashMap(String languageName,
+			List<AttributeValue> allAttributeValues) {
+		HashMap<Integer, String> batchAttributeValueTranslateHashMap = null;
+		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
+			List<Long> colorAttributeValueIds = allAttributeValues.stream()
+					.filter(av -> av.getAttribute().getAttributeType() == AttributeType.COLOR)
+					.map(AttributeValue::getAttributeValueId).toList();
+
+			if (!colorAttributeValueIds.isEmpty()) {
+				batchAttributeValueTranslateHashMap = translationService.batchTranslate(languageName,
+						TranslatorPropertyType.COLOR, colorAttributeValueIds);
+			}
+		}
+		return batchAttributeValueTranslateHashMap;
+	}
+
+	private AttributesDTO mapAttributeToAttributeDTO(Attribute attribute, Set<AttributeValue> values,
+			HashMap<Integer, String> batchTranslateHashMap,
+			HashMap<Integer, String> batchAttributeValueTranslateHashMap) {
+
+		Integer key = attribute.getAttributeId().intValue();
+		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key)
+				: attribute.getAttributeType().toString();
+
+		List<AttributesDTO.AttributeValueDTO> attributeValueDTOs = new ArrayList<>();
+		for (AttributeValue av : values) {
+			Integer valueKey = av.getAttributeValueId().intValue();
+			String value = batchAttributeValueTranslateHashMap != null
+					? batchAttributeValueTranslateHashMap.getOrDefault(valueKey, av.getValue())
+					: av.getValue();
+
+			AttributesDTO.AttributeValueDTO dto = AttributesDTO.AttributeValueDTO.builder()
+					.attributeValueId(av.getAttributeValueId()).value(value).build();
+			attributeValueDTOs.add(dto);
+		}
+
+		return AttributesDTO.builder().attributeId(attribute.getAttributeId()).name(name)
+				.attributeValues(attributeValueDTOs).build();
+	}
+
+}
