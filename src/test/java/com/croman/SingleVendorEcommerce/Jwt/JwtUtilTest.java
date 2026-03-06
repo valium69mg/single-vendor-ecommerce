@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce;
+package com.croman.SingleVendorEcommerce.Jwt;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;

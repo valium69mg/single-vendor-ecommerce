@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce;
+package com.croman.SingleVendorEcommerce.Jwt;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;

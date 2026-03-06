@@ -1,4 +1,4 @@
-package com.croman.SingleVendorEcommerce;
+package com.croman.SingleVendorEcommerce.Auth;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
