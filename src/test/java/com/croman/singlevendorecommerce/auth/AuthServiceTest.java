@@ -1,0 +1,105 @@
+package com.croman.singlevendorecommerce.auth;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.croman.singlevendorecommerce.Auth.AuthService;
+import com.croman.singlevendorecommerce.Auth.DTO.LoginContextDTO;
+import com.croman.singlevendorecommerce.Auth.DTO.LoginDTO;
+import com.croman.singlevendorecommerce.Auth.DTO.LoginResponseDTO;
+import com.croman.singlevendorecommerce.Auth.Entity.LoginAttempt;
+import com.croman.singlevendorecommerce.Auth.Repository.LoginAttemptRepository;
+import com.croman.singlevendorecommerce.Exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.Jwt.JwtUtil;
+import com.croman.singlevendorecommerce.Message.MessageService;
+import com.croman.singlevendorecommerce.Users.UserService;
+import com.croman.singlevendorecommerce.Users.DTO.UserDTO;
+import com.croman.singlevendorecommerce.Users.Entity.User;
+
+@ExtendWith(MockitoExtension.class)
+class AuthServiceTest {
+
+    @Mock private JwtUtil jwtUtil;
+    @Mock private MessageService messageService;
+    @Mock private UserService userService;
+    @Mock private LoginAttemptRepository loginAttemptRepository;
+
+    @InjectMocks private AuthService authService;
+
+    private LoginContextDTO buildContext(String email, String password, String ip) {
+        LoginDTO loginDTO = new LoginDTO(email, password);
+        return new LoginContextDTO(loginDTO, ip);
+    }
+
+    @Test
+    void login_success() {
+        LoginContextDTO ctx = buildContext("user@example.com", "secret", "127.0.0.1");
+
+        when(userService.existsByEmail("user@example.com")).thenReturn(true);
+        when(loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(anyString(), any(LocalDateTime.class)))
+                .thenReturn(0L);
+        when(userService.passwordCorrect("user@example.com", "secret")).thenReturn(true);
+        doNothing().when(userService).updateLastLogin("user@example.com");
+        when(userService.getUserRoleNameByEmail("user@example.com")).thenReturn("ADMIN");
+        when(jwtUtil.generateToken("user@example.com", "ADMIN")).thenReturn("jwt-token");
+        when(userService.getUserDTOByEmail("user@example.com"))
+                .thenReturn(UserDTO.builder().userId("123").build());
+        when(userService.getUserByEmail("user@example.com")).thenReturn(new User());
+
+        LoginResponseDTO response = authService.login(ctx);
+
+        assertEquals("user@example.com", response.getEmail());
+        assertEquals("jwt-token", response.getToken());
+        verify(userService, times(1)).updateLastLogin("user@example.com");
+        verify(loginAttemptRepository).save(any(LoginAttempt.class));
+    }
+
+    @Test
+    void login_emailNotExists_throwsException() {
+        LoginContextDTO ctx = buildContext("missing@example.com", "secret", "127.0.0.1");
+
+        when(userService.existsByEmail("missing@example.com")).thenReturn(false);
+        when(messageService.getMessage(eq("invalid_credentials"), any())).thenReturn("Invalid credentials");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class, () -> authService.login(ctx));
+        assertEquals("Invalid credentials", ex.getMessage());
+    }
+
+    @Test
+    void login_tooManyFailedAttempts_throwsLocked() {
+        LoginContextDTO ctx = buildContext("user@example.com", "secret", "127.0.0.1");
+
+        when(userService.existsByEmail("user@example.com")).thenReturn(true);
+        when(loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(anyString(), any(LocalDateTime.class)))
+                .thenReturn(5L);
+        when(messageService.getMessage(eq("account_locked"), any())).thenReturn("Account locked");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class, () -> authService.login(ctx));
+        assertEquals("Account locked", ex.getMessage());
+    }
+
+    @Test
+    void login_wrongPassword_throwsExceptionAndRegistersAttempt() {
+        LoginContextDTO ctx = buildContext("user@example.com", "wrong", "127.0.0.1");
+
+        when(userService.existsByEmail("user@example.com")).thenReturn(true);
+        when(loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(anyString(), any(LocalDateTime.class)))
+                .thenReturn(0L);
+        when(userService.passwordCorrect("user@example.com", "wrong")).thenReturn(false);
+        when(messageService.getMessage(eq("invalid_credentials"), any())).thenReturn("Invalid credentials");
+        when(userService.getUserByEmail("user@example.com")).thenReturn(new User());
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class, () -> authService.login(ctx));
+        assertEquals("Invalid credentials", ex.getMessage());
+        verify(loginAttemptRepository).save(any(LoginAttempt.class));
+    }
+}
