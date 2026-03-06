@@ -6,6 +6,8 @@ import org.springframework.data.domain.Sort;
 
 public class PaginationUtils {
 	
+	private PaginationUtils () {}
+	
 	private static final int MAX_PAGINATION_SIZE = 100;
 
 	public static int safeSize(int size) {
