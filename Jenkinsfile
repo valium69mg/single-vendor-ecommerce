@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
+                git branch: 'dev',
                     url: 'https://github.com/valium69mg/single-vendor-ecommerce'
             }
         }
