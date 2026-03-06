@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 
 # Copia el jar generado por Maven
-COPY target/*.jar app.jar
+COPY target/single-vendor-ecommerce.jar app.jar
 
 # Exponer el puerto de Spring Boot
 EXPOSE 8080
