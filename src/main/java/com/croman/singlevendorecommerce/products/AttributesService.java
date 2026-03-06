@@ -7,25 +7,21 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.general.PaginationUtils;
-import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.AttributeType;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.entity.Attribute;
 import com.croman.singlevendorecommerce.products.entity.AttributeValue;
-import com.croman.singlevendorecommerce.products.entity.Category;
 import com.croman.singlevendorecommerce.products.repository.AttributeRepository;
 import com.croman.singlevendorecommerce.products.repository.AttributeValueRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
 
-import io.jsonwebtoken.lang.Collections;
 import lombok.RequiredArgsConstructor;
 
 @Service

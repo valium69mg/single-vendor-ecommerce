@@ -45,7 +45,7 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
    
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_role_id", nullable = false)
     private UserRole userRole;
 

@@ -1,6 +1,5 @@
 package com.croman.singlevendorecommerce.auth.repository;
 
-import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.croman.singlevendorecommerce.auth.AuthService;
 import com.croman.singlevendorecommerce.auth.dto.LoginContextDTO;
 import com.croman.singlevendorecommerce.auth.dto.LoginDTO;
 import com.croman.singlevendorecommerce.auth.dto.LoginResponseDTO;

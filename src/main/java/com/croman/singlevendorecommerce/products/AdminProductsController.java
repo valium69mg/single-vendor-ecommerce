@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.croman.singlevendorecommerce.auth.dto.LoginResponseDTO;
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.general.ApiResponseService;
 import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;

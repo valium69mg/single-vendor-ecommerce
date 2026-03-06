@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.auth.dto.LoginContextDTO;
 import com.croman.singlevendorecommerce.auth.dto.LoginDTO;

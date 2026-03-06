@@ -20,7 +20,6 @@ import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.roles.RolesService;
 import com.croman.singlevendorecommerce.roles.UserRole;
 import com.croman.singlevendorecommerce.roles.dto.RoleType;
-import com.croman.singlevendorecommerce.users.UserService;
 import com.croman.singlevendorecommerce.users.dto.CreateUserDTO;
 import com.croman.singlevendorecommerce.users.dto.UserDTO;
 import com.croman.singlevendorecommerce.users.entity.User;
