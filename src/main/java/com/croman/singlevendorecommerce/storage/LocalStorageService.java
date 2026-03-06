@@ -41,7 +41,7 @@ public class LocalStorageService implements StorageService {
             while ((read = data.read(buffer)) != -1) {
                 os.write(buffer, 0, read);
             }
-            log.info("File uploaded: {}", key);
+            log.debug("File uploaded: {}", key);
         } catch (IOException e) {
             log.error("Error uploading file: {}", key, e);
             throw new RuntimeException("Error uploading file with key: " + key, e);
@@ -74,7 +74,7 @@ public class LocalStorageService implements StorageService {
         Path target = basePath.resolve(key).normalize();
         try {
             Files.deleteIfExists(target);
-            log.info("File deleted: {}", key);
+            log.debug("File deleted: {}", key);
         } catch (IOException e) {
             log.error("Error deleting file: {}", key, e);
             throw new RuntimeException("Error deleting file with key: " + key, e);
