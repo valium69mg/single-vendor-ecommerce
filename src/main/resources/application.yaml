@@ -6,11 +6,7 @@ spring:
     level:
       org.springframework.security: {"${SPRING_SECURITY_LOGGING_LEVEL:INFO}"}
       org.flywaydb: "${FLYWAY_LOGGING_LEVEL:INFO}"
-      com.croman.SingleVendorEcommerce: "${APP_LOGGING_LEVEL:DEBUG}"
-
-  application:
-    name: SingleVendorEcommerce
-
+      com.croman.singlevendorecommerce: "${APP_LOGGING_LEVEL:DEBUG}"
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:single_vendor_ecommerce}}
