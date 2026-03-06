@@ -36,6 +36,7 @@ public class CategoryService {
 	private final MessageService messageService;
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 
+	@Transactional(readOnly = true)
 	public List<CategoryDTO> getCategories(String languageName, int page, int size) {
 	
 		Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
@@ -60,6 +61,7 @@ public class CategoryService {
 		return categoryDTOs;
 	}
 	
+	@Transactional(readOnly = true)
 	public CategoryByIdDTO getCategoryById(Long categoryId) {
 
 		Category category = categoryRepository.findById(categoryId)

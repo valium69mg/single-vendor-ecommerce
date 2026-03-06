@@ -32,6 +32,7 @@ public class MaterialsService {
 	private final TranslationService translationService;
 	private final MessageService messageService;
 	
+	@Transactional(readOnly = true)
 	public List<MaterialDTO> getMaterials(String languageName, int page, int size) {
 		
 		Pageable pageable = PaginationUtils.getPageable(page, size, "materialId");
@@ -63,6 +64,7 @@ public class MaterialsService {
 		return MaterialDTO.builder().materialId(material.getMaterialId()).name(name).build();
 	}
 	
+	@Transactional(readOnly = true)
 	public MaterialByIdDTO getMaterialById(Long materialId) {
 		
 		Material material = materialRepository.findById(materialId).orElseThrow(

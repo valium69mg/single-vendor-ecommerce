@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.general.PaginationUtils;
@@ -32,6 +33,7 @@ public class AttributesService {
 	private final AttributeValueRepository attributeValueRepository;
 	private final TranslationService translationService;
 
+	@Transactional(readOnly = true)
 	public List<AttributesDTO> getAttributes(String languageName, int page, int size) {
 
 		Pageable pageable = PaginationUtils.getPageable(page, size, "attributeId");

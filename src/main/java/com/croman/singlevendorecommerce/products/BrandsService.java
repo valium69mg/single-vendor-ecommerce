@@ -28,6 +28,7 @@ public class BrandsService {
 	private final BrandRepository brandRepository;
 	private final MessageService messageService;
 	
+	@Transactional(readOnly = true)
 	public List<BrandDTO> getBrands(int page, int size) {
 		Pageable pageable = PaginationUtils.getPageable(page, size, "brandId");
 		List<Brand> allBrands = brandRepository.findAll(pageable).getContent();
@@ -44,6 +45,7 @@ public class BrandsService {
 				.name(brand.getName()).build();
 	}
 	
+	@Transactional(readOnly = true)
 	public BrandByIdDTO getBrandById(long brandId) {
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
