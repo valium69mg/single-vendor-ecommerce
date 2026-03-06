@@ -78,7 +78,6 @@ public class AuthService {
 		}
 	}
 	
-	@Transactional
 	private void registerLoginAttempt(LoginContextDTO loginContextDTO, boolean successfull) {
 		String email = loginContextDTO.getLoginDTO().getEmail();
 		String ipAddress = loginContextDTO.getIp();
