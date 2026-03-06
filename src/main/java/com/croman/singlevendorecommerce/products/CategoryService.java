@@ -21,7 +21,6 @@ import com.croman.singlevendorecommerce.products.dto.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.products.entity.Category;
 import com.croman.singlevendorecommerce.products.repository.CategoryRepository;
-import com.croman.singlevendorecommerce.translations.LanguageService;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
 
@@ -36,6 +35,7 @@ public class CategoryService {
 	private final CategoryRepository categoryRepository;
 	private final TranslationService translationService;
 	private final MessageService messageService;
+	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 
 	public List<CategoryDTO> getCategories(String languageName, int page, int size) {
 	
@@ -65,7 +65,7 @@ public class CategoryService {
 
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("category_not_found", LocaleUtils.getDefaultLocale())));
+						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 		
 		HashMap<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
 				TranslatorPropertyType.CATEGORY, List.of(category.getCategoryId()));
@@ -121,7 +121,7 @@ public class CategoryService {
 
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("category_not_found", LocaleUtils.getDefaultLocale())));
+						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 
 		if (englishName != null) {
 			category.setName(englishName);
@@ -139,7 +139,7 @@ public class CategoryService {
 	public void deleteCategory(Long categoryId) {
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("category_not_found", LocaleUtils.getDefaultLocale())));
+						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 		
 		/* TODO: Validate if there are no products related to this category */
 
