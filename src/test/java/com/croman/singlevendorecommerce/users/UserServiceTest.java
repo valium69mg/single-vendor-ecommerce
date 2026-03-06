@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
 import com.croman.singlevendorecommerce.general.EnvironmentUtils;
@@ -165,5 +167,24 @@ class UserServiceTest {
 
         ApiServiceException ex = assertThrows(ApiServiceException.class, () -> userService.getUserByEmail("missing@example.com"));
         assertEquals("Email does not exist", ex.getMessage());
+    }
+    
+    @Test
+    void testShouldNotGetUserRoleNameByEmail() {
+    	String email = "doesn't@exists.com";
+    	when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    	ApiServiceException exception = assertThrows(ApiServiceException.class, () -> userService.getUserRoleNameByEmail(email));
+    	assertEquals(exception.getStatusCode(), HttpStatus.NOT_FOUND.value());
+    }
+    
+    @Test
+    void shouldGetUserRoleNameByEmail() {
+    	String email = "exists@exists.com";
+    	UUID userId = UUID.randomUUID();
+    	UserRole userRole = UserRole.builder().roleType(RoleType.ADMIN).build();
+    	User user = User.builder().userId(userId).email(email).userRole(userRole).build();
+    	when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+    	String result = userService.getUserRoleNameByEmail(email);
+    	assertEquals(RoleType.ADMIN.name(), result);
     }
 }
