@@ -1,0 +1,42 @@
+services:
+    jenkins:
+        image: jenkins/jenkins:lts
+        container_name: jenkins
+        user: root
+        ports:
+            - "8080:8080"
+            - "50000:50000"
+        volumes:
+            - jenkins_home:/var/jenkins_home
+            - ./single-vendor-ecommerce:/var/jenkins_home/workspace/single-vendor-ecommerce
+        environment:
+            JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+
+    sonarqube:
+        image: sonarqube:community
+        container_name: sonarqube
+        ports:
+            - "9000:9000"
+        environment:
+            SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+        volumes:
+            - sonarqube_data:/opt/sonarqube/data
+            - sonarqube_extensions:/opt/sonarqube/extensions
+        depends_on:
+            - db
+
+    db:
+        image: postgres:15
+        container_name: sonarqube-db
+        environment:
+            POSTGRES_USER: sonar
+            POSTGRES_PASSWORD: sonar
+            POSTGRES_DB: sonar
+        volumes:
+            - sonarqube_db:/var/lib/postgresql/data
+
+volumes:
+    jenkins_home:
+    sonarqube_data:
+    sonarqube_extensions:
+    sonarqube_db:
