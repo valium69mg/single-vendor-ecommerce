@@ -1,9 +1,11 @@
 package com.croman.singlevendorecommerce.products;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -76,16 +78,23 @@ public class CategoryService {
 	}
 
 	private CategoryDTO mapCategoryToDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
+		Random random = new Random();
 		Integer key = category.getCategoryId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
-		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name).build();
+		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name)
+				.products(random.nextInt(101)).unitsSold(random.nextInt(101))
+				.revenue(new BigDecimal(random.nextInt(101))).averagePrice(new BigDecimal(random.nextInt(101)))
+				.stock(random.nextInt(101)).build();
 	}
 	
 	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
+		Random random = new Random();
 		Integer key = category.getCategoryId().intValue();
 		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
 		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).englishName(category.getName())
-				.spanishName(spanishName).build();
+				.products(random.nextInt(101)).spanishName(spanishName).unitsSold(random.nextInt(101))
+				.revenue(new BigDecimal(random.nextInt(101))).averagePrice(new BigDecimal(random.nextInt(101)))
+				.stock(random.nextInt(101)).build();
 	}
 	
 	@Transactional

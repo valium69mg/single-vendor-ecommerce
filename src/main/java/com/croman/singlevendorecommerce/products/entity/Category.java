@@ -1,5 +1,10 @@
 package com.croman.singlevendorecommerce.products.entity;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -26,5 +31,13 @@ public class Category {
 	
 	@Column(name = "name", length = 255, unique = true)
 	private String name;
+	
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
+	
+	@UpdateTimestamp
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
 	
 }
