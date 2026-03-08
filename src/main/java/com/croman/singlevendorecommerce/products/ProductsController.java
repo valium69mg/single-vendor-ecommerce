@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.general.LocaleUtils;
+import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
@@ -40,23 +41,39 @@ public class ProductsController {
 	private final AttributesService attributesService;
 
 	@GetMapping("categories")
-	@Operation(summary = "Get categories by offset pagination", responses = {
-		    @ApiResponse(
-		        responseCode = "200",
-		        description = "Content successfully returned",
-		        content = @Content(
-		            mediaType = "application/json",
-		            array = @ArraySchema(schema = @Schema(implementation = CategoryDTO.class))
-		        )
-		    )
-		})
-	public ResponseEntity<List<CategoryDTO>> getCategories(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "50") int size, 
-			@RequestParam(defaultValue = "") @Valid @Size(min=0, max = 60, message = "Search term must max of 60 characters") String term) {
-		return ResponseEntity.status(HttpStatus.OK)
-				.body(categoryService.getCategories(LocaleUtils.APP_DEFAULT_LANG, page, size, term));
+	@Operation(
+	    summary = "Get categories by offset pagination",
+	    responses = {
+	        @ApiResponse(
+	            responseCode = "200",
+	            description = "Content successfully returned",
+	            content = @Content(
+	                mediaType = "application/json",
+	                schema = @Schema(implementation = PageResponse.class)
+	            )
+	        )
+	    }
+	)
+	public ResponseEntity<PageResponse<CategoryDTO>> getCategories(
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "50") int size,
+	        @RequestParam(defaultValue = "")
+	        @Valid
+	        @Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+	        String term
+	) {
+
+	    return ResponseEntity.status(HttpStatus.OK)
+	            .body(categoryService.getCategories(
+	                    LocaleUtils.APP_DEFAULT_LANG,
+	                    page,
+	                    size,
+	                    term
+	            ));
 	}
 	
+	@GetMapping("categories/{id}")
+
 	@Operation(
 		    summary = "Get category by id",
 		    responses = {
@@ -78,7 +95,6 @@ public class ProductsController {
 		        )
 		    }
 		)
-	@GetMapping("categories/{id}")
 	public ResponseEntity<CategoryByIdDTO> getCategoryById(@PathVariable long id) {
 		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getCategoryById(id));
 	}

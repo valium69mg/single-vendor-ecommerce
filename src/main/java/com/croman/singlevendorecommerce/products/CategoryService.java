@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
 import com.croman.singlevendorecommerce.general.FileUtils;
 import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.general.PaginationUtils;
+import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
@@ -47,33 +49,49 @@ public class CategoryService {
 	private static final String CATEGORY_SUB_DIRECTORY = "categories/";
 
 	@Transactional(readOnly = true)
-	public List<CategoryDTO> getCategories(String languageName, int page, int size, String term) {
-		
-		List<Category> allCategories = null;
-		if (!term.isBlank()) {
-			Pageable pageable = PaginationUtils.getPageable(page, size, "category_id");
-			allCategories = categoryRepository.searchByNameOrTranslation(term, pageable).getContent();
-		} else {
-			Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
-			allCategories = categoryRepository.findAll(pageable).getContent();
-		}
-		
-		HashMap<Integer, String> batchTranslateHashMap = null;
-		
-		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
-			List<Long> categoryIds = allCategories.stream().map(Category::getCategoryId).distinct()
-					.toList();
-			batchTranslateHashMap = translationService.batchTranslate(languageName, TranslatorPropertyType.CATEGORY,
-					categoryIds);
-		}
+	public PageResponse<CategoryDTO> getCategories(String languageName, int page, int size, String term) {
 
-		List<CategoryDTO> categoryDTOs = new ArrayList<>();
+	    Page<Category> categoryPage;
 
-		for (Category category : allCategories) {
-			categoryDTOs.add(mapCategoryToDTO(category, batchTranslateHashMap));
-		}
+	    if (!term.isBlank()) {
+	    	 Pageable pageable = PaginationUtils.getPageable(page, size, "category_id");
+	        categoryPage = categoryRepository.searchByNameOrTranslation(term, pageable);
+	    } else {
+	    	 Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
+	        categoryPage = categoryRepository.findAll(pageable);
+	    }
 
-		return categoryDTOs;
+	    List<Category> allCategories = categoryPage.getContent();
+
+	    HashMap<Integer, String> tempTranslateHashMap = null;
+
+	    if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
+	        List<Long> categoryIds = allCategories.stream()
+	                .map(Category::getCategoryId)
+	                .distinct()
+	                .toList();
+
+	        tempTranslateHashMap = translationService.batchTranslate(
+	                languageName,
+	                TranslatorPropertyType.CATEGORY,
+	                categoryIds
+	        );
+	    }
+
+	    final HashMap<Integer, String> batchTranslateHashMap = tempTranslateHashMap;
+
+	    List<CategoryDTO> categoryDTOs = allCategories.stream()
+	            .map(category -> mapCategoryToDTO(category, batchTranslateHashMap))
+	            .toList();
+
+	    return PageResponse.<CategoryDTO>builder()
+	            .content(categoryDTOs)
+	            .page(categoryPage.getNumber())
+	            .size(categoryPage.getSize())
+	            .totalElements(categoryPage.getTotalElements())
+	            .totalPages(categoryPage.getTotalPages())
+	            .last(categoryPage.isLast())
+	            .build();
 	}
 	
 	@Transactional(readOnly = true)

@@ -2,6 +2,7 @@ package com.croman.singlevendorecommerce.products;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
 import com.croman.singlevendorecommerce.general.LocaleUtils;
+import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
@@ -69,49 +70,70 @@ class CategoryServiceTest {
 	    Page<Category> page = new PageImpl<>(List.of(category));
 	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-	    List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
+	    PageResponse<CategoryDTO> response =
+	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
+
+	    List<CategoryDTO> result = response.getContent();
 
 	    assertThat(result).hasSize(1);
 	    assertThat(result.get(0).getCategoryId()).isEqualTo(CATEGORY_ID);
 	    assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
+
 	    verifyNoInteractions(translationService);
 	}
-
+	
 	@Test
 	void testGetCategoriesWithSpanishLanguageReturnsTranslatedNames() {
 	    Page<Category> page = new PageImpl<>(List.of(category));
+
 	    HashMap<Integer, String> translations = new HashMap<>();
 	    translations.put(CATEGORY_ID.intValue(), SPANISH_NAME);
 
 	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
-	    when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.CATEGORY), anyList()))
+
+	    when(translationService.batchTranslate(
+	            eq(SPANISH_LANG),
+	            eq(TranslatorPropertyType.CATEGORY),
+	            anyList()))
 	            .thenReturn(translations);
 
-	    List<CategoryDTO> result = categoryService.getCategories(SPANISH_LANG, 0, 10, "");
+	    PageResponse<CategoryDTO> response =
+	            categoryService.getCategories(SPANISH_LANG, 0, 10, "");
+
+	    List<CategoryDTO> result = response.getContent();
 
 	    assertThat(result).hasSize(1);
 	    assertThat(result.get(0).getName()).isEqualTo(SPANISH_NAME);
 	}
-
+	
 	@Test
 	void testGetCategoriesReturnsEmptyListWhenNoCategoriesExist() {
-	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+	    when(categoryRepository.findAll(any(Pageable.class)))
+	            .thenReturn(Page.empty());
 
-	    List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
+	    PageResponse<CategoryDTO> response =
+	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
 
-	    assertThat(result).isEmpty();
+	    assertThat(response.getContent()).isEmpty();
 	}
 	
 	@Test
 	void testGetCategoriesWithSearchTermUsesSearchQuery() {
 	    Page<Category> page = new PageImpl<>(List.of(category));
-	    when(categoryRepository.searchByNameOrTranslation(eq("shoe"), any(Pageable.class))).thenReturn(page);
 
-	    List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10, "shoe");
+	    when(categoryRepository.searchByNameOrTranslation(eq("shoe"), any(Pageable.class)))
+	            .thenReturn(page);
+
+	    PageResponse<CategoryDTO> response =
+	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "shoe");
+
+	    List<CategoryDTO> result = response.getContent();
 
 	    assertThat(result).hasSize(1);
 	    assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
-	    verify(categoryRepository).searchByNameOrTranslation(eq("shoe"), any(Pageable.class));
+
+	    verify(categoryRepository)
+	            .searchByNameOrTranslation(eq("shoe"), any(Pageable.class));
 	}
 
 
