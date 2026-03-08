@@ -39,11 +39,16 @@ public class CategoryService {
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 
 	@Transactional(readOnly = true)
-	public List<CategoryDTO> getCategories(String languageName, int page, int size) {
-	
-		Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
+	public List<CategoryDTO> getCategories(String languageName, int page, int size, String term) {
 		
-		List<Category> allCategories = categoryRepository.findAll(pageable).getContent();
+		List<Category> allCategories = null;
+		if (!term.isBlank()) {
+			Pageable pageable = PaginationUtils.getPageable(page, size, "category_id");
+			allCategories = categoryRepository.searchByNameOrTranslation(term, pageable).getContent();
+		} else {
+			Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
+			allCategories = categoryRepository.findAll(pageable).getContent();
+		}
 		
 		HashMap<Integer, String> batchTranslateHashMap = null;
 		

@@ -1,5 +1,6 @@
 package com.croman.singlevendorecommerce.products.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -16,4 +17,29 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 	Optional<Category> findByName(@Param("name") String englishName);
 	
 	Page<Category> findByNameContainingIgnoreCase(String name, Pageable pageable);
+	
+	@Query(value = """
+		    SELECT c.* FROM categories c
+		    WHERE c.name ILIKE CONCAT('%', :term, '%')
+		       OR EXISTS (
+		           SELECT 1 FROM translations t
+		           WHERE t.register_id = c.category_id
+		             AND t.translation ILIKE CONCAT('%', :term, '%')
+		       )
+		    """,
+		    countQuery = """
+		    SELECT COUNT(*) FROM categories c
+		    WHERE c.name ILIKE CONCAT('%', :term, '%')
+		       OR EXISTS (
+		           SELECT 1 FROM translations t
+		           WHERE t.register_id = c.category_id
+		             AND t.translation ILIKE CONCAT('%', :term, '%')
+		       )
+		    """,
+		    nativeQuery = true)
+		Page<Category> searchByNameOrTranslation(@Param("term") String term, Pageable pageable);
+
+
+
+
 }

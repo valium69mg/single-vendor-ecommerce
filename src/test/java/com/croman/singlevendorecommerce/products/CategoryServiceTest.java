@@ -66,41 +66,54 @@ class CategoryServiceTest {
 
 	@Test
 	void testGetCategoriesWithDefaultLanguageReturnsOriginalNames() {
-		Page<Category> page = new PageImpl<>(List.of(category));
-		when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
+	    Page<Category> page = new PageImpl<>(List.of(category));
+	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-		List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10);
+	    List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
 
-		assertThat(result).hasSize(1);
-		assertThat(result.get(0).getCategoryId()).isEqualTo(CATEGORY_ID);
-		assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
-		verifyNoInteractions(translationService);
+	    assertThat(result).hasSize(1);
+	    assertThat(result.get(0).getCategoryId()).isEqualTo(CATEGORY_ID);
+	    assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
+	    verifyNoInteractions(translationService);
 	}
 
 	@Test
 	void testGetCategoriesWithSpanishLanguageReturnsTranslatedNames() {
-		Page<Category> page = new PageImpl<>(List.of(category));
-		HashMap<Integer, String> translations = new HashMap<>();
-		translations.put(CATEGORY_ID.intValue(), SPANISH_NAME);
+	    Page<Category> page = new PageImpl<>(List.of(category));
+	    HashMap<Integer, String> translations = new HashMap<>();
+	    translations.put(CATEGORY_ID.intValue(), SPANISH_NAME);
 
-		when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
-		when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.CATEGORY), anyList()))
-				.thenReturn(translations);
+	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
+	    when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.CATEGORY), anyList()))
+	            .thenReturn(translations);
 
-		List<CategoryDTO> result = categoryService.getCategories(SPANISH_LANG, 0, 10);
+	    List<CategoryDTO> result = categoryService.getCategories(SPANISH_LANG, 0, 10, "");
 
-		assertThat(result).hasSize(1);
-		assertThat(result.get(0).getName()).isEqualTo(SPANISH_NAME);
+	    assertThat(result).hasSize(1);
+	    assertThat(result.get(0).getName()).isEqualTo(SPANISH_NAME);
 	}
 
 	@Test
 	void testGetCategoriesReturnsEmptyListWhenNoCategoriesExist() {
-		when(categoryRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-		List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10);
+	    List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
 
-		assertThat(result).isEmpty();
+	    assertThat(result).isEmpty();
 	}
+	
+	@Test
+	void testGetCategoriesWithSearchTermUsesSearchQuery() {
+	    Page<Category> page = new PageImpl<>(List.of(category));
+	    when(categoryRepository.searchByNameOrTranslation(eq("shoe"), any(Pageable.class))).thenReturn(page);
+
+	    List<CategoryDTO> result = categoryService.getCategories(DEFAULT_LANG, 0, 10, "shoe");
+
+	    assertThat(result).hasSize(1);
+	    assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
+	    verify(categoryRepository).searchByNameOrTranslation(eq("shoe"), any(Pageable.class));
+	}
+
 
 	// ─── getCategoryById ─────────────────────────────────────────────────────
 

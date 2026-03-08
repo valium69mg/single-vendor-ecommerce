@@ -24,6 +24,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 
@@ -49,9 +51,10 @@ public class ProductsController {
 		    )
 		})
 	public ResponseEntity<List<CategoryDTO>> getCategories(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "50") int size) {
+			@RequestParam(defaultValue = "50") int size, 
+			@RequestParam(defaultValue = "") @Valid @Size(min=0, max = 60, message = "Search term must max of 60 characters") String term) {
 		return ResponseEntity.status(HttpStatus.OK)
-				.body(categoryService.getCategories(LocaleUtils.APP_DEFAULT_LANG, page, size));
+				.body(categoryService.getCategories(LocaleUtils.APP_DEFAULT_LANG, page, size, term));
 	}
 	
 	@Operation(
