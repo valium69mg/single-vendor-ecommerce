@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.croman.singlevendorecommerce.storage.dto.StoredFile;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -72,9 +74,9 @@ class LocalStorageServiceTest {
     void testDownloadReturnsCorrectContent() throws Exception {
         uploadFile(FILE_KEY);
 
-        InputStream result = localStorageService.download(FILE_KEY);
+        StoredFile result = localStorageService.download(FILE_KEY);
 
-        assertThat(new String(result.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(FILE_CONTENT);
+        assertThat(new String(result.getInputStream().readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(FILE_CONTENT);
     }
 
     @Test

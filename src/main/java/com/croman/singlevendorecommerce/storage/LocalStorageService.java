@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.croman.singlevendorecommerce.storage.dto.StoredFile;
+
 import jakarta.annotation.PostConstruct;
 
 import java.io.*;
@@ -54,14 +56,34 @@ public class LocalStorageService implements StorageService {
     }
 
     @Override
-    public InputStream download(String key) {
+    public StoredFile download(String key) {
+
         Path target = basePath.resolve(key).normalize();
+
         if (!Files.exists(target)) {
             log.warn("File not found: {}", key);
             throw new NoSuchElementException("File not found: " + key);
         }
+
         try {
-            return Files.newInputStream(target, StandardOpenOption.READ);
+
+            InputStream inputStream = Files.newInputStream(target, StandardOpenOption.READ);
+
+            long size = Files.size(target);
+
+            String contentType = Files.probeContentType(target);
+
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return new StoredFile(
+                    inputStream,
+                    size,
+                    contentType,
+                    target.getFileName().toString()
+            );
+
         } catch (IOException e) {
             log.error("Error downloading file: {}", key, e);
             throw new RuntimeException("Error downloading file with key: " + key, e);

@@ -1,6 +1,5 @@
 package com.croman.singlevendorecommerce.products;
 
-import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

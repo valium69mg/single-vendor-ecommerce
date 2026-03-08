@@ -97,7 +97,10 @@ public class CategoryService {
 		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name)
 				.products(random.nextInt(101)).unitsSold(random.nextInt(101))
 				.revenue(new BigDecimal(random.nextInt(101))).averagePrice(new BigDecimal(random.nextInt(101)))
-				.stock(random.nextInt(101)).build();
+				.stock(random.nextInt(101)).imageUrl(category.getFileUrl())
+				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
+				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
+				.build();
 	}
 	
 	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
@@ -107,7 +110,10 @@ public class CategoryService {
 		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).englishName(category.getName())
 				.products(random.nextInt(101)).spanishName(spanishName).unitsSold(random.nextInt(101))
 				.revenue(new BigDecimal(random.nextInt(101))).averagePrice(new BigDecimal(random.nextInt(101)))
-				.stock(random.nextInt(101)).build();
+				.stock(random.nextInt(101)).imageUrl(category.getFileUrl())
+				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
+				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
+				.build();
 	}
 	
 	@Transactional

@@ -20,5 +20,8 @@ public class CategoryDTO {
 	private BigDecimal revenue;
 	private BigDecimal averagePrice;
 	private int stock;
+	private String imageUrl;
+	private String mediumThumbnailUrl;
+	private String smallThumbnailUrl;
 	
 }
