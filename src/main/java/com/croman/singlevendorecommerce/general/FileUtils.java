@@ -21,10 +21,10 @@ public final class FileUtils {
 
 		int dotIndex = key.lastIndexOf(".");
 		if (dotIndex == -1) {
-			return key + "_200";
+			return key + "_400";
 		}
 
-		return key.substring(0, dotIndex) + "_200" + key.substring(dotIndex);
+		return key.substring(0, dotIndex) + "_400" + key.substring(dotIndex);
 	}
 
 	public static String toSmallThumbnailKey(String key) {
@@ -33,9 +33,9 @@ public final class FileUtils {
 
 		int dotIndex = key.lastIndexOf(".");
 		if (dotIndex == -1) {
-			return key + "_400";
+			return key + "_200";
 		}
 
-		return key.substring(0, dotIndex) + "_400" + key.substring(dotIndex);
+		return key.substring(0, dotIndex) + "_200" + key.substring(dotIndex);
 	}
 }

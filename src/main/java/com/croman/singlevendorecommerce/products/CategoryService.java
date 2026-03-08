@@ -146,6 +146,8 @@ public class CategoryService {
 	                        messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 
 	        storageService.delete(category.getFileUrl());
+	        storageService.delete(FileUtils.toMediumThumbnailKey(category.getFileUrl()));
+	        storageService.delete(FileUtils.toSmallThumbnailKey(category.getFileUrl()));
 	        
 	        String imageId = UUID.randomUUID().toString();
 	        String originalFilename = file.getOriginalFilename();
