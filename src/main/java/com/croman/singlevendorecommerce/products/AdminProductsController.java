@@ -1,5 +1,7 @@
 package com.croman.singlevendorecommerce.products;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -8,10 +10,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.general.ApiResponseService;
+import com.croman.singlevendorecommerce.general.LocaleUtils;
+import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateMaterialDTO;
@@ -32,6 +38,7 @@ public class AdminProductsController {
 	private final MaterialsService materialsService;
 	private final BrandsService brandsService;
 	private final ApiResponseService apiResponseService;
+	private final MessageService messageService;
 
 	@PostMapping("categories")
 	@Operation(summary = "Create category", responses = {
@@ -53,6 +60,52 @@ public class AdminProductsController {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("category_created", HttpStatus.CREATED));
 	}
+	
+	@PostMapping("/categories/{categoryId}/image")
+	@Operation(
+	    summary = "Upload category image",
+	    description = "Uploads an image for a category, stores it locally, and queues a thumbnail generation job.",
+	    responses = {
+	        @ApiResponse(
+	            responseCode = "200",
+	            description = "Upload successful",
+	            content = @Content(
+	                mediaType = "application/json",
+	                schema = @Schema(implementation = DefaultApiResponse.class)
+	            )
+	        ),
+	        @ApiResponse(
+	            responseCode = "400",
+	            description = "Bad request",
+	            content = @Content(
+	                mediaType = "application/json",
+	                schema = @Schema(implementation = DefaultApiResponse.class)
+	            )
+	        ),
+	        @ApiResponse(
+	            responseCode = "404",
+	            description = "Category not found",
+	            content = @Content(
+	                mediaType = "application/json",
+	                schema = @Schema(implementation = DefaultApiResponse.class)
+	            )
+	        )
+	    }
+	)
+	public ResponseEntity<DefaultApiResponse> uploadCategoryImage(
+	        @PathVariable Long categoryId,
+	        @RequestParam("file") MultipartFile file) {
+
+	    categoryService.uploadImage(file, categoryId);
+
+	    DefaultApiResponse response = DefaultApiResponse.builder()
+	            .status(HttpStatus.OK.value())
+	            .message(messageService.getMessage("image_uploaded", LocaleUtils.getDefaultLocale()))
+	            .build();
+
+	    return ResponseEntity.ok(response);
+	}
+
 	
 	@PatchMapping("categories/{id}")
 	@Operation(summary = "Update category", responses = {

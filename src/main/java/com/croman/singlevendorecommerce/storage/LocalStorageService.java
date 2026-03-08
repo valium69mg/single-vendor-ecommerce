@@ -35,13 +35,18 @@ public class LocalStorageService implements StorageService {
     @Override
     public void upload(String key, InputStream data, long contentLength, String contentType) {
         Path target = basePath.resolve(key).normalize();
-        try (OutputStream os = Files.newOutputStream(target, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = data.read(buffer)) != -1) {
-                os.write(buffer, 0, read);
+        try {
+            Files.createDirectories(target.getParent());
+            try (OutputStream os = Files.newOutputStream(target,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = data.read(buffer)) != -1) {
+                    os.write(buffer, 0, read);
+                }
+                log.debug("File uploaded: {}", key);
             }
-            log.debug("File uploaded: {}", key);
         } catch (IOException e) {
             log.error("Error uploading file: {}", key, e);
             throw new RuntimeException("Error uploading file with key: " + key, e);
@@ -65,12 +70,18 @@ public class LocalStorageService implements StorageService {
 
     @Override
     public boolean exists(String key) {
+    	if (key == null) {
+    		return false;
+    	}
         Path target = basePath.resolve(key).normalize();
         return Files.exists(target);
     }
 
     @Override
     public void delete(String key) {
+		if (!exists(key)) {
+			return;
+		}
         Path target = basePath.resolve(key).normalize();
         try {
             Files.deleteIfExists(target);

@@ -6,13 +6,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.general.FileUtils;
 import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.general.PaginationUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
@@ -22,6 +25,8 @@ import com.croman.singlevendorecommerce.products.dto.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.products.entity.Category;
 import com.croman.singlevendorecommerce.products.repository.CategoryRepository;
+import com.croman.singlevendorecommerce.storage.StorageService;
+import com.croman.singlevendorecommerce.thumbnail.ThumbnailJobPublisher;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
 
@@ -36,7 +41,10 @@ public class CategoryService {
 	private final CategoryRepository categoryRepository;
 	private final TranslationService translationService;
 	private final MessageService messageService;
+	private final StorageService storageService;
+	private final ThumbnailJobPublisher thumbnailJobPublisher;
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
+	private static final String CATEGORY_SUB_DIRECTORY = "categories/";
 
 	@Transactional(readOnly = true)
 	public List<CategoryDTO> getCategories(String languageName, int page, int size, String term) {
@@ -123,6 +131,36 @@ public class CategoryService {
 		
 		
 	}
+	
+	@Transactional
+	public void uploadImage(MultipartFile file, Long categoryId) {
+	    try {
+	        Category category = categoryRepository.findById(categoryId)
+	                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+	                        messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
+
+	        storageService.delete(category.getFileUrl());
+	        
+	        String imageId = UUID.randomUUID().toString();
+	        String originalFilename = file.getOriginalFilename();
+	        String extension = FileUtils.getFileExtension(originalFilename);
+	        String key = CATEGORY_SUB_DIRECTORY + imageId + extension;
+
+	        category.setFileUrl(key);
+	        
+	        storageService.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
+
+	        thumbnailJobPublisher.publishJob(categoryId.toString(), imageId, key);
+
+	        log.debug("Image uploaded for category {} with ID {}", categoryId, imageId);
+
+	    } catch (Exception e) {
+	        log.error("Error uploading image for category {}", categoryId, e);
+	        throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+	                messageService.getMessage("image_upload_failed", LocaleUtils.getDefaultLocale()));
+	    }
+	}
+
 	
 	@Transactional
 	public void updateCategory(Long categoryId, UpdateCategoryDTO updateCategoryDTO) {
