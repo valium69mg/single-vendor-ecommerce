@@ -2,6 +2,7 @@ package com.croman.singlevendorecommerce.translations;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -38,7 +39,7 @@ public class TranslationService {
 				messageService.getMessage("translation_not_found", LocaleUtils.getDefaultLocale()));
 	}
 
-	public HashMap<Integer, String> batchTranslate(String languageName, TranslatorPropertyType type,
+	public Map<Integer, String> batchTranslate(String languageName, TranslatorPropertyType type,
 			List<Long> registerIds) {
 		Language language = languageService.getLanguageByName(languageName);
 

@@ -1,9 +1,8 @@
 package com.croman.singlevendorecommerce.products;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -64,7 +63,7 @@ public class CategoryService {
 
 	    List<Category> allCategories = categoryPage.getContent();
 
-	    HashMap<Integer, String> tempTranslateHashMap = null;
+	    Map<Integer, String> tempTranslateHashMap = null;
 
 	    if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
 	        List<Long> categoryIds = allCategories.stream()
@@ -79,7 +78,7 @@ public class CategoryService {
 	        );
 	    }
 
-	    final HashMap<Integer, String> batchTranslateHashMap = tempTranslateHashMap;
+	    final Map<Integer, String> batchTranslateHashMap = tempTranslateHashMap;
 
 	    List<CategoryDTO> categoryDTOs = allCategories.stream()
 	            .map(category -> mapCategoryToDTO(category, batchTranslateHashMap))
@@ -102,14 +101,14 @@ public class CategoryService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 		
-		HashMap<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
+		Map<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
 				TranslatorPropertyType.CATEGORY, List.of(category.getCategoryId()));
 		
 		return mapCategoryToByIdDTO(category, batchTranslateHashMap);
 
 	}
 
-	private CategoryDTO mapCategoryToDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
+	private CategoryDTO mapCategoryToDTO(Category category, Map<Integer, String> batchTranslateHashMap) {
 		Integer key = category.getCategoryId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
 		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name)
@@ -121,7 +120,7 @@ public class CategoryService {
 				.build();
 	}
 	
-	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
+	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, Map<Integer, String> batchTranslateHashMap) {
 		Integer key = category.getCategoryId().intValue();
 		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
 		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).englishName(category.getName())

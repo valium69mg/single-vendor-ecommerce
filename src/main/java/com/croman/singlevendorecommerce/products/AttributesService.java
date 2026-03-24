@@ -1,7 +1,6 @@
 package com.croman.singlevendorecommerce.products;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,10 +45,10 @@ public class AttributesService {
 
 		Map<Attribute, Set<AttributeValue>> valuesByAttribute = getValuesByAttribute(attributes, allAttributeValues);
 
-		HashMap<Integer, String> batchAttributeTranslateHashMap = getAttributeBatchTranslateHashMap(languageName,
+		Map<Integer, String> batchAttributeTranslateHashMap = getAttributeBatchTranslateHashMap(languageName,
 				attributeIds);
 
-		HashMap<Integer, String> batchAttributeValueTranslateHashMap = getAttributeValuesBatchTranslateHashMap(
+		Map<Integer, String> batchAttributeValueTranslateHashMap = getAttributeValuesBatchTranslateHashMap(
 				languageName, allAttributeValues);
 
 		List<AttributesDTO> attributesDTOs = new ArrayList<>();
@@ -75,8 +74,8 @@ public class AttributesService {
 		return valuesByAttribute;
 	}
 	
-	private HashMap<Integer, String> getAttributeBatchTranslateHashMap(String languageName, List<Long> attributeIds) {
-		HashMap<Integer, String> batchAttributeTranslateHashMap = null;
+	private Map<Integer, String> getAttributeBatchTranslateHashMap(String languageName, List<Long> attributeIds) {
+		Map<Integer, String> batchAttributeTranslateHashMap = null;
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
 			batchAttributeTranslateHashMap = translationService.batchTranslate(languageName,
 					TranslatorPropertyType.ATTRIBUTE, attributeIds);
@@ -84,9 +83,9 @@ public class AttributesService {
 		return batchAttributeTranslateHashMap;
 	}
 	
-	private HashMap<Integer, String> getAttributeValuesBatchTranslateHashMap(String languageName,
+	private Map<Integer, String> getAttributeValuesBatchTranslateHashMap(String languageName,
 			List<AttributeValue> allAttributeValues) {
-		HashMap<Integer, String> batchAttributeValueTranslateHashMap = null;
+		Map<Integer, String> batchAttributeValueTranslateHashMap = null;
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
 			List<Long> colorAttributeValueIds = allAttributeValues.stream()
 					.filter(av -> av.getAttribute().getAttributeType() == AttributeType.COLOR)
@@ -101,8 +100,8 @@ public class AttributesService {
 	}
 
 	private AttributesDTO mapAttributeToAttributeDTO(Attribute attribute, Set<AttributeValue> values,
-			HashMap<Integer, String> batchTranslateHashMap,
-			HashMap<Integer, String> batchAttributeValueTranslateHashMap) {
+			Map<Integer, String> batchTranslateHashMap,
+			Map<Integer, String> batchAttributeValueTranslateHashMap) {
 
 		Integer key = attribute.getAttributeId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key)

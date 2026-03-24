@@ -1,8 +1,8 @@
 package com.croman.singlevendorecommerce.products;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
@@ -39,7 +39,7 @@ public class MaterialsService {
 		
 		List<Material> allMaterials = materialRepository.findAll(pageable).getContent();
 
-		HashMap<Integer, String> batchTranslateHashMap = null;
+		Map<Integer, String> batchTranslateHashMap = null;
 		
 		if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
 			List<Long> materialIds = allMaterials.stream().map(Material::getMaterialId)
@@ -58,7 +58,7 @@ public class MaterialsService {
 
 	}
 
-	private MaterialDTO mapMaterialToMaterialDTO(Material material, HashMap<Integer, String> batchTranslateHashMap) {
+	private MaterialDTO mapMaterialToMaterialDTO(Material material, Map<Integer, String> batchTranslateHashMap) {
 		Integer key = material.getMaterialId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : material.getName();
 		return MaterialDTO.builder().materialId(material.getMaterialId()).name(name).build();
@@ -71,14 +71,14 @@ public class MaterialsService {
 				() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(), messageService.getMessage("material_not_found", 
 						LocaleUtils.getDefaultLocale())));
 		
-		HashMap<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
+		Map<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
 				TranslatorPropertyType.MATERIAL, List.of(material.getMaterialId()));
 	
 		return mapMaterialToMaterialByIdDTO(material, batchTranslateHashMap);
 		
 	}
 	
-	private MaterialByIdDTO mapMaterialToMaterialByIdDTO(Material material, HashMap<Integer, String> batchTranslateHashMap) {
+	private MaterialByIdDTO mapMaterialToMaterialByIdDTO(Material material, Map<Integer, String> batchTranslateHashMap) {
 		Integer key = material.getMaterialId().intValue();
 		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : material.getName();
 		return MaterialByIdDTO.builder().materialId(material.getMaterialId()).englishName(material.getName())

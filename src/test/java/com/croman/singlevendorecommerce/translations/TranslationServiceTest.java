@@ -15,9 +15,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,7 +98,7 @@ class TranslationServiceTest {
         when(translationsRepository.findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(eq(language), eq(TYPE), anyList()))
                 .thenReturn(List.of(translation));
 
-        HashMap<Integer, String> result = translationService.batchTranslate(SPANISH_LANG, TYPE, List.of(1L));
+        Map<Integer, String> result = translationService.batchTranslate(SPANISH_LANG, TYPE, List.of(1L));
 
         assertThat(result).hasSize(1);
         assertThat(result.get(REGISTER_ID)).isEqualTo(TRANSLATED);
@@ -124,7 +124,7 @@ class TranslationServiceTest {
                 .thenReturn(List.of(translation));
 
         // passing duplicate IDs — should be deduplicated internally
-        HashMap<Integer, String> result = translationService.batchTranslate(SPANISH_LANG, TYPE, List.of(1L, 1L, 1L));
+        Map<Integer, String> result = translationService.batchTranslate(SPANISH_LANG, TYPE, List.of(1L, 1L, 1L));
 
         assertThat(result).hasSize(1);
         verify(translationsRepository).findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(
