@@ -16,6 +16,7 @@ import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
+import com.croman.singlevendorecommerce.products.dto.CategoriesPageResponse;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialByIdDTO;
@@ -49,7 +50,7 @@ public class ProductsController {
 	            description = "Content successfully returned",
 	            content = @Content(
 	                mediaType = "application/json",
-	                schema = @Schema(implementation = PageResponse.class)
+	                schema = @Schema(implementation = CategoriesPageResponse.class)
 	            )
 	        )
 	    }
