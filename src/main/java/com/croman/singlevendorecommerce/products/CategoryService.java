@@ -47,6 +47,7 @@ public class CategoryService {
 	private final ThumbnailJobPublisher thumbnailJobPublisher;
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 	private static final String CATEGORY_SUB_DIRECTORY = "categories/";
+	private static final Random RANDOM = new Random();
 
 	@Transactional(readOnly = true)
 	public PageResponse<CategoryDTO> getCategories(String languageName, int page, int size, String term) {
@@ -109,26 +110,24 @@ public class CategoryService {
 	}
 
 	private CategoryDTO mapCategoryToDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
-		Random random = new Random();
 		Integer key = category.getCategoryId().intValue();
 		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
 		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name)
-				.products(random.nextInt(101)).unitsSold(random.nextInt(101))
-				.revenue(new BigDecimal(random.nextInt(101))).averagePrice(new BigDecimal(random.nextInt(101)))
-				.stock(random.nextInt(101)).imageUrl(category.getFileUrl())
+				.products(RANDOM.nextInt(101)).unitsSold(RANDOM.nextInt(101))
+				.revenue(new BigDecimal(RANDOM.nextInt(101))).averagePrice(new BigDecimal(RANDOM.nextInt(101)))
+				.stock(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
 				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
 				.build();
 	}
 	
 	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, HashMap<Integer, String> batchTranslateHashMap) {
-		Random random = new Random();
 		Integer key = category.getCategoryId().intValue();
 		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
 		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).englishName(category.getName())
-				.products(random.nextInt(101)).spanishName(spanishName).unitsSold(random.nextInt(101))
-				.revenue(new BigDecimal(random.nextInt(101))).averagePrice(new BigDecimal(random.nextInt(101)))
-				.stock(random.nextInt(101)).imageUrl(category.getFileUrl())
+				.products(RANDOM.nextInt(101)).spanishName(spanishName).unitsSold(RANDOM.nextInt(101))
+				.revenue(new BigDecimal(RANDOM.nextInt(101))).averagePrice(new BigDecimal(RANDOM.nextInt(101)))
+				.stock(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
 				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
 				.build();
