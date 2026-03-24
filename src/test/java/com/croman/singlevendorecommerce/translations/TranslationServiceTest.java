@@ -100,8 +100,10 @@ class TranslationServiceTest {
 
         Map<Integer, String> result = translationService.batchTranslate(SPANISH_LANG, TYPE, List.of(1L));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(REGISTER_ID)).isEqualTo(TRANSLATED);
+		assertThat(result)
+		            .hasSize(1)
+		            .containsEntry(REGISTER_ID, TRANSLATED);
+
     }
 
     @Test
