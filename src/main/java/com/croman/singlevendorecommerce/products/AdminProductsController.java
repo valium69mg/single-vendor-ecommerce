@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
-import com.croman.singlevendorecommerce.general.ApiResponseService;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.products.dto.UpdateCategoryDTO;
+import com.croman.singlevendorecommerce.utils.ApiResponseService;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
-import com.croman.singlevendorecommerce.general.PaginationUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;
 import com.croman.singlevendorecommerce.products.entity.Brand;
 import com.croman.singlevendorecommerce.products.repository.BrandRepository;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.PaginationUtils;
 
 import lombok.RequiredArgsConstructor;
 

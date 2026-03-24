@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
-import com.croman.singlevendorecommerce.general.ApiResponseService;
 import com.croman.singlevendorecommerce.users.dto.CreateUserDTO;
+import com.croman.singlevendorecommerce.utils.ApiResponseService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

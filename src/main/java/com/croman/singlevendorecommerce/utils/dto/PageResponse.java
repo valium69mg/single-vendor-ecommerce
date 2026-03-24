@@ -1,4 +1,4 @@
-package com.croman.singlevendorecommerce.general.dto;
+package com.croman.singlevendorecommerce.utils.dto;
 
 import java.util.List;
 

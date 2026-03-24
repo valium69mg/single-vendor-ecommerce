@@ -1,6 +1,5 @@
 package com.croman.singlevendorecommerce.products;
 
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.products.dto.AttributeType;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.entity.Attribute;
@@ -9,6 +8,7 @@ import com.croman.singlevendorecommerce.products.repository.AttributeRepository;
 import com.croman.singlevendorecommerce.products.repository.AttributeValueRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

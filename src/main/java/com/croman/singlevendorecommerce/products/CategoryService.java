@@ -15,10 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.FileUtils;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
-import com.croman.singlevendorecommerce.general.PaginationUtils;
-import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
@@ -30,6 +26,10 @@ import com.croman.singlevendorecommerce.storage.StorageService;
 import com.croman.singlevendorecommerce.thumbnail.ThumbnailJobPublisher;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
+import com.croman.singlevendorecommerce.utils.FileUtils;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.PaginationUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

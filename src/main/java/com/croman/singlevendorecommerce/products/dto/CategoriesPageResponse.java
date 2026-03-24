@@ -2,7 +2,7 @@ package com.croman.singlevendorecommerce.products.dto;
 
 import java.util.List;
 
-import com.croman.singlevendorecommerce.general.dto.PageResponse;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 public class CategoriesPageResponse extends PageResponse<CategoryDTO> {
 

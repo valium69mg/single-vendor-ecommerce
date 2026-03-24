@@ -1,4 +1,4 @@
-package com.croman.singlevendorecommerce.users.utils;
+package com.croman.singlevendorecommerce.utils;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;

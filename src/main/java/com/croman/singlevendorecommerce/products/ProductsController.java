@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
-import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
@@ -21,6 +19,8 @@ import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialDTO;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

@@ -11,8 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.croman.singlevendorecommerce.general.LocaleUtils;
-import com.croman.singlevendorecommerce.general.PaginationUtils;
 import com.croman.singlevendorecommerce.products.dto.AttributeType;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.entity.Attribute;
@@ -21,6 +19,8 @@ import com.croman.singlevendorecommerce.products.repository.AttributeRepository;
 import com.croman.singlevendorecommerce.products.repository.AttributeValueRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.PaginationUtils;
 
 import lombok.RequiredArgsConstructor;
 

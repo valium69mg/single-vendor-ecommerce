@@ -6,10 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.translations.entity.Language;
 import com.croman.singlevendorecommerce.translations.repository.LanguageRepository;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
 import lombok.RequiredArgsConstructor;
 

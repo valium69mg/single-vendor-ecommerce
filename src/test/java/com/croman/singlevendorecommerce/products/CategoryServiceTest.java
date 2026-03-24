@@ -1,8 +1,6 @@
 package com.croman.singlevendorecommerce.products;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
-import com.croman.singlevendorecommerce.general.dto.PageResponse;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
@@ -12,6 +10,8 @@ import com.croman.singlevendorecommerce.products.entity.Category;
 import com.croman.singlevendorecommerce.products.repository.CategoryRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

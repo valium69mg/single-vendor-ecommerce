@@ -8,9 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.DateTimeUtils;
-import com.croman.singlevendorecommerce.general.EnvironmentUtils;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.roles.RolesService;
 import com.croman.singlevendorecommerce.roles.dto.RoleType;
@@ -18,7 +15,10 @@ import com.croman.singlevendorecommerce.users.dto.CreateUserDTO;
 import com.croman.singlevendorecommerce.users.dto.UserDTO;
 import com.croman.singlevendorecommerce.users.entity.User;
 import com.croman.singlevendorecommerce.users.repository.UserRepository;
-import com.croman.singlevendorecommerce.users.utils.PasswordUtils;
+import com.croman.singlevendorecommerce.utils.DateTimeUtils;
+import com.croman.singlevendorecommerce.utils.EnvironmentUtils;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.PasswordUtils;
 
 import lombok.RequiredArgsConstructor;
 

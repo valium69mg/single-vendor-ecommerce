@@ -1,4 +1,4 @@
-package com.croman.singlevendorecommerce.general;
+package com.croman.singlevendorecommerce.utils;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

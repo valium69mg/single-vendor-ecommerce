@@ -1,4 +1,4 @@
-package com.croman.singlevendorecommerce.general;
+package com.croman.singlevendorecommerce.utils;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
