@@ -112,10 +112,15 @@ public class ProductsController {
 		            )
 		    )
 		})
-	public ResponseEntity<PageResponse<MaterialDTO>> getMaterials(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "50") int size) {
+	public ResponseEntity<PageResponse<MaterialDTO>> getMaterials(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size,
+			@RequestParam(defaultValue = "")
+		    @Valid
+		    @Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+		    String term) {
 		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG,
-				page, size));
+				page, size, term));
 	}
 	
 	@GetMapping("materials/{id}")

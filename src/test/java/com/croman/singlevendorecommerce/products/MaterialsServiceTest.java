@@ -78,12 +78,15 @@ class MaterialsServiceTest {
     void testGetMaterialsWithDefaultLanguageReturnsOriginalNames() {
         Page<Material> page = new PageImpl<>(List.of(material));
         when(materialRepository.findAll(any(Pageable.class))).thenReturn(page);
-        
-        PageResponse<MaterialDTO> result = materialsService.getMaterials(DEFAULT_LANG, 0, 10);
+
+        PageResponse<MaterialDTO> result =
+                materialsService.getMaterials(DEFAULT_LANG, 0, 10, "");
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getMaterialId()).isEqualTo(MATERIAL_ID);
         assertThat(result.getContent().get(0).getName()).isEqualTo(ENGLISH_NAME);
+
+        verify(materialRepository).findAll(any(Pageable.class));
         verifyNoInteractions(translationService);
     }
 
@@ -94,22 +97,91 @@ class MaterialsServiceTest {
         translations.put(MATERIAL_ID.intValue(), SPANISH_NAME);
 
         when(materialRepository.findAll(any(Pageable.class))).thenReturn(page);
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.MATERIAL), anyList()))
-                .thenReturn(translations);
+        when(translationService.batchTranslate(
+                eq(SPANISH_LANG),
+                eq(TranslatorPropertyType.MATERIAL),
+                anyList()))
+            .thenReturn(translations);
 
-        PageResponse<MaterialDTO> result = materialsService.getMaterials(SPANISH_LANG, 0, 10);
+        PageResponse<MaterialDTO> result =
+                materialsService.getMaterials(SPANISH_LANG, 0, 10, "");
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getName()).isEqualTo(SPANISH_NAME);
+
+        verify(materialRepository).findAll(any(Pageable.class));
     }
 
     @Test
     void testGetMaterialsReturnsEmptyListWhenNoMaterialsExist() {
-        when(materialRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(materialRepository.findAll(any(Pageable.class)))
+                .thenReturn(Page.empty());
 
-        PageResponse<MaterialDTO> result = materialsService.getMaterials(DEFAULT_LANG, 0, 10);
+        PageResponse<MaterialDTO> result =
+                materialsService.getMaterials(DEFAULT_LANG, 0, 10, "");
 
         assertThat(result.getContent()).isEmpty();
+
+        verify(materialRepository).findAll(any(Pageable.class));
+    }
+    
+    @Test
+    void testGetMaterialsWithSearchTermUsesSearchRepositoryMethod() {
+        String term = "cot";
+
+        Page<Material> page = new PageImpl<>(List.of(material));
+        when(materialRepository.searchByNameOrTranslation(eq(term), any(Pageable.class)))
+                .thenReturn(page);
+
+        PageResponse<MaterialDTO> result =
+                materialsService.getMaterials(DEFAULT_LANG, 0, 10, term);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo(ENGLISH_NAME);
+
+        verify(materialRepository).searchByNameOrTranslation(eq(term), any(Pageable.class));
+    }
+    
+    @Test
+    void testGetMaterialsWithSearchTermAndSpanishLanguageReturnsTranslatedNames() {
+        String term = "alg";
+
+        Page<Material> page = new PageImpl<>(List.of(material));
+
+        HashMap<Integer, String> translations = new HashMap<>();
+        translations.put(MATERIAL_ID.intValue(), SPANISH_NAME);
+
+        when(materialRepository.searchByNameOrTranslation(eq(term), any(Pageable.class)))
+                .thenReturn(page);
+
+        when(translationService.batchTranslate(
+                eq(SPANISH_LANG),
+                eq(TranslatorPropertyType.MATERIAL),
+                anyList()))
+            .thenReturn(translations);
+
+        PageResponse<MaterialDTO> result =
+                materialsService.getMaterials(SPANISH_LANG, 0, 10, term);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo(SPANISH_NAME);
+
+        verify(materialRepository).searchByNameOrTranslation(eq(term), any(Pageable.class));
+    }
+    
+    @Test
+    void testGetMaterialsWithSearchTermReturnsEmptyWhenNoMatches() {
+        String term = "notfound";
+
+        when(materialRepository.searchByNameOrTranslation(eq(term), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        PageResponse<MaterialDTO> result =
+                materialsService.getMaterials(DEFAULT_LANG, 0, 10, term);
+
+        assertThat(result.getContent()).isEmpty();
+
+        verify(materialRepository).searchByNameOrTranslation(eq(term), any(Pageable.class));
     }
 
     // ─── getMaterialById ──────────────────────────────────────────────────────

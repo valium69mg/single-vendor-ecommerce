@@ -37,11 +37,19 @@ public class MaterialsService {
 	private static final String MATERIAL_NOT_FOUND = "material_not_found";
 	
 	@Transactional(readOnly = true)
-	public PageResponse<MaterialDTO> getMaterials(String languageName, int page, int size) {
+	public PageResponse<MaterialDTO> getMaterials(String languageName, int page, int size, String term) {
 		
-		Pageable pageable = PaginationUtils.getPageable(page, size, "materialId");
+		Pageable pageable;
 		
-		Page<Material> allMaterials = materialRepository.findAll(pageable);
+		Page<Material> allMaterials;
+		
+		if (term.isEmpty()) {
+			pageable  = PaginationUtils.getPageable(page, size, "material_id");
+			allMaterials = materialRepository.findAll(pageable);
+		} else {
+			pageable = PaginationUtils.getPageable(page, size, "materialId");
+			allMaterials = materialRepository.searchByNameOrTranslation(term, pageable);
+		}
 
 		Map<Integer, String> batchTranslateHashMap = null;
 		
