@@ -176,8 +176,8 @@ class CategoryServiceTest {
 		categoryService.createCategoryDTO(dto);
 
 		verify(categoryRepository).save(any(Category.class));
-		verify(translationService).createTranslation(eq(CATEGORY_ID.intValue()), eq(SPANISH_LANG),
-				eq(TranslatorPropertyType.CATEGORY), eq(SPANISH_NAME));
+		verify(translationService).createTranslation(CATEGORY_ID.intValue(), SPANISH_LANG,
+				TranslatorPropertyType.CATEGORY, SPANISH_NAME);
 	}
 
 	@Test
@@ -218,8 +218,8 @@ class CategoryServiceTest {
 		categoryService.updateCategory(CATEGORY_ID, dto);
 
 		verify(categoryRepository, never()).save(any());
-		verify(translationService).updateTranslation(eq(CATEGORY_ID.intValue()), eq(SPANISH_LANG),
-				eq(TranslatorPropertyType.CATEGORY), eq("Nueva Electrónica"));
+		verify(translationService).updateTranslation(CATEGORY_ID.intValue(), SPANISH_LANG,
+				TranslatorPropertyType.CATEGORY, "Nueva Electrónica");
 	}
 
 	@Test
@@ -266,8 +266,8 @@ class CategoryServiceTest {
 
 		categoryService.deleteCategory(CATEGORY_ID);
 
-		verify(translationService).deleteTranslation(eq(CATEGORY_ID.intValue()), eq(SPANISH_LANG),
-				eq(TranslatorPropertyType.CATEGORY));
+		verify(translationService).deleteTranslation(CATEGORY_ID.intValue(), SPANISH_LANG,
+				TranslatorPropertyType.CATEGORY);
 		verify(categoryRepository).delete(category);
 	}
 
