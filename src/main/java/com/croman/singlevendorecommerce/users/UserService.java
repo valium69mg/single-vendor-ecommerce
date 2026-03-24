@@ -30,7 +30,8 @@ public class UserService {
 	private final RolesService rolesService;
 	private final MessageService messageService;
 	private final EnvironmentUtils environmentUtils;
-
+	private static final String EMAIL_DOES_NOT_EXISTS = "email_does_not_exists";
+	
 	@Transactional
 	public void register(CreateUserDTO dto) {
 		try {
@@ -80,7 +81,7 @@ public class UserService {
 
 			if (!emailExists) {
 				throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+						messageService.getMessage(EMAIL_DOES_NOT_EXISTS, LocaleUtils.getDefaultLocale()));
 			}
 			
 			userRepository.deleteByEmail(email);
@@ -173,7 +174,7 @@ public class UserService {
 			return userOpt.get();
 		}
 		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+				messageService.getMessage(EMAIL_DOES_NOT_EXISTS, LocaleUtils.getDefaultLocale()));
 	}
 	
 	public String getUserRoleNameByEmail(String email) {
@@ -182,7 +183,7 @@ public class UserService {
 			return userOpt.get().getUserRole().getRoleType().toString();
 		}
 		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+				messageService.getMessage(EMAIL_DOES_NOT_EXISTS, LocaleUtils.getDefaultLocale()));
 	}
 	
 }
