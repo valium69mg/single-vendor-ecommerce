@@ -3,8 +3,10 @@ package com.croman.singlevendorecommerce.storage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
 import com.croman.singlevendorecommerce.storage.dto.StoredFile;
 
 import jakarta.annotation.PostConstruct;
@@ -30,7 +32,7 @@ public class LocalStorageService implements StorageService {
             Files.createDirectories(basePath);
             log.info("Storage initialized at: {}", basePath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize storage folder: " + basePath, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to initialize storage folder: " + basePath);
         }
     }
 
@@ -51,7 +53,7 @@ public class LocalStorageService implements StorageService {
             }
         } catch (IOException e) {
             log.error("Error uploading file: {}", key, e);
-            throw new RuntimeException("Error uploading file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Error uploading file with key: " + key);
         }
     }
 
@@ -86,7 +88,7 @@ public class LocalStorageService implements StorageService {
 
         } catch (IOException e) {
             log.error("Error downloading file: {}", key, e);
-            throw new RuntimeException("Error downloading file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error downloading file with key: " + key);
         }
     }
 
@@ -110,7 +112,7 @@ public class LocalStorageService implements StorageService {
             log.debug("File deleted: {}", key);
         } catch (IOException e) {
             log.error("Error deleting file: {}", key, e);
-            throw new RuntimeException("Error deleting file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error deleting file with key: " + key);
         }
     }
 
@@ -121,7 +123,7 @@ public class LocalStorageService implements StorageService {
             return Files.size(target);
         } catch (IOException e) {
             log.error("Error getting file size: {}", key, e);
-            throw new RuntimeException("Error getting size of file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error getting size of file with key: " + key);
         }
     }
 
@@ -139,7 +141,7 @@ public class LocalStorageService implements StorageService {
             return Optional.of(meta);
         } catch (IOException e) {
             log.error("Error getting metadata for file: {}", key, e);
-            throw new RuntimeException("Error getting metadata for file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error getting metadata for file with key: " + key);
         }
     }
 }
