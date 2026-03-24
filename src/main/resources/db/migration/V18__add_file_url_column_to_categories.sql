@@ -1,0 +1,2 @@
+ALTER TABLE categories
+ADD COLUMN file_url VARCHAR(255) DEFAULT NULL;

@@ -4,21 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.bouncycastle.asn1.LocaleUtil;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
-import com.croman.singlevendorecommerce.general.PaginationUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;
 import com.croman.singlevendorecommerce.products.entity.Brand;
 import com.croman.singlevendorecommerce.products.repository.BrandRepository;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.PaginationUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +28,7 @@ public class BrandsService {
 	private final BrandRepository brandRepository;
 	private final MessageService messageService;
 	
+	@Transactional(readOnly = true)
 	public List<BrandDTO> getBrands(int page, int size) {
 		Pageable pageable = PaginationUtils.getPageable(page, size, "brandId");
 		List<Brand> allBrands = brandRepository.findAll(pageable).getContent();
@@ -45,6 +45,7 @@ public class BrandsService {
 				.name(brand.getName()).build();
 	}
 	
+	@Transactional(readOnly = true)
 	public BrandByIdDTO getBrandById(long brandId) {
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),

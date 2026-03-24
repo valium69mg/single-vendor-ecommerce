@@ -6,7 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.croman.singlevendorecommerce.jwt.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
 class JwtUtilTest {
@@ -36,11 +35,10 @@ class JwtUtilTest {
     }
 
     @Test
-    void testTokenExpiration() throws InterruptedException {
+    void testTokenExpiration() {
         JwtUtil shortLivedJwtUtil = new JwtUtil("anothersecretkeyanothersecretkey", 1); // 1 ms
         String token = shortLivedJwtUtil.generateToken("expiringuser", "USER");
 
-        Thread.sleep(10); 
         assertFalse(shortLivedJwtUtil.validateToken(token));
     }
 }

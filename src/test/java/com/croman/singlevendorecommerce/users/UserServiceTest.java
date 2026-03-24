@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
@@ -11,19 +12,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.EnvironmentUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.roles.RolesService;
 import com.croman.singlevendorecommerce.roles.UserRole;
 import com.croman.singlevendorecommerce.roles.dto.RoleType;
-import com.croman.singlevendorecommerce.users.UserService;
 import com.croman.singlevendorecommerce.users.dto.CreateUserDTO;
 import com.croman.singlevendorecommerce.users.dto.UserDTO;
 import com.croman.singlevendorecommerce.users.entity.User;
 import com.croman.singlevendorecommerce.users.repository.UserRepository;
-import com.croman.singlevendorecommerce.users.utils.PasswordUtils;
+import com.croman.singlevendorecommerce.utils.EnvironmentUtils;
+import com.croman.singlevendorecommerce.utils.PasswordUtils;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -166,4 +167,100 @@ class UserServiceTest {
         ApiServiceException ex = assertThrows(ApiServiceException.class, () -> userService.getUserByEmail("missing@example.com"));
         assertEquals("Email does not exist", ex.getMessage());
     }
+    
+    @Test
+    void testShouldNotGetUserRoleNameByEmail() {
+    	String email = "doesn't@exists.com";
+    	when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    	ApiServiceException exception = assertThrows(ApiServiceException.class, () -> userService.getUserRoleNameByEmail(email));
+    	assertEquals(exception.getStatusCode(), HttpStatus.NOT_FOUND.value());
+    }
+    
+    @Test
+    void shouldGetUserRoleNameByEmail() {
+    	String email = "exists@exists.com";
+    	UUID userId = UUID.randomUUID();
+    	UserRole userRole = UserRole.builder().roleType(RoleType.ADMIN).build();
+    	User user = User.builder().userId(userId).email(email).userRole(userRole).build();
+    	when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+    	String result = userService.getUserRoleNameByEmail(email);
+    	assertEquals(RoleType.ADMIN.name(), result);
+    }
+    
+    @Test
+    void register_unexpectedException_throwsInternalServerError() {
+        CreateUserDTO dto = new CreateUserDTO("test@example.com", "password");
+
+        when(userRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(rolesService.getUserRoleByRoleType(RoleType.USER))
+                .thenThrow(new RuntimeException("boom"));
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class, () -> userService.register(dto));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void deleteUserByEmail_emailDoesNotExist_throwsNotFound() {
+        when(environmentUtils.isDev()).thenReturn(true);
+        when(userRepository.existsByEmail("missing@example.com")).thenReturn(false);
+        when(messageService.getMessage(eq("email_does_not_exists"), any()))
+                .thenReturn("Email does not exist");
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.deleteUserByEmail("missing@example.com"));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void deleteUserByEmail_unexpectedException_throwsInternalServerError() {
+        when(environmentUtils.isDev()).thenReturn(true);
+        when(userRepository.existsByEmail(anyString()))
+                .thenThrow(new RuntimeException("boom"));
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.deleteUserByEmail("test@example.com"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void updateLastLogin_userNotFound_throwsBadRequest() {
+        when(userRepository.findByEmail("missing@example.com"))
+                .thenReturn(Optional.empty());
+
+        when(messageService.getMessage(eq("invalid_credentials"), any()))
+                .thenReturn("Invalid credentials");
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.updateLastLogin("missing@example.com"));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void createSiteAdmin_emailAlreadyExists_throwsBadRequest() {
+        CreateUserDTO dto = new CreateUserDTO("admin@example.com", "password");
+
+        when(userRepository.findAllByUserRole_RoleType(RoleType.ADMIN))
+                .thenReturn(java.util.Collections.emptyList());
+
+        when(userRepository.existsByEmail(dto.getEmail())).thenReturn(true);
+
+        when(messageService.getMessage(eq("email_exists"), any()))
+                .thenReturn("Email exists");
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.createSiteAdmin(dto));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+    }
+    
+    
 }

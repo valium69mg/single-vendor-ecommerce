@@ -4,11 +4,13 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Optional;
 
+import com.croman.singlevendorecommerce.storage.dto.StoredFile;
+
 public interface StorageService {
 
     void upload(String key, InputStream data, long contentLength, String contentType);
 
-    InputStream download(String key);
+    StoredFile download(String key);
 
     boolean exists(String key);
 
@@ -17,5 +19,5 @@ public interface StorageService {
     long size(String key);
 
     Optional<Map<String, String>> metadata(String key);
-    
+
 }

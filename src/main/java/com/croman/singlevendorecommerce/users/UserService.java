@@ -3,15 +3,11 @@ package com.croman.singlevendorecommerce.users;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.DateTimeUtils;
-import com.croman.singlevendorecommerce.general.EnvironmentUtils;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.roles.RolesService;
 import com.croman.singlevendorecommerce.roles.dto.RoleType;
@@ -19,7 +15,10 @@ import com.croman.singlevendorecommerce.users.dto.CreateUserDTO;
 import com.croman.singlevendorecommerce.users.dto.UserDTO;
 import com.croman.singlevendorecommerce.users.entity.User;
 import com.croman.singlevendorecommerce.users.repository.UserRepository;
-import com.croman.singlevendorecommerce.users.utils.PasswordUtils;
+import com.croman.singlevendorecommerce.utils.DateTimeUtils;
+import com.croman.singlevendorecommerce.utils.EnvironmentUtils;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.PasswordUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,7 +30,9 @@ public class UserService {
 	private final RolesService rolesService;
 	private final MessageService messageService;
 	private final EnvironmentUtils environmentUtils;
-
+	private static final String EMAIL_DOES_NOT_EXISTS = "email_does_not_exists";
+	private static final String INVALID_CREDENTIALS = "invalid_credentials";
+	
 	@Transactional
 	public void register(CreateUserDTO dto) {
 		try {
@@ -81,7 +82,7 @@ public class UserService {
 
 			if (!emailExists) {
 				throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+						messageService.getMessage(EMAIL_DOES_NOT_EXISTS, LocaleUtils.getDefaultLocale()));
 			}
 			
 			userRepository.deleteByEmail(email);
@@ -98,7 +99,7 @@ public class UserService {
 		Optional<User> userOpt = userRepository.findByEmail(email);
 		if (userOpt.isEmpty()) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
 		}
 		return mapUserToUserDTO(userOpt.get());
 	}
@@ -122,7 +123,7 @@ public class UserService {
 			return hashedPasswordOpt.get();
 		}
 		throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-				messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+				messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
 	}
 	
 	@Transactional
@@ -131,7 +132,7 @@ public class UserService {
 		Optional<User> userOpt = userRepository.findByEmail(email);
 		if (userOpt.isEmpty()) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
 		}
 		userRepository.updateLastLogin(email, now);
 	}
@@ -174,7 +175,7 @@ public class UserService {
 			return userOpt.get();
 		}
 		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+				messageService.getMessage(EMAIL_DOES_NOT_EXISTS, LocaleUtils.getDefaultLocale()));
 	}
 	
 	public String getUserRoleNameByEmail(String email) {
@@ -183,7 +184,7 @@ public class UserService {
 			return userOpt.get().getUserRole().getRoleType().toString();
 		}
 		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-				messageService.getMessage("email_does_not_exists", LocaleUtils.getDefaultLocale()));
+				messageService.getMessage(EMAIL_DOES_NOT_EXISTS, LocaleUtils.getDefaultLocale()));
 	}
 	
 }

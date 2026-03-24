@@ -10,11 +10,11 @@ import com.croman.singlevendorecommerce.products.entity.AttributeValue;
 public interface AttributeValueRepository extends JpaRepository<AttributeValue, Long> {
 
 	@Query("""
-	        SELECT av
-	        FROM AttributeValue av
-	        JOIN FETCH av.attribute a
-	        WHERE a.attributeId IN :attributeIds
-	        """)
+			SELECT av
+			FROM AttributeValue av
+			JOIN FETCH av.attribute a
+			WHERE a.attributeId IN :attributeIds
+			""")
 	List<AttributeValue> findByAttributeIdIn(List<Long> attributeIds);
 }
 

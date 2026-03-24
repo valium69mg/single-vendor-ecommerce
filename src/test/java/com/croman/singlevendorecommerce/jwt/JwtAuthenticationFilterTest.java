@@ -15,8 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.croman.singlevendorecommerce.jwt.JwtAuthenticationFilter;
-import com.croman.singlevendorecommerce.jwt.JwtUtil;
 
 import java.io.IOException;
 import java.io.PrintWriter;

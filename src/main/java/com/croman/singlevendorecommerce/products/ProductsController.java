@@ -11,19 +11,23 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
+import com.croman.singlevendorecommerce.products.dto.CategoriesPageResponse;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialDTO;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 
@@ -38,22 +42,39 @@ public class ProductsController {
 	private final AttributesService attributesService;
 
 	@GetMapping("categories")
-	@Operation(summary = "Get categories by offset pagination", responses = {
-		    @ApiResponse(
-		        responseCode = "200",
-		        description = "Content successfully returned",
-		        content = @Content(
-		            mediaType = "application/json",
-		            array = @ArraySchema(schema = @Schema(implementation = CategoryDTO.class))
-		        )
-		    )
-		})
-	public ResponseEntity<List<CategoryDTO>> getCategories(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "50") int size) {
-		return ResponseEntity.status(HttpStatus.OK)
-				.body(categoryService.getCategories(LocaleUtils.APP_DEFAULT_LANG, page, size));
+	@Operation(
+	    summary = "Get categories by offset pagination",
+	    responses = {
+	        @ApiResponse(
+	            responseCode = "200",
+	            description = "Content successfully returned",
+	            content = @Content(
+	                mediaType = "application/json",
+	                schema = @Schema(implementation = CategoriesPageResponse.class)
+	            )
+	        )
+	    }
+	)
+	public ResponseEntity<PageResponse<CategoryDTO>> getCategories(
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "50") int size,
+	        @RequestParam(defaultValue = "")
+	        @Valid
+	        @Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+	        String term
+	) {
+
+	    return ResponseEntity.status(HttpStatus.OK)
+	            .body(categoryService.getCategories(
+	                    LocaleUtils.APP_DEFAULT_LANG,
+	                    page,
+	                    size,
+	                    term
+	            ));
 	}
 	
+	@GetMapping("categories/{id}")
+
 	@Operation(
 		    summary = "Get category by id",
 		    responses = {
@@ -75,7 +96,6 @@ public class ProductsController {
 		        )
 		    }
 		)
-	@GetMapping("categories/{id}")
 	public ResponseEntity<CategoryByIdDTO> getCategoryById(@PathVariable long id) {
 		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getCategoryById(id));
 	}

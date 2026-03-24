@@ -23,13 +23,16 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain filterChain(HttpSecurity http) {
 		http.csrf(csrf -> csrf.disable())
+				.cors(cors -> {})
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST)
 						.permitAll()
 						.requestMatchers("/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin")
+						.permitAll()
+						.requestMatchers("/api/v1/file/**")
 						.permitAll()
 						.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 						.anyRequest().authenticated())

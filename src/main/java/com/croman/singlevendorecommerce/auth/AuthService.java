@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.auth.dto.LoginContextDTO;
 import com.croman.singlevendorecommerce.auth.dto.LoginDTO;
@@ -12,12 +11,12 @@ import com.croman.singlevendorecommerce.auth.dto.LoginResponseDTO;
 import com.croman.singlevendorecommerce.auth.entity.LoginAttempt;
 import com.croman.singlevendorecommerce.auth.repository.LoginAttemptRepository;
 import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
-import com.croman.singlevendorecommerce.general.LocaleUtils;
 import com.croman.singlevendorecommerce.jwt.JwtUtil;
 import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.users.UserService;
 import com.croman.singlevendorecommerce.users.dto.UserDTO;
 import com.croman.singlevendorecommerce.users.entity.User;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
 import lombok.RequiredArgsConstructor;
 

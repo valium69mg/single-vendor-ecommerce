@@ -11,7 +11,7 @@ import com.croman.singlevendorecommerce.auth.dto.LoginContextDTO;
 import com.croman.singlevendorecommerce.auth.dto.LoginDTO;
 import com.croman.singlevendorecommerce.auth.dto.LoginResponseDTO;
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
-import com.croman.singlevendorecommerce.general.HttpUtils;
+import com.croman.singlevendorecommerce.utils.HttpUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;

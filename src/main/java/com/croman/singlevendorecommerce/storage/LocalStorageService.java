@@ -3,7 +3,11 @@ package com.croman.singlevendorecommerce.storage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import com.croman.singlevendorecommerce.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.storage.dto.StoredFile;
 
 import jakarta.annotation.PostConstruct;
 
@@ -28,56 +32,87 @@ public class LocalStorageService implements StorageService {
             Files.createDirectories(basePath);
             log.info("Storage initialized at: {}", basePath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize storage folder: " + basePath, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to initialize storage folder: " + basePath);
         }
     }
 
     @Override
     public void upload(String key, InputStream data, long contentLength, String contentType) {
         Path target = basePath.resolve(key).normalize();
-        try (OutputStream os = Files.newOutputStream(target, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = data.read(buffer)) != -1) {
-                os.write(buffer, 0, read);
+        try {
+            Files.createDirectories(target.getParent());
+            try (OutputStream os = Files.newOutputStream(target,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = data.read(buffer)) != -1) {
+                    os.write(buffer, 0, read);
+                }
+                log.debug("File uploaded: {}", key);
             }
-            log.info("File uploaded: {}", key);
         } catch (IOException e) {
             log.error("Error uploading file: {}", key, e);
-            throw new RuntimeException("Error uploading file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Error uploading file with key: " + key);
         }
     }
 
     @Override
-    public InputStream download(String key) {
+    public StoredFile download(String key) {
+
         Path target = basePath.resolve(key).normalize();
+
         if (!Files.exists(target)) {
             log.warn("File not found: {}", key);
             throw new NoSuchElementException("File not found: " + key);
         }
+
         try {
-            return Files.newInputStream(target, StandardOpenOption.READ);
+
+            InputStream inputStream = Files.newInputStream(target, StandardOpenOption.READ);
+
+            long size = Files.size(target);
+
+            String contentType = Files.probeContentType(target);
+
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return new StoredFile(
+                    inputStream,
+                    size,
+                    contentType,
+                    target.getFileName().toString()
+            );
+
         } catch (IOException e) {
             log.error("Error downloading file: {}", key, e);
-            throw new RuntimeException("Error downloading file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error downloading file with key: " + key);
         }
     }
 
     @Override
     public boolean exists(String key) {
+    	if (key == null) {
+    		return false;
+    	}
         Path target = basePath.resolve(key).normalize();
         return Files.exists(target);
     }
 
     @Override
     public void delete(String key) {
+		if (!exists(key)) {
+			return;
+		}
         Path target = basePath.resolve(key).normalize();
         try {
             Files.deleteIfExists(target);
-            log.info("File deleted: {}", key);
+            log.debug("File deleted: {}", key);
         } catch (IOException e) {
             log.error("Error deleting file: {}", key, e);
-            throw new RuntimeException("Error deleting file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error deleting file with key: " + key);
         }
     }
 
@@ -88,7 +123,7 @@ public class LocalStorageService implements StorageService {
             return Files.size(target);
         } catch (IOException e) {
             log.error("Error getting file size: {}", key, e);
-            throw new RuntimeException("Error getting size of file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error getting size of file with key: " + key);
         }
     }
 
@@ -106,7 +141,7 @@ public class LocalStorageService implements StorageService {
             return Optional.of(meta);
         } catch (IOException e) {
             log.error("Error getting metadata for file: {}", key, e);
-            throw new RuntimeException("Error getting metadata for file with key: " + key, e);
+            throw new ApiServiceException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error getting metadata for file with key: " + key);
         }
     }
 }
