@@ -5,6 +5,7 @@ import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialDTO;
+import com.croman.singlevendorecommerce.products.dto.UpdateMaterialDTO;
 import com.croman.singlevendorecommerce.products.entity.Material;
 import com.croman.singlevendorecommerce.products.repository.MaterialRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +31,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -56,7 +60,8 @@ class MaterialsServiceTest {
     private static final String SPANISH_NAME   = "Algodón";
     private static final String DEFAULT_LANG   = LocaleUtils.DATABASE_DEFAULT_LANG;
     private static final String SPANISH_LANG   = LocaleUtils.ES;
-
+    private static final String MISSING_LANGUAGE_NAMES = "missing_language_names";
+    private static final String MATERIAL_NOT_FOUND = "material_not_found";
     private Material material;
 
     @BeforeEach
@@ -173,5 +178,106 @@ class MaterialsServiceTest {
 
         verify(materialRepository, never()).save(any());
         verifyNoInteractions(translationService);
+    }
+    
+    @Test
+    void testUpdateMaterialSuccessfullyWithSpanishAndEnglish() {
+    	// Arrange
+    	Long materialId = 1L;
+    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().spanishName(SPANISH_NAME)
+    			.englishName(ENGLISH_NAME).build();
+    	
+    	String oldName = "Coton";
+    	Material materialEntity = new Material(materialId, oldName);
+    	Material newMaterialEntity = new Material(materialId, ENGLISH_NAME);
+    	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
+    	when(materialRepository.save(materialEntity)).thenReturn(newMaterialEntity);
+    	doNothing().when(translationService).updateTranslation(materialId.intValue(), LocaleUtils.ES,TranslatorPropertyType.MATERIAL, SPANISH_NAME);
+    	
+    	// Act
+    	materialsService.updateMaterial(materialId, updateMaterialDTO);
+    	
+    	// Assert
+    	verify(materialRepository, times(1)).save(materialEntity);
+    	verify(translationService, times(1)).updateTranslation(materialId.intValue(), LocaleUtils.ES,TranslatorPropertyType.MATERIAL, SPANISH_NAME);
+    	
+    }
+    
+    @Test
+    void testUpdateMaterialSuccessfullyWithOnlySpanish() {
+    	// Arrange
+    	Long materialId = 1L;
+    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().spanishName(SPANISH_NAME).build();
+    	
+    	Material materialEntity = new Material(materialId, ENGLISH_NAME);
+    	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
+    	doNothing().when(translationService).updateTranslation(materialId.intValue(), LocaleUtils.ES,TranslatorPropertyType.MATERIAL, SPANISH_NAME);
+    	
+    	// Act
+    	materialsService.updateMaterial(materialId, updateMaterialDTO);
+    	
+    	// Assert
+    	verify(materialRepository, never()).save(materialEntity);
+    	verify(translationService, times(1)).updateTranslation(materialId.intValue(), LocaleUtils.ES,TranslatorPropertyType.MATERIAL, SPANISH_NAME);
+    }
+    
+    @Test
+    void testUpdateMaterialSuccesfullyWithOnlyEnglish() {
+    	// Arrange
+    	Long materialId = 1L;
+    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder()
+    			.englishName(ENGLISH_NAME).build();
+    	
+    	String oldName = "Coton";
+    	Material materialEntity = new Material(materialId, oldName);
+    	Material newMaterialEntity = new Material(materialId, ENGLISH_NAME);
+    	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
+    	when(materialRepository.save(materialEntity)).thenReturn(newMaterialEntity);
+    	
+    	// Act
+    	materialsService.updateMaterial(materialId, updateMaterialDTO);
+    	
+    	// Assert
+    	verify(materialRepository, times(1)).save(materialEntity);
+    	verify(translationService, never()).updateTranslation(any(), any(), any(), any());
+    }
+    
+    @Test
+    void testUpdateMaterialSpanishAndEnglishNameMissing() {
+    	Long materialId = 1L;
+    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().build();
+    
+		when(messageService.getMessage(MISSING_LANGUAGE_NAMES, LocaleUtils.getDefaultLocale()))
+				.thenReturn(MISSING_LANGUAGE_NAMES);
+    	
+    	// Act
+		ApiServiceException ex = assertThrows(ApiServiceException.class,
+				() -> materialsService.updateMaterial(materialId, updateMaterialDTO));
+    	
+    	
+    	// Assert
+		assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+    	assertEquals(MISSING_LANGUAGE_NAMES, ex.getMessage());
+    }
+    
+    @Test
+    void testUpdateMaterialMaterialNotFound() {
+    	Long materialId = 1L;
+    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().spanishName(SPANISH_NAME)
+    			.englishName(ENGLISH_NAME).build();
+    
+		when(materialRepository.findById(materialId)).thenReturn(Optional.empty());
+    	when(messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()))
+				.thenReturn(MATERIAL_NOT_FOUND);
+		
+    	
+    	// Act
+		ApiServiceException ex = assertThrows(ApiServiceException.class,
+				() -> materialsService.updateMaterial(materialId, updateMaterialDTO));
+    	
+    	
+    	// Assert
+		assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    	assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
     }
 }

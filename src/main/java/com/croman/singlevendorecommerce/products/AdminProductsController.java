@@ -19,6 +19,7 @@ import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.products.dto.UpdateCategoryDTO;
+import com.croman.singlevendorecommerce.products.dto.UpdateMaterialDTO;
 import com.croman.singlevendorecommerce.utils.ApiResponseService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
@@ -168,6 +169,28 @@ public class AdminProductsController {
 		materialsService.createMaterial(createMaterialDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("material_created", HttpStatus.CREATED));
+	}
+	
+	@PatchMapping("materials/{id}")
+	@Operation(summary = "Update material", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Material updated successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> patchMaterial(@PathVariable long id, 
+			@RequestBody UpdateMaterialDTO updateMaterialDTO) {
+		materialsService.updateMaterial(id, updateMaterialDTO);
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(apiResponseService.getApiResponseMessage("material_updated", HttpStatus.OK));
 	}
 	
 	@PostMapping("brands")

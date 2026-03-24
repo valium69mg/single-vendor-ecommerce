@@ -16,6 +16,7 @@ import com.croman.singlevendorecommerce.message.MessageService;
 import com.croman.singlevendorecommerce.products.dto.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialDTO;
+import com.croman.singlevendorecommerce.products.dto.UpdateMaterialDTO;
 import com.croman.singlevendorecommerce.products.entity.Material;
 import com.croman.singlevendorecommerce.products.repository.MaterialRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
@@ -33,6 +34,7 @@ public class MaterialsService {
 	private final MaterialRepository materialRepository;
 	private final TranslationService translationService;
 	private final MessageService messageService;
+	private static final String MATERIAL_NOT_FOUND = "material_not_found";
 	
 	@Transactional(readOnly = true)
 	public PageResponse<MaterialDTO> getMaterials(String languageName, int page, int size) {
@@ -77,7 +79,7 @@ public class MaterialsService {
 	public MaterialByIdDTO getMaterialById(Long materialId) {
 		
 		Material material = materialRepository.findById(materialId).orElseThrow(
-				() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(), messageService.getMessage("material_not_found", 
+				() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(), messageService.getMessage(MATERIAL_NOT_FOUND, 
 						LocaleUtils.getDefaultLocale())));
 		
 		Map<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
@@ -115,5 +117,30 @@ public class MaterialsService {
 	
 	}
 	
+	@Transactional
+	public void updateMaterial(Long materialId, UpdateMaterialDTO updateMaterialDTO) {
+		String englishName = updateMaterialDTO.getEnglishName();
+		String spanishName = updateMaterialDTO.getSpanishName();
+
+		if (englishName == null && spanishName == null) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("missing_language_names", LocaleUtils.getDefaultLocale()));
+		}
+		
+		Material material = materialRepository.findById(materialId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale())));
+		
+		if (englishName != null) {
+			material.setName(englishName);
+			materialRepository.save(material);
+		}
+		
+		if (spanishName != null) {
+			translationService.updateTranslation(materialId.intValue(), LocaleUtils.ES, TranslatorPropertyType.MATERIAL,
+					spanishName);
+		}
+		
+	}
 
 }
