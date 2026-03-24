@@ -151,8 +151,8 @@ class MaterialsServiceTest {
 
         verify(materialRepository).save(any(Material.class));
         verify(translationService).createTranslation(
-                eq(MATERIAL_ID.intValue()), eq(SPANISH_LANG),
-                eq(TranslatorPropertyType.MATERIAL), eq(SPANISH_NAME));
+                MATERIAL_ID.intValue(), SPANISH_LANG,
+                TranslatorPropertyType.MATERIAL, SPANISH_NAME);
     }
 
     @Test
