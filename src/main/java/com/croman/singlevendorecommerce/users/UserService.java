@@ -31,6 +31,7 @@ public class UserService {
 	private final MessageService messageService;
 	private final EnvironmentUtils environmentUtils;
 	private static final String EMAIL_DOES_NOT_EXISTS = "email_does_not_exists";
+	private static final String INVALID_CREDENTIALS = "invalid_credentials";
 	
 	@Transactional
 	public void register(CreateUserDTO dto) {
@@ -98,7 +99,7 @@ public class UserService {
 		Optional<User> userOpt = userRepository.findByEmail(email);
 		if (userOpt.isEmpty()) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
 		}
 		return mapUserToUserDTO(userOpt.get());
 	}
@@ -122,7 +123,7 @@ public class UserService {
 			return hashedPasswordOpt.get();
 		}
 		throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-				messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+				messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
 	}
 	
 	@Transactional
@@ -131,7 +132,7 @@ public class UserService {
 		Optional<User> userOpt = userRepository.findByEmail(email);
 		if (userOpt.isEmpty()) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
 		}
 		userRepository.updateLastLogin(email, now);
 	}
