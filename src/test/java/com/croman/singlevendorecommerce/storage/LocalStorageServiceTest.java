@@ -1,5 +1,6 @@
 package com.croman.singlevendorecommerce.storage;
 
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -15,7 +16,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -202,18 +202,16 @@ class LocalStorageServiceTest {
 
     @Test
     void testUploadThrowsApiServiceExceptionWhenWriteFails() throws Exception {
-        // Use a key with a subdirectory path where the parent doesn't exist —
-        // writing to "dir/test-file.txt" when "dir" is itself a file always fails on all OSes.
         Path blockingFile = tempDir.resolve("subdir");
         Files.writeString(blockingFile, "I am a file, not a directory");
 
-        // "subdir/test-file.txt" cannot be created because "subdir" is a regular file
         String key = "subdir/test-file.txt";
         InputStream data = contentAsStream();
 
-        assertThatThrownBy(() ->
-                localStorageService.upload(key, data, FILE_CONTENT.length(), "text/plain")
-        )
+        ThrowableAssert.ThrowingCallable upload =
+                () -> localStorageService.upload(key, data, FILE_CONTENT.length(), "text/plain");
+
+        assertThatThrownBy(upload)
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Error uploading file");
     }
@@ -221,7 +219,7 @@ class LocalStorageServiceTest {
     // ─── download (contentType null) ──────────────────────────────────────────
 
     @Test
-    void testDownloadUsesDefaultContentTypeWhenProbeReturnsNull() throws Exception {
+    void testDownloadUsesDefaultContentTypeWhenProbeReturnsNull() {
         uploadFile(FILE_KEY);
 
         StoredFile result = localStorageService.download(FILE_KEY);

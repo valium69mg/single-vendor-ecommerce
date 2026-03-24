@@ -218,8 +218,6 @@ public class CategoryService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 		
-		/* TODO: Validate if there are no products related to this category */
-
 		translationService.deleteTranslation(categoryId.intValue(), LocaleUtils.ES, TranslatorPropertyType.CATEGORY);
 
 		categoryRepository.delete(category);
