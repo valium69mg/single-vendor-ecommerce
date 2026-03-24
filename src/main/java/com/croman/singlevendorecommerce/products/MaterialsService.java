@@ -44,10 +44,10 @@ public class MaterialsService {
 		Page<Material> allMaterials;
 		
 		if (term.isEmpty()) {
-			pageable  = PaginationUtils.getPageable(page, size, "material_id");
+			pageable = PaginationUtils.getPageable(page, size, "materialId");
 			allMaterials = materialRepository.findAll(pageable);
 		} else {
-			pageable = PaginationUtils.getPageable(page, size, "materialId");
+			pageable  = PaginationUtils.getPageable(page, size, "material_id");
 			allMaterials = materialRepository.searchByNameOrTranslation(term, pageable);
 		}
 
