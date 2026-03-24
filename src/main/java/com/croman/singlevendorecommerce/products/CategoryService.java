@@ -175,7 +175,7 @@ public class CategoryService {
 	        
 	        storageService.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
 
-	        thumbnailJobPublisher.publishJob(categoryId.toString(), imageId, key);
+	        thumbnailJobPublisher.publishJob(key);
 
 	        log.debug("Image uploaded for category {} with ID {}", categoryId, imageId);
 

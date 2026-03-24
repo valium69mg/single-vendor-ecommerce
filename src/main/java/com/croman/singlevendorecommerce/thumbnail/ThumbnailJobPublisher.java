@@ -17,7 +17,7 @@ public class ThumbnailJobPublisher {
 	private final RedisTemplate<String, String> redisTemplate;
 
 
-    public void publishJob(String productId, String imageId, String imageUrl) {
+    public void publishJob(String imageUrl) {
         ObjectNode job = JsonNodeFactory.instance.objectNode();
         job.put("image_url", imageUrl);
         job.putArray("sizes").add(200).add(400);
