@@ -45,7 +45,7 @@ public class TranslationService {
 
 		HashMap<Integer, String> translationsMap = new HashMap<>();
 
-		List<Integer> registerIdsToInt = registerIds.stream().map(id -> id.intValue())
+		List<Integer> registerIdsToInt = registerIds.stream().map(Number::intValue)
 				.distinct().toList();
 		
 		translationsRepository.findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(language, type, registerIdsToInt)
