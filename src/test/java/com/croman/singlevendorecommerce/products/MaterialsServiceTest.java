@@ -280,4 +280,38 @@ class MaterialsServiceTest {
 		assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
     	assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
     }
+    
+    @Test
+    void testShouldDeleteMaterialSuccessfully() {
+    	Long materialId = 1L;
+    	
+    	when(materialRepository.existsById(materialId)).thenReturn(true);
+    	doNothing().when(translationService).deleteTranslation(materialId.intValue(), LocaleUtils.ES, TranslatorPropertyType.MATERIAL);
+    	doNothing().when(materialRepository).deleteById(materialId);
+    	
+    	// Act
+    	materialsService.deleteMaterial(materialId);
+    	
+    	// Assert
+    	verify(materialRepository, times(1)).existsById(materialId);
+    	verify(translationService, times(1)).deleteTranslation(materialId.intValue(), LocaleUtils.ES, TranslatorPropertyType.MATERIAL);
+    	verify(materialRepository, times(1)).deleteById(materialId);
+    	
+    }
+    
+    @Test
+    void testShouldThrowNotFoundOnDeleteMaterial() {
+    	Long materialId = 1L;
+    	
+    	when(materialRepository.existsById(materialId)).thenReturn(false);
+    	when(messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale())).thenReturn(MATERIAL_NOT_FOUND);
+    	
+    	// Act 
+    	ApiServiceException ex = assertThrows(ApiServiceException.class,
+				() -> materialsService.deleteMaterial(materialId));
+    	
+    	assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    	assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
+    }
+    
 }

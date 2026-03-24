@@ -142,5 +142,20 @@ public class MaterialsService {
 		}
 		
 	}
+	
+	@Transactional
+	public void deleteMaterial(Long materialId) {
+		boolean exists = materialRepository.existsById(materialId);
+		
+		if (!exists) {
+			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+					messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()));
+		}
+		
+		translationService.deleteTranslation(materialId.intValue(), LocaleUtils.ES, TranslatorPropertyType.MATERIAL);
+		
+		materialRepository.deleteById(materialId);
+		
+	}
 
 }

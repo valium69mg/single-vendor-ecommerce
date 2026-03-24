@@ -193,6 +193,27 @@ public class AdminProductsController {
 				.body(apiResponseService.getApiResponseMessage("material_updated", HttpStatus.OK));
 	}
 	
+	@DeleteMapping("materials/{id}")
+	@Operation(summary = "Delete material", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Material deleted successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Material not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> deleteMaterial(@PathVariable long id) {
+		materialsService.deleteMaterial(id);
+		return ResponseEntity.status(HttpStatus.NO_CONTENT)
+				.body(apiResponseService.getApiResponseMessage("category_deleted", HttpStatus.NO_CONTENT));
+	}
+	
 	@PostMapping("brands")
 	@Operation(summary = "Create brand", responses = {
 		    @ApiResponse(
