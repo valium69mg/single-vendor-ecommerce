@@ -35,7 +35,7 @@ public class Translation {
 	private Integer registerId;
 	
 	@Column(name = "translation", length = 255, nullable = false)
-	private String translation;
+	private String translationValue;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "language_id", nullable = false)

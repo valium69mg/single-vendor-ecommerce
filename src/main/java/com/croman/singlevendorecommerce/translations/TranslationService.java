@@ -33,7 +33,7 @@ public class TranslationService {
 				.findByRegisterIdAndLanguageAndTranslatorPropertyType(registerId, language, type);
 
 		if (translationOpt.isPresent()) {
-			return translationOpt.get().getTranslation();
+			return translationOpt.get().getTranslationValue();
 		}
 		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 				messageService.getMessage("translation_not_found", LocaleUtils.getDefaultLocale()));
@@ -49,7 +49,7 @@ public class TranslationService {
 				.distinct().toList();
 		
 		translationsRepository.findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(language, type, registerIdsToInt)
-				.forEach(t -> translationsMap.put(t.getRegisterId(), t.getTranslation()));
+				.forEach(t -> translationsMap.put(t.getRegisterId(), t.getTranslationValue()));
 
 		if (translationsMap.isEmpty()) {
 			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
@@ -71,7 +71,7 @@ public class TranslationService {
 			return;
 		}
 			
-		translationsRepository.save(Translation.builder().registerId(registerId).translation(translation)
+		translationsRepository.save(Translation.builder().registerId(registerId).translationValue(translation)
 				.language(language).translatorPropertyType(type).build());
 	}
 	
@@ -87,9 +87,9 @@ public class TranslationService {
 
 		if (translationOpt.isPresent()) {
 			existingTranslation = translationOpt.get();
-			existingTranslation.setTranslation(translation);
+			existingTranslation.setTranslationValue(translation);
 		} else {
-			existingTranslation = Translation.builder().registerId(registerId).translation(translation)
+			existingTranslation = Translation.builder().registerId(registerId).translationValue(translation)
 					.language(language).translatorPropertyType(type).build();
 		}
 

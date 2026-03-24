@@ -58,7 +58,7 @@ class TranslationServiceTest {
         translation = Translation.builder()
                 .translationId(1L)
                 .registerId(REGISTER_ID)
-                .translation(TRANSLATED)
+                .translationValue(TRANSLATED)
                 .language(language)
                 .translatorPropertyType(TYPE)
                 .build();
@@ -143,7 +143,7 @@ class TranslationServiceTest {
 
         verify(translationsRepository).save(argThat(t ->
                 t.getRegisterId().equals(REGISTER_ID) &&
-                t.getTranslation().equals(TRANSLATED) &&
+                t.getTranslationValue().equals(TRANSLATED) &&
                 t.getTranslatorPropertyType() == TYPE));
     }
 
@@ -169,7 +169,7 @@ class TranslationServiceTest {
 
         translationService.updateTranslation(REGISTER_ID, SPANISH_LANG, TYPE, updatedText);
 
-        verify(translationsRepository).save(argThat(t -> t.getTranslation().equals(updatedText)));
+        verify(translationsRepository).save(argThat(t -> t.getTranslationValue().equals(updatedText)));
     }
 
     @Test
@@ -183,7 +183,7 @@ class TranslationServiceTest {
 
         verify(translationsRepository).save(argThat(t ->
                 t.getRegisterId().equals(REGISTER_ID) &&
-                t.getTranslation().equals(newText) &&
+                t.getTranslationValue().equals(newText) &&
                 t.getTranslatorPropertyType() == TYPE));
     }
 
