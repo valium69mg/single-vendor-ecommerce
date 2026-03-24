@@ -186,4 +186,81 @@ class UserServiceTest {
     	String result = userService.getUserRoleNameByEmail(email);
     	assertEquals(RoleType.ADMIN.name(), result);
     }
+    
+    @Test
+    void register_unexpectedException_throwsInternalServerError() {
+        CreateUserDTO dto = new CreateUserDTO("test@example.com", "password");
+
+        when(userRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(rolesService.getUserRoleByRoleType(RoleType.USER))
+                .thenThrow(new RuntimeException("boom"));
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class, () -> userService.register(dto));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void deleteUserByEmail_emailDoesNotExist_throwsNotFound() {
+        when(environmentUtils.isDev()).thenReturn(true);
+        when(userRepository.existsByEmail("missing@example.com")).thenReturn(false);
+        when(messageService.getMessage(eq("email_does_not_exists"), any()))
+                .thenReturn("Email does not exist");
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.deleteUserByEmail("missing@example.com"));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void deleteUserByEmail_unexpectedException_throwsInternalServerError() {
+        when(environmentUtils.isDev()).thenReturn(true);
+        when(userRepository.existsByEmail(anyString()))
+                .thenThrow(new RuntimeException("boom"));
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.deleteUserByEmail("test@example.com"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void updateLastLogin_userNotFound_throwsBadRequest() {
+        when(userRepository.findByEmail("missing@example.com"))
+                .thenReturn(Optional.empty());
+
+        when(messageService.getMessage(eq("invalid_credentials"), any()))
+                .thenReturn("Invalid credentials");
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.updateLastLogin("missing@example.com"));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+    }
+    
+    @Test
+    void createSiteAdmin_emailAlreadyExists_throwsBadRequest() {
+        CreateUserDTO dto = new CreateUserDTO("admin@example.com", "password");
+
+        when(userRepository.findAllByUserRole_RoleType(RoleType.ADMIN))
+                .thenReturn(java.util.Collections.emptyList());
+
+        when(userRepository.existsByEmail(dto.getEmail())).thenReturn(true);
+
+        when(messageService.getMessage(eq("email_exists"), any()))
+                .thenReturn("Email exists");
+
+        ApiServiceException ex =
+                assertThrows(ApiServiceException.class,
+                        () -> userService.createSiteAdmin(dto));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+    }
+    
+    
 }
