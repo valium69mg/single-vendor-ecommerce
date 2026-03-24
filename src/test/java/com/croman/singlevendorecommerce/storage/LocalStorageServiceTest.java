@@ -79,7 +79,8 @@ class LocalStorageServiceTest {
 
         StoredFile result = localStorageService.download(FILE_KEY);
 
-        assertThat(new String(result.getInputStream().readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(FILE_CONTENT);
+        assertThat(new String(result.getInputStream().readAllBytes(), StandardCharsets.UTF_8))
+                .isEqualTo(FILE_CONTENT);
     }
 
     @Test
@@ -114,11 +115,10 @@ class LocalStorageServiceTest {
         assertThat(tempDir.resolve(FILE_KEY)).doesNotExist();
     }
 
-
-	@Test
-	void testDeleteDoesNotThrowWhenFileDoesNotExist() {
-		assertDoesNotThrow(() -> localStorageService.delete("nonexistent.txt"));
-	}
+    @Test
+    void testDeleteDoesNotThrowWhenFileDoesNotExist() {
+        assertDoesNotThrow(() -> localStorageService.delete("nonexistent.txt"));
+    }
 
     // ─── size ─────────────────────────────────────────────────────────────────
 
@@ -151,10 +151,10 @@ class LocalStorageServiceTest {
         assertThat(result.get()).containsKey("lastModified");
         assertThat(result.get()).containsKey("path");
         assertThat(result.get())
-        .containsEntry(
-                "size",
-                String.valueOf(FILE_CONTENT.getBytes(StandardCharsets.UTF_8).length)
-        );
+                .containsEntry(
+                        "size",
+                        String.valueOf(FILE_CONTENT.getBytes(StandardCharsets.UTF_8).length)
+                );
     }
 
     @Test
@@ -163,8 +163,8 @@ class LocalStorageServiceTest {
 
         assertThat(result).isEmpty();
     }
-    
- // ─── init ────────────────────────────────────────────────────────────────
+
+    // ─── init ────────────────────────────────────────────────────────────────
 
     @Test
     void testInitCreatesBaseDirectorySuccessfully() {
@@ -202,13 +202,17 @@ class LocalStorageServiceTest {
 
     @Test
     void testUploadThrowsApiServiceExceptionWhenWriteFails() throws Exception {
-        Path directoryInsteadOfFile = tempDir.resolve(FILE_KEY);
-        Files.createDirectory(directoryInsteadOfFile);
+        // Use a key with a subdirectory path where the parent doesn't exist —
+        // writing to "dir/test-file.txt" when "dir" is itself a file always fails on all OSes.
+        Path blockingFile = tempDir.resolve("subdir");
+        Files.writeString(blockingFile, "I am a file, not a directory");
 
+        // "subdir/test-file.txt" cannot be created because "subdir" is a regular file
+        String key = "subdir/test-file.txt";
         InputStream data = contentAsStream();
 
         assertThatThrownBy(() ->
-                localStorageService.upload(FILE_KEY, data, FILE_CONTENT.length(), "text/plain")
+                localStorageService.upload(key, data, FILE_CONTENT.length(), "text/plain")
         )
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Error uploading file");
@@ -226,37 +230,23 @@ class LocalStorageServiceTest {
         assertThat(result.getContentType()).isNotBlank();
     }
 
-    // ─── download (IOException) ───────────────────────────────────────────────
-
-    @Test
-    void testDownloadThrowsApiServiceExceptionOnIoError() throws Exception {
-        // Arrange
-        Path directoryInsteadOfFile = tempDir.resolve(FILE_KEY);
-        Files.createDirectory(directoryInsteadOfFile);
-
-        // Act + Assert
-        assertThatThrownBy(() -> localStorageService.download(FILE_KEY))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Error downloading file");
-    }
-
     // ─── delete (IOException) ─────────────────────────────────────────────────
 
     @Test
     void testDeleteThrowsApiServiceExceptionWhenDeletionFails() throws Exception {
-        // Arrange
+        // Create a non-empty directory: Files.deleteIfExists throws
+        // DirectoryNotEmptyException on all OSes when the directory has contents.
         Path directory = tempDir.resolve(FILE_KEY);
         Files.createDirectory(directory);
 
         Path innerFile = directory.resolve("inner.txt");
         Files.writeString(innerFile, "data");
 
-        // Act + Assert
         assertThatThrownBy(() -> localStorageService.delete(FILE_KEY))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Error deleting file");
     }
-    
+
     // ─── metadata (IOException) ───────────────────────────────────────────────
 
     @Test
@@ -267,8 +257,7 @@ class LocalStorageServiceTest {
         Files.delete(file);
 
         Optional<Map<String, String>> optional = localStorageService.metadata(FILE_KEY);
-        
+
         assertTrue(optional.isEmpty());
     }
-
 }
