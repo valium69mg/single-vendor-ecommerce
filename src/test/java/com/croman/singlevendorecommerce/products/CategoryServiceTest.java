@@ -8,8 +8,11 @@ import com.croman.singlevendorecommerce.products.dto.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.products.entity.Category;
 import com.croman.singlevendorecommerce.products.repository.CategoryRepository;
+import com.croman.singlevendorecommerce.storage.StorageService;
+import com.croman.singlevendorecommerce.thumbnail.ThumbnailJobPublisher;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
+import com.croman.singlevendorecommerce.utils.FileUtils;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
@@ -18,18 +21,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -44,6 +53,15 @@ class CategoryServiceTest {
 
 	@Mock
 	private MessageService messageService;
+	
+	@Mock
+	private StorageService storageService;
+
+	@Mock
+	private ThumbnailJobPublisher thumbnailJobPublisher;
+
+	@Mock
+	private MultipartFile multipartFile;
 
 	@InjectMocks
 	private CategoryService categoryService;
@@ -282,4 +300,50 @@ class CategoryServiceTest {
 		verify(categoryRepository, never()).delete(any());
 		verifyNoInteractions(translationService);
 	}
+	
+	@Test
+	void testUploadImageUploadsFileAndPublishesThumbnailJob() throws Exception {
+	    // Arrange
+	    String existingFileUrl = "categories/old-image.jpg";
+	    category.setFileUrl(existingFileUrl);
+
+	    when(categoryRepository.findById(CATEGORY_ID))
+	            .thenReturn(Optional.of(category));
+
+	    when(multipartFile.getOriginalFilename()).thenReturn("image.png");
+	    when(multipartFile.getContentType()).thenReturn("image/png");
+	    when(multipartFile.getSize()).thenReturn(10L);
+
+	    InputStream inputStream = new ByteArrayInputStream("image".getBytes());
+	    when(multipartFile.getInputStream()).thenReturn(inputStream);
+
+	    UUID fixedUuid = UUID.fromString("00000000-0000-0000-0000-000000000123");
+	    String expectedKey = "categories/" + fixedUuid + ".png";
+
+	    try (MockedStatic<UUID> uuidMock = mockStatic(UUID.class)) {
+	        uuidMock.when(UUID::randomUUID).thenReturn(fixedUuid);
+
+	        // Act
+	        assertDoesNotThrow(() ->
+	                categoryService.uploadImage(multipartFile, CATEGORY_ID)
+	        );
+	    }
+
+	    // Assert
+	    verify(storageService).delete(existingFileUrl);
+	    verify(storageService).delete(FileUtils.toMediumThumbnailKey(existingFileUrl));
+	    verify(storageService).delete(FileUtils.toSmallThumbnailKey(existingFileUrl));
+
+	    verify(storageService).upload(
+	            eq(expectedKey),
+	            any(InputStream.class),
+	            eq(10L),
+	            eq("image/png")
+	    );
+
+	    verify(thumbnailJobPublisher).publishJob(expectedKey);
+
+	    assertThat(category.getFileUrl()).isEqualTo(expectedKey);
+	}
+
 }
