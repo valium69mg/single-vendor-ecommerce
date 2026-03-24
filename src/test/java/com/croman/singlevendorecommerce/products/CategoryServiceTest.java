@@ -19,6 +19,7 @@ import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -317,33 +318,41 @@ class CategoryServiceTest {
 	    InputStream inputStream = new ByteArrayInputStream("image".getBytes());
 	    when(multipartFile.getInputStream()).thenReturn(inputStream);
 
-	    UUID fixedUuid = UUID.fromString("00000000-0000-0000-0000-000000000123");
-	    String expectedKey = "categories/" + fixedUuid + ".png";
+	    // Act
+	    assertDoesNotThrow(() ->
+	            categoryService.uploadImage(multipartFile, CATEGORY_ID)
+	    );
 
-	    try (MockedStatic<UUID> uuidMock = mockStatic(UUID.class)) {
-	        uuidMock.when(UUID::randomUUID).thenReturn(fixedUuid);
-
-	        // Act
-	        assertDoesNotThrow(() ->
-	                categoryService.uploadImage(multipartFile, CATEGORY_ID)
-	        );
-	    }
-
-	    // Assert
+	    // Assert - deletions of old files
 	    verify(storageService).delete(existingFileUrl);
 	    verify(storageService).delete(FileUtils.toMediumThumbnailKey(existingFileUrl));
 	    verify(storageService).delete(FileUtils.toSmallThumbnailKey(existingFileUrl));
 
+	    // Capture the actual key used for upload
+	    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
 	    verify(storageService).upload(
-	            eq(expectedKey),
+	            keyCaptor.capture(),
 	            any(InputStream.class),
 	            eq(10L),
 	            eq("image/png")
 	    );
 
-	    verify(thumbnailJobPublisher).publishJob(expectedKey);
+	    String actualKey = keyCaptor.getValue();
 
-	    assertThat(category.getFileUrl()).isEqualTo(expectedKey);
+	    // Verify key structure without caring about the specific UUID value
+	    assertThat(actualKey)
+	            .startsWith("categories/")
+	            .endsWith(".png")
+	            .matches("categories/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.png");
+
+	    // Verify thumbnail job published with same key
+	    verify(thumbnailJobPublisher).publishJob(actualKey);
+
+	    // Verify category was updated with the new key
+	    assertThat(category.getFileUrl())
+	            .isEqualTo(actualKey)
+	            .startsWith("categories/")
+	            .endsWith(".png");
 	}
 
 }
