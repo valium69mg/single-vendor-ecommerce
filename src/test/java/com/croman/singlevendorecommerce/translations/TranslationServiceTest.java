@@ -107,12 +107,17 @@ class TranslationServiceTest {
     @Test
     void testBatchTranslateThrowsWhenNoTranslationsFound() {
         when(languageService.getLanguageByName(SPANISH_LANG)).thenReturn(language);
-        when(translationsRepository.findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(eq(language), eq(TYPE), anyList()))
+        when(translationsRepository.findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(
+                eq(language), eq(TYPE), anyList()))
                 .thenReturn(List.of());
         when(messageService.getMessage(eq("translation_not_found"), any(Locale.class)))
                 .thenReturn("Translation not found");
 
-        assertThatThrownBy(() -> translationService.batchTranslate(SPANISH_LANG, TYPE, List.of(1L)))
+        List<Long> registerIds = List.of(1L);
+
+        assertThatThrownBy(() ->
+                translationService.batchTranslate(SPANISH_LANG, TYPE, registerIds)
+        )
                 .isInstanceOf(ApiServiceException.class)
                 .hasMessageContaining("Translation not found");
     }
