@@ -128,7 +128,7 @@ class TranslationServiceTest {
 
         assertThat(result).hasSize(1);
         verify(translationsRepository).findByLanguageAndTranslatorPropertyTypeAndRegisterIdIn(
-                eq(language), eq(TYPE), eq(List.of(1)));
+                language, TYPE, List.of(1));
     }
 
     // ─── createTranslation ────────────────────────────────────────────────────
