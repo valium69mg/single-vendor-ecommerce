@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,11 +35,11 @@ public class MaterialsService {
 	private final MessageService messageService;
 	
 	@Transactional(readOnly = true)
-	public List<MaterialDTO> getMaterials(String languageName, int page, int size) {
+	public PageResponse<MaterialDTO> getMaterials(String languageName, int page, int size) {
 		
 		Pageable pageable = PaginationUtils.getPageable(page, size, "materialId");
 		
-		List<Material> allMaterials = materialRepository.findAll(pageable).getContent();
+		Page<Material> allMaterials = materialRepository.findAll(pageable);
 
 		Map<Integer, String> batchTranslateHashMap = null;
 		
@@ -50,11 +52,18 @@ public class MaterialsService {
 
 		List<MaterialDTO> materialDTOs = new ArrayList<>();
 
-		for (Material material : allMaterials) {
+		for (Material material : allMaterials.getContent()) {
 			materialDTOs.add(mapMaterialToMaterialDTO(material, batchTranslateHashMap));
 		}
-
-		return materialDTOs;
+		
+		return PageResponse.<MaterialDTO>builder()
+	            .content(materialDTOs)
+	            .page(allMaterials.getNumber())
+	            .size(allMaterials.getSize())
+	            .totalElements(allMaterials.getTotalElements())
+	            .totalPages(allMaterials.getTotalPages())
+	            .last(allMaterials.isLast())
+	            .build();
 
 	}
 

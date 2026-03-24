@@ -19,6 +19,7 @@ import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.MaterialDTO;
+import com.croman.singlevendorecommerce.products.dto.MaterialsPageResponse;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
@@ -105,13 +106,13 @@ public class ProductsController {
 		    @ApiResponse(
 		        responseCode = "200",
 		        description = "Content successfully returned",
-		        content = @Content(
-		            mediaType = "application/json",
-		            array = @ArraySchema(schema = @Schema(implementation = MaterialDTO.class))
-		        )
+        		content = @Content(
+		                mediaType = "application/json",
+		                schema = @Schema(implementation = MaterialsPageResponse.class)
+		            )
 		    )
 		})
-	public ResponseEntity<List<MaterialDTO>> getMaterials(@RequestParam(defaultValue = "0") int page,
+	public ResponseEntity<PageResponse<MaterialDTO>> getMaterials(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "50") int size) {
 		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG,
 				page, size));

@@ -10,6 +10,7 @@ import com.croman.singlevendorecommerce.products.repository.MaterialRepository;
 import com.croman.singlevendorecommerce.translations.TranslationService;
 import com.croman.singlevendorecommerce.translations.dto.TranslatorPropertyType;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,12 +73,12 @@ class MaterialsServiceTest {
     void testGetMaterialsWithDefaultLanguageReturnsOriginalNames() {
         Page<Material> page = new PageImpl<>(List.of(material));
         when(materialRepository.findAll(any(Pageable.class))).thenReturn(page);
+        
+        PageResponse<MaterialDTO> result = materialsService.getMaterials(DEFAULT_LANG, 0, 10);
 
-        List<MaterialDTO> result = materialsService.getMaterials(DEFAULT_LANG, 0, 10);
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getMaterialId()).isEqualTo(MATERIAL_ID);
-        assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getMaterialId()).isEqualTo(MATERIAL_ID);
+        assertThat(result.getContent().get(0).getName()).isEqualTo(ENGLISH_NAME);
         verifyNoInteractions(translationService);
     }
 
@@ -91,19 +92,19 @@ class MaterialsServiceTest {
         when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.MATERIAL), anyList()))
                 .thenReturn(translations);
 
-        List<MaterialDTO> result = materialsService.getMaterials(SPANISH_LANG, 0, 10);
+        PageResponse<MaterialDTO> result = materialsService.getMaterials(SPANISH_LANG, 0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo(SPANISH_NAME);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo(SPANISH_NAME);
     }
 
     @Test
     void testGetMaterialsReturnsEmptyListWhenNoMaterialsExist() {
         when(materialRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-        List<MaterialDTO> result = materialsService.getMaterials(DEFAULT_LANG, 0, 10);
+        PageResponse<MaterialDTO> result = materialsService.getMaterials(DEFAULT_LANG, 0, 10);
 
-        assertThat(result).isEmpty();
+        assertThat(result.getContent()).isEmpty();
     }
 
     // ─── getMaterialById ──────────────────────────────────────────────────────
