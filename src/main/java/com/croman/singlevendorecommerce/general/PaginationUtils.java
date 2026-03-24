@@ -11,7 +11,7 @@ public class PaginationUtils {
 	private static final int MAX_PAGINATION_SIZE = 100;
 
 	public static int safeSize(int size) {
-		return Math.min(Math.max(size, 1), MAX_PAGINATION_SIZE);
+	    return Math.clamp(size, 1, MAX_PAGINATION_SIZE);
 	}
 	
 	public static int safePage(int page) {
