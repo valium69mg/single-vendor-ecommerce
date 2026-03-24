@@ -2,8 +2,12 @@ package com.croman.singlevendorecommerce.general;
 
 import java.util.Locale;
 
-public class LocaleUtils {
+public final class LocaleUtils {
 
+	private LocaleUtils() {
+		
+	}
+	
 	public static final String ES = "es";
 	public static final String EN = "en";
 	public static final String APP_DEFAULT_LANG = ES;
