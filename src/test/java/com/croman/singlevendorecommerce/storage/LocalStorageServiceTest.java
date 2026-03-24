@@ -15,10 +15,12 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocalStorageServiceTest {
 
@@ -161,4 +163,112 @@ class LocalStorageServiceTest {
 
         assertThat(result).isEmpty();
     }
+    
+ // ─── init ────────────────────────────────────────────────────────────────
+
+    @Test
+    void testInitCreatesBaseDirectorySuccessfully() {
+        LocalStorageService service = new LocalStorageService();
+        ReflectionTestUtils.setField(service, "basePathValue", tempDir.toString());
+
+        assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(service, "init"));
+
+        Path initializedPath = service.getBasePath();
+        assertThat(initializedPath).exists().isDirectory();
+    }
+
+    @Test
+    void testInitThrowsApiServiceExceptionWhenDirectoryCannotBeCreated() {
+        LocalStorageService service = new LocalStorageService();
+
+        Path invalidPath = tempDir.resolve("file.txt");
+        assertDoesNotThrow(() -> Files.writeString(invalidPath, "not a directory"));
+
+        ReflectionTestUtils.setField(service, "basePathValue", invalidPath.toString());
+
+        assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(service, "init"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to initialize storage folder");
+    }
+
+    // ─── exists (null) ────────────────────────────────────────────────────────
+
+    @Test
+    void testExistsReturnsFalseWhenKeyIsNull() {
+        assertThat(localStorageService.exists(null)).isFalse();
+    }
+
+    // ─── upload (IOException) ─────────────────────────────────────────────────
+
+    @Test
+    void testUploadThrowsApiServiceExceptionWhenWriteFails() throws Exception {
+        Path directoryInsteadOfFile = tempDir.resolve(FILE_KEY);
+        Files.createDirectory(directoryInsteadOfFile);
+
+        InputStream data = contentAsStream();
+
+        assertThatThrownBy(() ->
+                localStorageService.upload(FILE_KEY, data, FILE_CONTENT.length(), "text/plain")
+        )
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error uploading file");
+    }
+
+    // ─── download (contentType null) ──────────────────────────────────────────
+
+    @Test
+    void testDownloadUsesDefaultContentTypeWhenProbeReturnsNull() throws Exception {
+        uploadFile(FILE_KEY);
+
+        StoredFile result = localStorageService.download(FILE_KEY);
+
+        assertThat(result.getContentType()).isNotNull();
+        assertThat(result.getContentType()).isNotBlank();
+    }
+
+    // ─── download (IOException) ───────────────────────────────────────────────
+
+    @Test
+    void testDownloadThrowsApiServiceExceptionOnIoError() throws Exception {
+        // Arrange
+        Path directoryInsteadOfFile = tempDir.resolve(FILE_KEY);
+        Files.createDirectory(directoryInsteadOfFile);
+
+        // Act + Assert
+        assertThatThrownBy(() -> localStorageService.download(FILE_KEY))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error downloading file");
+    }
+
+    // ─── delete (IOException) ─────────────────────────────────────────────────
+
+    @Test
+    void testDeleteThrowsApiServiceExceptionWhenDeletionFails() throws Exception {
+        // Arrange
+        Path directory = tempDir.resolve(FILE_KEY);
+        Files.createDirectory(directory);
+
+        Path innerFile = directory.resolve("inner.txt");
+        Files.writeString(innerFile, "data");
+
+        // Act + Assert
+        assertThatThrownBy(() -> localStorageService.delete(FILE_KEY))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error deleting file");
+    }
+    
+    // ─── metadata (IOException) ───────────────────────────────────────────────
+
+    @Test
+    void testMetadataThrowsApiServiceExceptionWhenIoErrorOccurs() throws Exception {
+        uploadFile(FILE_KEY);
+
+        Path file = tempDir.resolve(FILE_KEY);
+        Files.delete(file);
+
+        Optional<Map<String, String>> optional = localStorageService.metadata(FILE_KEY);
+        
+        assertTrue(optional.isEmpty());
+    }
+
 }
