@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class LocalStorageServiceTest {
 
@@ -111,11 +112,11 @@ class LocalStorageServiceTest {
         assertThat(tempDir.resolve(FILE_KEY)).doesNotExist();
     }
 
-    @Test
-    void testDeleteDoesNotThrowWhenFileDoesNotExist() {
-        // deleteIfExists — should be silent
-        localStorageService.delete("nonexistent.txt");
-    }
+
+	@Test
+	void testDeleteDoesNotThrowWhenFileDoesNotExist() {
+		assertDoesNotThrow(() -> localStorageService.delete("nonexistent.txt"));
+	}
 
     // ─── size ─────────────────────────────────────────────────────────────────
 
