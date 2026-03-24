@@ -4,8 +4,12 @@ import java.time.format.DateTimeFormatter;
 
 import lombok.Getter;
 
-public class DateTimeUtils {
+public final class DateTimeUtils {
 
+	private DateTimeUtils() {
+		
+	}
+	
 	@Getter
 	private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
 	@Getter
