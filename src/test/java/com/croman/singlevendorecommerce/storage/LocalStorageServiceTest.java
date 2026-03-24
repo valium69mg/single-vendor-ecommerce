@@ -147,8 +147,11 @@ class LocalStorageServiceTest {
         assertThat(result.get()).containsKey("size");
         assertThat(result.get()).containsKey("lastModified");
         assertThat(result.get()).containsKey("path");
-        assertThat(result.get().get("size"))
-                .isEqualTo(String.valueOf(FILE_CONTENT.getBytes(StandardCharsets.UTF_8).length));
+        assertThat(result.get())
+        .containsEntry(
+                "size",
+                String.valueOf(FILE_CONTENT.getBytes(StandardCharsets.UTF_8).length)
+        );
     }
 
     @Test
