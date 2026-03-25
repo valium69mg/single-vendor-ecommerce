@@ -271,7 +271,7 @@
                     {
                       "key": "file",
                       "type": "file",
-                      "src": "/home/carlostr/Downloads/argollas.webp"
+                      "src": "/C:/Users/carlo/Downloads/argolla.jpg"
                     }
                   ]
                 },
@@ -583,7 +583,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/api/v1/products/brands?page=0&size=1",
+                  "raw": "http://localhost:8080/api/v1/products/brands?page=0&size=10",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -602,7 +602,13 @@
                     },
                     {
                       "key": "size",
-                      "value": "1"
+                      "value": "10"
+                    },
+                    {
+                      "key": "term",
+                      "value": "patit",
+                      "type": "text",
+                      "disabled": true
                     }
                   ]
                 }
@@ -651,7 +657,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"name\": \"Nike\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"D4C\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -732,7 +738,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/v1/file?key=categories/9b963be0-3b40-4be3-bdcd-a4e26ac83514.webp",
+              "raw": "http://localhost:8080/api/v1/file?key=categories/258dd94c-0ad7-448e-8fdb-b6b8e136ecac_400.jpg",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -746,7 +752,7 @@
               "query": [
                 {
                   "key": "key",
-                  "value": "categories/9b963be0-3b40-4be3-bdcd-a4e26ac83514.webp"
+                  "value": "categories/258dd94c-0ad7-448e-8fdb-b6b8e136ecac_400.jpg"
                 }
               ]
             }
