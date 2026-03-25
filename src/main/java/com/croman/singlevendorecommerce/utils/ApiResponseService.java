@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
-import com.croman.singlevendorecommerce.message.MessageService;
+import com.croman.singlevendorecommerce.service.message.MessageService;
 
 import lombok.RequiredArgsConstructor;
 
