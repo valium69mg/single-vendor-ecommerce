@@ -1,5 +1,10 @@
 package com.croman.singlevendorecommerce.products.entity;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -32,5 +37,13 @@ public class ProductMaterial {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_id", nullable = false)
     private Material material;
+    
+    @CreationTimestamp
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
+	
+	@UpdateTimestamp
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
 
 }

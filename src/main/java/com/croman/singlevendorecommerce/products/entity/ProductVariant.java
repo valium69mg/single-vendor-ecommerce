@@ -1,6 +1,10 @@
 package com.croman.singlevendorecommerce.products.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -45,5 +49,13 @@ public class ProductVariant {
 
     @Column(name = "weight_grams")
     private Integer weightGrams;
+    
+    @CreationTimestamp
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
+	
+	@UpdateTimestamp
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
 
 }

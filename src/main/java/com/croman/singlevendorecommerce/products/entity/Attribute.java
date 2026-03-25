@@ -1,5 +1,10 @@
 package com.croman.singlevendorecommerce.products.entity;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import com.croman.singlevendorecommerce.products.dto.AttributeType;
 
 import jakarta.persistence.Column;
@@ -30,4 +35,12 @@ public class Attribute {
     @Column(name = "attribute_type", nullable = false, length = 50, unique = true)
     private AttributeType attributeType;
 
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
+	
+	@UpdateTimestamp
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
+	
 }

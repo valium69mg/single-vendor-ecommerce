@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -55,7 +56,8 @@ class AttributesServiceTest {
     private static final String COLOR_TRANSLATED         = "Color";
     private static final String SIZE_TRANSLATED          = "Talla";
     private static final String COLOR_VALUE_TRANSLATED   = "Rojo";
-
+    private static final LocalDateTime NOW = LocalDateTime.now(); 
+    
     private Attribute colorAttribute;
     private Attribute sizeAttribute;
     private AttributeValue colorValue;
@@ -63,10 +65,10 @@ class AttributesServiceTest {
 
     @BeforeEach
     void setUp() {
-        colorAttribute = new Attribute(COLOR_ATTRIBUTE_ID, AttributeType.COLOR);
-        sizeAttribute  = new Attribute(SIZE_ATTRIBUTE_ID,  AttributeType.SIZE);
-        colorValue     = new AttributeValue(COLOR_VALUE_ID, colorAttribute, "Red");
-        sizeValue      = new AttributeValue(SIZE_VALUE_ID,  sizeAttribute,  "M");
+        colorAttribute = new Attribute(COLOR_ATTRIBUTE_ID, AttributeType.COLOR, NOW, NOW);
+        sizeAttribute  = new Attribute(SIZE_ATTRIBUTE_ID,  AttributeType.SIZE, NOW, NOW);
+        colorValue     = new AttributeValue(COLOR_VALUE_ID, colorAttribute, "Red", NOW, NOW);
+        sizeValue      = new AttributeValue(SIZE_VALUE_ID,  sizeAttribute,  "M", NOW, NOW);
     }
 
     // ─── getAttributes – default language ────────────────────────────────────

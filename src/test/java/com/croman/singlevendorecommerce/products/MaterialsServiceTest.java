@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -62,6 +63,8 @@ class MaterialsServiceTest {
     private static final String SPANISH_LANG   = LocaleUtils.ES;
     private static final String MISSING_LANGUAGE_NAMES = "missing_language_names";
     private static final String MATERIAL_NOT_FOUND = "material_not_found";
+    private static final LocalDateTime NOW = LocalDateTime.now(); 
+    
     private Material material;
 
     @BeforeEach
@@ -260,8 +263,8 @@ class MaterialsServiceTest {
     			.englishName(ENGLISH_NAME).build();
     	
     	String oldName = "Coton";
-    	Material materialEntity = new Material(materialId, oldName);
-    	Material newMaterialEntity = new Material(materialId, ENGLISH_NAME);
+    	Material materialEntity = new Material(materialId, oldName, NOW, NOW);
+    	Material newMaterialEntity = new Material(materialId, ENGLISH_NAME, NOW, NOW);
     	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
     	when(materialRepository.save(materialEntity)).thenReturn(newMaterialEntity);
     	doNothing().when(translationService).updateTranslation(materialId.intValue(), LocaleUtils.ES,TranslatorPropertyType.MATERIAL, SPANISH_NAME);
@@ -281,7 +284,7 @@ class MaterialsServiceTest {
     	Long materialId = 1L;
     	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().spanishName(SPANISH_NAME).build();
     	
-    	Material materialEntity = new Material(materialId, ENGLISH_NAME);
+    	Material materialEntity = new Material(materialId, ENGLISH_NAME, NOW, NOW);
     	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
     	doNothing().when(translationService).updateTranslation(materialId.intValue(), LocaleUtils.ES,TranslatorPropertyType.MATERIAL, SPANISH_NAME);
     	
@@ -301,8 +304,8 @@ class MaterialsServiceTest {
     			.englishName(ENGLISH_NAME).build();
     	
     	String oldName = "Coton";
-    	Material materialEntity = new Material(materialId, oldName);
-    	Material newMaterialEntity = new Material(materialId, ENGLISH_NAME);
+    	Material materialEntity = new Material(materialId, oldName, NOW, NOW);
+    	Material newMaterialEntity = new Material(materialId, ENGLISH_NAME, NOW, NOW);
     	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
     	when(materialRepository.save(materialEntity)).thenReturn(newMaterialEntity);
     	
