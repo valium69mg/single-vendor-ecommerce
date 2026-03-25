@@ -14,6 +14,7 @@ import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.products.dto.AttributesDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.BrandDTO;
+import com.croman.singlevendorecommerce.products.dto.BrandPageResponse;
 import com.croman.singlevendorecommerce.products.dto.CategoriesPageResponse;
 import com.croman.singlevendorecommerce.products.dto.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.products.dto.CategoryDTO;
@@ -156,13 +157,18 @@ public class ProductsController {
 		        description = "Content successfully returned",
 		        content = @Content(
 		            mediaType = "application/json",
-		            array = @ArraySchema(schema = @Schema(implementation = BrandDTO.class))
+		            array = @ArraySchema(schema = @Schema(implementation = BrandPageResponse.class))
 		        )
 		    )
 		})
-	public ResponseEntity<List<BrandDTO>> getBrands(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "50") int size) {
-		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands(page, size));
+	public ResponseEntity<PageResponse<BrandDTO>> getBrands(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size,
+			@RequestParam(defaultValue = "")
+		    @Valid
+		    @Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+		    String term) {
+		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrands(page, size, term));
 	}
 	
 	@GetMapping("brands/{id}")

@@ -7,6 +7,7 @@ import com.croman.singlevendorecommerce.products.dto.BrandDTO;
 import com.croman.singlevendorecommerce.products.dto.CreateBrandDTO;
 import com.croman.singlevendorecommerce.products.entity.Brand;
 import com.croman.singlevendorecommerce.products.repository.BrandRepository;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,8 @@ class BrandsServiceTest {
 
     private static final Long   BRAND_ID   = 1L;
     private static final String BRAND_NAME = "Nike";
-
+    private static final String SEARCH_TERM = "Ni";
+    
     private Brand brand;
 
     @BeforeEach
@@ -62,20 +64,35 @@ class BrandsServiceTest {
         Page<Brand> page = new PageImpl<>(List.of(brand));
         when(brandRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        List<BrandDTO> result = brandsService.getBrands(0, 10);
+        PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, "");
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getBrandId()).isEqualTo(BRAND_ID);
-        assertThat(result.get(0).getName()).isEqualTo(BRAND_NAME);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getBrandId()).isEqualTo(BRAND_ID);
+        assertThat(result.getContent().get(0).getName()).isEqualTo(BRAND_NAME);
+        verify(brandRepository, never()).searchByNameOrTranslation(any(), any());
     }
 
     @Test
     void testGetBrandsReturnsEmptyListWhenNoBrandsExist() {
         when(brandRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-        List<BrandDTO> result = brandsService.getBrands(0, 10);
+        PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, "");
 
-        assertThat(result).isEmpty();
+        assertThat(result.getContent()).isEmpty();
+        verify(brandRepository, never()).searchByNameOrTranslation(any(), any());
+    }
+    
+    @Test
+    void testGetBrandsBySearchTerm() {
+    	Page<Brand> page = new PageImpl<>(List.of(brand));
+    	when(brandRepository.searchByNameOrTranslation(eq(SEARCH_TERM), any(Pageable.class))).thenReturn(page);
+    	
+    	PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, SEARCH_TERM);
+    	
+    	assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getBrandId()).isEqualTo(BRAND_ID);
+        assertThat(result.getContent().get(0).getName()).isEqualTo(BRAND_NAME);
+        verify(brandRepository, never()).findAll();
     }
 
     // ─── getBrandById ─────────────────────────────────────────────────────────

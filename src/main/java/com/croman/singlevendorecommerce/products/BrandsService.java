@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import com.croman.singlevendorecommerce.products.entity.Brand;
 import com.croman.singlevendorecommerce.products.repository.BrandRepository;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
+import com.croman.singlevendorecommerce.utils.dto.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,15 +31,30 @@ public class BrandsService {
 	private final MessageService messageService;
 	
 	@Transactional(readOnly = true)
-	public List<BrandDTO> getBrands(int page, int size) {
-		Pageable pageable = PaginationUtils.getPageable(page, size, "brandId");
-		List<Brand> allBrands = brandRepository.findAll(pageable).getContent();
+	public PageResponse<BrandDTO> getBrands(int page, int size, String term) {
+		Pageable pageable;
+		Page<Brand> allBrands;
+		if (term.isBlank()) {
+			pageable = PaginationUtils.getPageable(page, size, "brandId");
+			allBrands = brandRepository.findAll(pageable);
+		} else {
+			pageable = PaginationUtils.getPageable(page, size, "brand_id");
+			allBrands = brandRepository.searchByNameOrTranslation(term, pageable);
+		}
+		
 		List<BrandDTO> brandDTOs = new ArrayList<>();
 		for (Brand brand : allBrands) {
 			brandDTOs.add(mapBrandToBrandDTO(brand));
 		}
 		
-		return brandDTOs;
+		return PageResponse.<BrandDTO>builder()
+	            .content(brandDTOs)
+	            .page(allBrands.getNumber())
+	            .size(allBrands.getSize())
+	            .totalElements(allBrands.getTotalElements())
+	            .totalPages(allBrands.getTotalPages())
+	            .last(allBrands.isLast())
+	            .build();
 	}
 	
 	private BrandDTO mapBrandToBrandDTO(Brand brand) {
