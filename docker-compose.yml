@@ -67,6 +67,8 @@ services:
     container_name: singlevendor_backend
     ports:
       - "8080:8080"
+    networks:
+      - singlevendor_network
     env_file:
       - .env
     depends_on:
