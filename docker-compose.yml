@@ -3,10 +3,8 @@ services:
     image: postgres:16
     container_name: singlevendor_postgres
     restart: always
-    environment:
-      POSTGRES_DB: db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     volumes:
@@ -26,9 +24,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: singlevendor_pgadmin
     restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+    env_file:
+      - .env
     ports:
       - "5050:80"
     depends_on:
@@ -65,15 +62,32 @@ services:
     mem_limit: 512m
     cpus: "0.5"
 
+  backend:
+    build: .
+    container_name: singlevendor_backend
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    mem_limit: 1024m
+    cpus: "1"
+
   thumbnail-worker:
     build: ../thumbnail-worker
-    container_name: thumbnail_worker
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - FILE_DIRECTORY=/c/Users/carlo/appfiles
+    container_name: singlevendor_thumbnail_worker
+    env_file:
+      - .env
     volumes:
-      - /c/Users/carlo/appfiles:/c/Users/carlo/appfiles
+      - ${FILE_DIRECTORY}:${FILE_DIRECTORY}
     depends_on:
       redis:
         condition: service_healthy
