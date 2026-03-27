@@ -86,3 +86,15 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 - Run tests
 
 - Run SonarQube analysis
+
+# 8 For docker hub repo
+
+- Create access token for user
+- Add it to credentials as username and password with same name as the Jenkinsfile
+
+# 9 QualityGate Webhook
+
+You need to set up a webhook in order for Sonar to notify that the quality gate is passed,
+it needs to be registered in jenkins and in sonar
+
+- http://192.168.100.50:8081/sonarqube-webhook/
