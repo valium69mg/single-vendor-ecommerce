@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         SONARQUBE = 'SonarQube'
+        DOCKER_IMAGE = 'carlostranquilinocr98/single-vendor-ecommerce'
     }
 
     triggers {
@@ -31,7 +32,6 @@ pipeline {
             }
             post {
                 always {
-                    // Publish JUnit results
                     junit '**/target/surefire-reports/*.xml'
                 }
             }
@@ -45,14 +45,38 @@ pipeline {
                 }
             }
         }
+
+        stage('Wait for SonarQube Quality Gate') {
+            steps {
+                echo 'Waiting for SonarQube Quality Gate...'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh "docker build -t carlostranquilinocr98/single-vendor-ecommerce:latest ."
+
+                echo 'Pushing Docker image to Docker Hub...'
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', 
+                                                  usernameVariable: 'DOCKER_USER', 
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push carlostranquilinocr98/single-vendor-ecommerce:latest"
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo '✅ Build, tests, and SonarQube analysis succeeded!'
+            echo '✅ Build, tests, SonarQube analysis, and Docker push succeeded!'
         }
         failure {
-            echo '❌ Build, tests, or SonarQube analysis failed!'
+            echo '❌ Build, tests, SonarQube analysis, or Docker push failed!'
         }
     }
 }
