@@ -30,7 +30,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST)
 						.permitAll()
-						.requestMatchers("/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin")
+						.requestMatchers("/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin", "/health")
 						.permitAll()
 						.requestMatchers("/api/v1/file/**")
 						.permitAll()
