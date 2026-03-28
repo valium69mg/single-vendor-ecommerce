@@ -21,7 +21,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                sh './mvnw clean compile'
+                sh './mvnw clean package -DskipTests'
             }
         }
 
@@ -49,7 +49,7 @@ pipeline {
         stage('Wait for SonarQube Quality Gate') {
             steps {
                 echo 'Waiting for SonarQube Quality Gate...'
-                timeout(time: 20, unit: 'MINUTES') {
+                timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
