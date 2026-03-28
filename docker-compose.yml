@@ -33,8 +33,6 @@ services:
         condition: service_healthy
     networks:
       - singlevendor_network
-    networks:
-      - singlevendor_network
     healthcheck:
       test:
         [
