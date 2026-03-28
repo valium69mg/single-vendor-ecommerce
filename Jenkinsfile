@@ -69,6 +69,21 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy') {
+            agent any
+            steps {
+                sshagent(['ubuntu-server-ssh']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no carlostr@192.168.100.50 \
+                        "cd /home/carlostr/single-vendor-ecommerce && \
+                        docker compose pull && \
+                        docker compose up -d --remove-orphans"
+                    '''
+                }
+            }
+        }
+
     }
 
     post {
