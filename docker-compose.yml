@@ -63,7 +63,7 @@ services:
     cpus: "0.5"
 
   backend:
-    build: .
+    image: carlostranquilinocr98/single-vendor-ecommerce-backend:latest 
     container_name: singlevendor_backend
     ports:
       - "8080:8080"
@@ -86,7 +86,7 @@ services:
     cpus: "1"
 
   thumbnail-worker:
-    build: ../thumbnail-worker
+    image: carlostranquilinocr98/single-vendor-ecommerce-thumbnail-worker:latest
     container_name: singlevendor_thumbnail_worker
     env_file:
       - .env
