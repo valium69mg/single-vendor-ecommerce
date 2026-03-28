@@ -35,6 +35,8 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
 - SonarQube Scanner (for code analysis)
 
+- Docker & Docker Pipeline
+
 ## 4. Configure GitHub Access
 
 ### 4.1 Manage Jenkins → Credentials → System → Global credentials → Add Credentials:
