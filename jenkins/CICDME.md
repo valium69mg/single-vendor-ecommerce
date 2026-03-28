@@ -103,3 +103,17 @@ You need to set up a webhook in order for Sonar to notify that the quality gate 
 it needs to be registered in jenkins and in sonar, with the following url:
 
 - http://jenkins:8080/sonarqube-webhook/
+
+# 10 SSH Deploy
+
+## 10.1 Generar clave ssh
+```bash
+ssh-keygen -t ed25519 -C "carlos-server"
+# just hit Enter 3 times (accept defaults, no passphrase)
+```
+
+## 10.2 Obtener clave privada y agregarla a Jenkins como SSH Key
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
