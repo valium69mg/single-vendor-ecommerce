@@ -37,6 +37,8 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
 - Docker & Docker Pipeline
 
+- SSH Agent
+
 ## 4. Configure GitHub Access
 
 ### 4.1 Manage Jenkins → Credentials → System → Global credentials → Add Credentials:
@@ -106,14 +108,63 @@ it needs to be registered in jenkins and in sonar, with the following url:
 
 # 10 SSH Deploy
 
-## 10.1 Generar clave ssh
+## 10.1 Generar clave SSH dentro del contenedor de Jenkins
 ```bash
-ssh-keygen -t ed25519 -C "carlos-server"
-# just hit Enter 3 times (accept defaults, no passphrase)
+docker exec jenkins mkdir -p /var/jenkins_home/.ssh
+docker exec jenkins ssh-keygen -t ed25519 -C "jenkins" -f /var/jenkins_home/.ssh/id_ed25519 -N ""
 ```
 
-## 10.2 Obtener clave privada y agregarla a Jenkins como SSH Key
-
+## 10.2 Obtener clave publica de Jenkins y agregarla al servidor Ubuntu
 ```bash
-cat ~/.ssh/id_ed25519.pub
+# Obtener la clave publica
+docker exec jenkins cat /var/jenkins_home/.ssh/id_ed25519.pub
+
+# Agregarla al servidor Ubuntu
+echo "paste-jenkins-public-key-here" >> ~/.ssh/authorized_keys
+
+# Fijar permisos
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+## 10.3 Copiar clave al directorio /root/.ssh dentro del contenedor
+```bash
+docker exec jenkins mkdir -p /root/.ssh
+docker exec jenkins cp /var/jenkins_home/.ssh/id_ed25519 /root/.ssh/id_ed25519
+docker exec jenkins cp /var/jenkins_home/.ssh/id_ed25519.pub /root/.ssh/id_ed25519.pub
+docker exec jenkins chmod 700 /root/.ssh
+docker exec jenkins chmod 600 /root/.ssh/id_ed25519
+```
+
+## 10.4 Agregar clave privada de Jenkins a Jenkins Credentials (UI)
+```
+Manage Jenkins → Credentials → Global → Add Credentials
+
+Kind:        SSH Username with private key
+ID:          ubuntu-server-ssh
+Username:    carlostr
+Private Key: Enter directly → paste output of:
+             docker exec jenkins cat /var/jenkins_home/.ssh/id_ed25519
+```
+
+## 10.5 Habilitar PubkeyAuthentication en el servidor Ubuntu
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+
+Descomentar estas lineas:
+```
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+```
+
+Reiniciar SSH:
+```bash
+sudo systemctl restart ssh
+```
+
+## 10.6 Probar conexion
+```bash
+docker exec jenkins ssh -o StrictHostKeyChecking=no carlostr@192.168.100.50
+# debe conectar sin pedir password
 ```
