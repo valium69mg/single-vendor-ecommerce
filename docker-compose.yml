@@ -63,7 +63,7 @@ services:
     cpus: "0.5"
 
   backend:
-    image: carlostranquilinocr98/single-vendor-ecommerce-backend:latest 
+    image: carlostranquilinocr98/single-vendor-ecommerce:latest 
     container_name: singlevendor_backend
     ports:
       - "8080:8080"
