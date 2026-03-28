@@ -25,6 +25,8 @@ services:
             - sonarqube_extensions:/opt/sonarqube/extensions
         depends_on:
             - db
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
 
     db:
         image: postgres:15
