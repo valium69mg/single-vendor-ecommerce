@@ -7,7 +7,6 @@ import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.products.BrandsService;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 import org.junit.jupiter.api.BeforeEach;

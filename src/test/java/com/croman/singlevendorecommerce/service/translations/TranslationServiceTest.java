@@ -5,8 +5,6 @@ import com.croman.singlevendorecommerce.entity.translations.Language;
 import com.croman.singlevendorecommerce.entity.translations.Translation;
 import com.croman.singlevendorecommerce.repository.translations.TranslationsRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.translations.LanguageService;
-import com.croman.singlevendorecommerce.service.translations.TranslationService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 

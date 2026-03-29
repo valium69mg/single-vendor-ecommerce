@@ -9,7 +9,6 @@ import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.products.CategoryService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailJobPublisher;
 import com.croman.singlevendorecommerce.service.translations.TranslationService;

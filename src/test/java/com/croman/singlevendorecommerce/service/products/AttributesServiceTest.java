@@ -7,7 +7,6 @@ import com.croman.singlevendorecommerce.entity.products.Attribute;
 import com.croman.singlevendorecommerce.entity.products.AttributeValue;
 import com.croman.singlevendorecommerce.repository.products.AttributeRepository;
 import com.croman.singlevendorecommerce.repository.products.AttributeValueRepository;
-import com.croman.singlevendorecommerce.service.products.AttributesService;
 import com.croman.singlevendorecommerce.service.translations.TranslationService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 

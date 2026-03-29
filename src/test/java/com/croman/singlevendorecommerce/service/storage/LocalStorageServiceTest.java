@@ -7,7 +7,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.croman.singlevendorecommerce.dto.storage.StoredFile;
-import com.croman.singlevendorecommerce.service.storage.LocalStorageService;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

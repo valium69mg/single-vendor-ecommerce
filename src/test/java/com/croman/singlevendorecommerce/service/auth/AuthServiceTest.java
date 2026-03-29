@@ -18,7 +18,6 @@ import com.croman.singlevendorecommerce.dto.users.UserDTO;
 import com.croman.singlevendorecommerce.entity.auth.LoginAttempt;
 import com.croman.singlevendorecommerce.entity.users.User;
 import com.croman.singlevendorecommerce.repository.auth.LoginAttemptRepository;
-import com.croman.singlevendorecommerce.service.auth.AuthService;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.users.UserService;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;

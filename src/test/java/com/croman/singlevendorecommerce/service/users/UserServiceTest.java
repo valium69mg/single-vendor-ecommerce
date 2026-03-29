@@ -22,7 +22,6 @@ import com.croman.singlevendorecommerce.entity.users.User;
 import com.croman.singlevendorecommerce.repository.users.UserRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.roles.RolesService;
-import com.croman.singlevendorecommerce.service.users.UserService;
 import com.croman.singlevendorecommerce.utils.EnvironmentUtils;
 import com.croman.singlevendorecommerce.utils.PasswordUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;

@@ -3,7 +3,6 @@ package com.croman.singlevendorecommerce.service.translations;
 import com.croman.singlevendorecommerce.entity.translations.Language;
 import com.croman.singlevendorecommerce.repository.translations.LanguageRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.translations.LanguageService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 

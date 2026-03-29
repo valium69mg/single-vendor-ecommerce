@@ -13,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 
-import com.croman.singlevendorecommerce.service.message.MessageService;
 
 @ExtendWith(MockitoExtension.class)
 class MessageServiceTest {

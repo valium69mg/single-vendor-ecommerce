@@ -9,7 +9,6 @@ import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Material;
 import com.croman.singlevendorecommerce.repository.products.MaterialRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.products.MaterialsService;
 import com.croman.singlevendorecommerce.service.translations.TranslationService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;

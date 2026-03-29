@@ -15,7 +15,6 @@ import com.croman.singlevendorecommerce.dto.roles.RoleType;
 import com.croman.singlevendorecommerce.entity.roles.UserRole;
 import com.croman.singlevendorecommerce.repository.roles.UserRoleRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.roles.RolesService;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 @ExtendWith(MockitoExtension.class)
