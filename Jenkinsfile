@@ -1,6 +1,9 @@
 pipeline {
     agent any
-
+    
+    tools {
+        nodejs 'NodeJS'
+    }
     environment {
         SONARQUBE = 'SonarQube'
         DOCKER_IMAGE = 'carlostranquilinocr98/single-vendor-ecommerce'
