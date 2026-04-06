@@ -13,6 +13,11 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock
         environment:
             JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.5"
+                    memory: 512m
 
     sonarqube:
         image: sonarqube:community
@@ -27,6 +32,11 @@ services:
             - sonarqube_extensions:/opt/sonarqube/extensions
         depends_on:
             - db
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.5"
+                    memory: 1024m
 
     db:
         image: postgres:15
@@ -38,6 +48,11 @@ services:
             POSTGRES_DB: sonar
         volumes:
             - sonarqube_db:/var/lib/postgresql/data
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.5"
+                    memory: 512m
 
 volumes:
     jenkins_home:
