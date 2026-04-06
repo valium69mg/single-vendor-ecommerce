@@ -200,16 +200,30 @@ public class CategoryService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 
-		if (englishName != null) {
-			category.setName(englishName);
-			categoryRepository.save(category);
-		}
+		updateEnglishName(category, englishName);
 
 		if (spanishName != null) {
 			translationService.updateTranslation(categoryId.intValue(), LocaleUtils.ES, TranslatorPropertyType.CATEGORY,
 					spanishName);
 		}
 
+	}
+	
+	private void updateEnglishName(Category category, String englishName) {
+		Optional<Category> existingCategoryOpt = categoryRepository.findByName(englishName);
+		boolean nameAlreadyExists = existingCategoryOpt.isPresent() && !existingCategoryOpt.get().equals(category);
+		if (nameAlreadyExists) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(), 
+					messageService.getMessage("english_name_already_taken", LocaleUtils.getDefaultLocale()));
+		}
+		if (englishName != null) {
+			category.setName(englishName);
+			categoryRepository.save(category);
+		}
+	}
+	
+	private void updateSpanishName(Category category, String spanishName) {
+		
 	}
 	
 	@Transactional
