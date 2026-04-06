@@ -1,9 +1,6 @@
 pipeline {
     agent any
-    
-    tools {
-        nodejs 'NodeJS'
-    }
+  
     environment {
         SONARQUBE = 'SonarQube'
         DOCKER_IMAGE = 'carlostranquilinocr98/single-vendor-ecommerce'
@@ -72,7 +69,7 @@ pipeline {
                 }
             }
         }
-
+        /*
         stage('Deploy') {
             agent any
             steps {
@@ -86,9 +83,10 @@ pipeline {
                 }
             }
         }
+        */
 
     }
-
+    
     post {
         success {
             echo '✅ Build, tests, SonarQube analysis, and Docker push succeeded!'

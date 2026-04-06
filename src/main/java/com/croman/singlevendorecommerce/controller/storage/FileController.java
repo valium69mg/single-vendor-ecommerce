@@ -14,6 +14,9 @@ import com.croman.singlevendorecommerce.service.storage.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,7 +40,7 @@ public class FileController {
 	    }
 	)
 	public ResponseEntity<InputStreamResource> download(
-	        @RequestParam String key
+	        @RequestParam @Valid @NotBlank(message = "key must not be null") String key
 	) {
 
 	    StoredFile file = storageService.download(key);
