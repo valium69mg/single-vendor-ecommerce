@@ -222,10 +222,6 @@ public class CategoryService {
 		}
 	}
 	
-	private void updateSpanishName(Category category, String spanishName) {
-		
-	}
-	
 	@Transactional
 	public void deleteCategory(Long categoryId) {
 		Category category = categoryRepository.findById(categoryId)
