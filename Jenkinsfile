@@ -36,7 +36,7 @@ pipeline {
                 }
             }
         }
-
+        /*
         stage('SonarQube Analysis') {
             steps {
                 echo 'Running SonarQube analysis...'
@@ -54,7 +54,7 @@ pipeline {
                 }
             }
         }
-
+        */
         stage('Build & Push Docker Image') {
             steps {
                 echo 'Building Docker image...'
@@ -69,7 +69,7 @@ pipeline {
                 }
             }
         }
-        /*
+        
         stage('Deploy') {
             agent any
             steps {
@@ -83,7 +83,7 @@ pipeline {
                 }
             }
         }
-        */
+        
 
     }
     
