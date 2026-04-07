@@ -108,28 +108,42 @@ it needs to be registered in jenkins and in sonar, with the following url:
 
 # 10 SSH Deploy
 
-## 10.1 Generar llave en el servidor a desplegar
+## 10.1 Generate SSH Key
 
 ```bash
-ssh-keygen -t ed25519 -C "jenkins"
+ssh-keygen -t rsa -b 4096 -m PEM -C "jenkins"
 ```
 
-## 10.2 Revisar generación de llave
+When it asks to 'Enter file in which to save the key:'
+You should press Enter
+
+When it asks to 'Enter passphrase:'
+You should press Enter
+
+## 10.2 Add the SSH key to authorized_keys
 
 ```bash
-cat ~/.ssh/authorized_keys
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+cat ~/.ssh/authorized_keys # verify
 ```
 
-## 10.3 Ajustar permisos de llaves SSH
+## 10.3 Set permissions of SSH keys
 
 ```bash
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/id_rsa
 ```
 
-## 10.4 Agregar credenciales a Jenkins
+## 10.4 Add credentials to Jenkins
+
+Show private key with this:
+
+```bash
+cat ~/.ssh/id_rsa
+```
 
 Kind: SSH Username with private key
 ID: ubuntu-server-ssh
-Username: carlostr
-Private Key: (pega la privada)
+Username: ubuntu
+Private Key: (private key)
