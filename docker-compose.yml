@@ -87,7 +87,7 @@ services:
     cpus: "1"
 
   frontend:
-    image: carlostranquilinocr98/single-vendor-ecommerce:latest
+    image: carlostranquilinocr98/single-vendor-ecommerce-frontend:latest
     container_name: singlevendor_frontend
     restart: always
     ports:
