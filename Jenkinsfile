@@ -69,21 +69,21 @@ pipeline {
                 }
             }
         }
-        /*
+        
         stage('Deploy') {
-            agent any
             steps {
                 sshagent(['ubuntu-server-ssh']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no carlostr@192.168.100.50 \
-                        "cd /home/carlostr/single-vendor-ecommerce && \
-                        docker compose pull && \
-                        docker compose up -d --remove-orphans"
+                        ssh -o StrictHostKeyChecking=no carlostr@3.80.104.36 << 'EOF'
+                        cd /home/ubuntu/single-vendor-ecommerce
+                        docker compose pull
+                        docker compose up -d postgres redis backend frontend thumbnail-worker --remove-orphans
+                        EOF
                     '''
                 }
             }
         }
-        */
+
 
     }
     
