@@ -54,6 +54,8 @@ class BrandsServiceTest {
     private static final String BRAND_NAME_2 = "Adidas";
     private static final String BRAND_EXISTS_MESSAGE = "Brand already exists";
     private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
+    private static final String BRAND_NOT_EXISTS_MESSAGE_KEY = "brand_does_not_exists";
+    private static final String BRAND_NOT_EXISTS_MESSAGE = "Brand does not exist";
     
     private Brand brand;
     private Brand brand2;
@@ -123,12 +125,12 @@ class BrandsServiceTest {
     @Test
     void testGetBrandByIdThrowsWhenBrandNotFound() {
         when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
-        when(messageService.getMessage(eq("brand_does_not_exists"), any(Locale.class)))
-                .thenReturn("Brand does not exist");
+        when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
 
         assertThatThrownBy(() -> brandsService.getBrandById(BRAND_ID))
                 .isInstanceOf(ApiServiceException.class)
-                .hasMessageContaining("Brand does not exist");
+                .hasMessageContaining(BRAND_NOT_EXISTS_MESSAGE);
     }
 
     // ─── createBrand ─────────────────────────────────────────────────────────
@@ -188,5 +190,30 @@ class BrandsServiceTest {
 		brandsService.updateBrand(updateBrandDTO);
 		// Assert
 		verify(brandRepository, times(1)).save(any());
+	}
+	
+	@Test
+	void testDeleteBrandBrandNotFound() {
+		// Arrange
+		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
+		when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+        .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
+		// Act
+		ApiServiceException ex = assertThrows(ApiServiceException.class,
+				() ->brandsService.deleteBrand(BRAND_ID));
+		// Assert
+		verify(brandRepository, never()).delete(any());
+		assertEquals(BRAND_NOT_EXISTS_MESSAGE, ex.getMessage());
+		assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+	}
+	
+	@Test
+	void testDeleteBrandSuccessfully() {
+		// Arrange
+		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+		// Act
+		brandsService.deleteBrand(BRAND_ID);
+		// Assert
+		verify(brandRepository, times(1)).delete(any());
 	}
 }

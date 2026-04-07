@@ -31,6 +31,7 @@ public class BrandsService {
 	private final BrandRepository brandRepository;
 	private final MessageService messageService;
 	private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
+	private static final String BRAND_NOT_EXISTS_MESSAGE_KEY = "brand_does_not_exists";
 	
 	@Transactional(readOnly = true)
 	public PageResponse<BrandDTO> getBrands(int page, int size, String term) {
@@ -68,7 +69,7 @@ public class BrandsService {
 	public BrandByIdDTO getBrandById(long brandId) {
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("brand_does_not_exists", LocaleUtils.getDefaultLocale())));
+						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
 		return mapBrandTBrandByIdDTO(brand);
 	}
 	
@@ -101,7 +102,7 @@ public class BrandsService {
 		String newName = updateBrandDTO.getName();
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-						messageService.getMessage("brand_does_not_exists", LocaleUtils.getDefaultLocale())));
+						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
 		
 		Optional<Brand> existingBrandOpt = brandRepository.findByName(newName);
 	
@@ -116,4 +117,13 @@ public class BrandsService {
 		brandRepository.save(brand);
 	}
 
+	@Transactional
+	public void deleteBrand(Long brandId) {
+		Brand brand = brandRepository.findById(brandId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
+
+		brandRepository.delete(brand);
+	}
+	
 }
