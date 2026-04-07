@@ -89,10 +89,10 @@ pipeline {
     
     post {
         success {
-            echo '✅ Build, tests, SonarQube analysis, and Docker push succeeded!'
+            echo '✅ Deploy completed'
         }
         failure {
-            echo '❌ Build, tests, SonarQube analysis, or Docker push failed!'
+            echo '❌ Deploy failed failed!'
         }
     }
 }
