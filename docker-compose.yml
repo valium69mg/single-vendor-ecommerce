@@ -17,8 +17,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-    mem_limit: 1024m
-    cpus: "1.0"
+    mem_limit: 512m
+    cpus: "0.5"
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -83,8 +83,8 @@ services:
       timeout: 15s
       retries: 5
       start_period: 10s
-    mem_limit: 1024m
-    cpus: "1"
+    mem_limit: 728m
+    cpus: "0.5"
 
   frontend:
     image: carlostranquilinocr98/single-vendor-ecommerce-frontend:latest
