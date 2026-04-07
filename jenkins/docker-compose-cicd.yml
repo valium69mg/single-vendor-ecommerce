@@ -17,7 +17,7 @@ services:
             resources:
                 limits:
                     cpus: "0.5"
-                    memory: 1024m
+                    memory: 1580m
 
     sonarqube:
         image: sonarqube:community
