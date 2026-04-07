@@ -63,7 +63,7 @@ services:
     cpus: "0.5"
 
   backend:
-    image: carlostranquilinocr98/single-vendor-ecommerce:latest 
+    image: carlostranquilinocr98/single-vendor-ecommerce:latest
     container_name: singlevendor_backend
     restart: always
     ports:
@@ -80,11 +80,31 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 15s
       retries: 5
       start_period: 10s
     mem_limit: 1024m
     cpus: "1"
+
+  frontend:
+    image: carlostranquilinocr98/single-vendor-ecommerce:latest
+    container_name: singlevendor_frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - singlevendor_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    mem_limit: 512m
+    cpus: "0.5"
 
   thumbnail-worker:
     image: carlostranquilinocr98/single-vendor-ecommerce-thumbnail-worker:latest
