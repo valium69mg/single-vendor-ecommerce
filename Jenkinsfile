@@ -78,7 +78,6 @@ pipeline {
                         cd /home/ubuntu/single-vendor-ecommerce
                         docker compose pull
                         docker compose up -d postgres redis backend frontend thumbnail-worker --remove-orphans
-                        EOF
                     '''
                 }
             }
