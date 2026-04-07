@@ -3,6 +3,7 @@ package com.croman.singlevendorecommerce.service.products;
 import com.croman.singlevendorecommerce.dto.products.BrandByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
+import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +27,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -46,8 +50,13 @@ class BrandsServiceTest {
     private static final Long   BRAND_ID   = 1L;
     private static final String BRAND_NAME = "Nike";
     private static final String SEARCH_TERM = "Ni";
+    private static final Long BRAND_ID_2 = 2L;
+    private static final String BRAND_NAME_2 = "Adidas";
+    private static final String BRAND_EXISTS_MESSAGE = "Brand already exists";
+    private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
     
     private Brand brand;
+    private Brand brand2;
 
     @BeforeEach
     void setUp() {
@@ -55,6 +64,10 @@ class BrandsServiceTest {
                 .brandId(BRAND_ID)
                 .name(BRAND_NAME)
                 .build();
+        brand2 = Brand.builder()
+        		.brandId(BRAND_ID_2)
+        		.name(BRAND_NAME_2)
+        		.build();
     }
 
     // ─── getBrands ───────────────────────────────────────────────────────────
@@ -136,13 +149,44 @@ class BrandsServiceTest {
         CreateBrandDTO dto = CreateBrandDTO.builder().name(BRAND_NAME).build();
 
         when(brandRepository.findByName(BRAND_NAME)).thenReturn(Optional.of(brand));
-        when(messageService.getMessage(eq("brand_exists"), any(Locale.class)))
-                .thenReturn("Brand already exists");
+        when(messageService.getMessage(eq(BRAND_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_EXISTS_MESSAGE);
 
         assertThatThrownBy(() -> brandsService.createBrand(dto))
                 .isInstanceOf(ApiServiceException.class)
-                .hasMessageContaining("Brand already exists");
+                .hasMessageContaining(BRAND_EXISTS_MESSAGE);
 
         verify(brandRepository, never()).save(any());
     }
+    
+	@Test
+	void testUpdateBrandBrandExists() {
+		// Arrange
+		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().brandId(BRAND_ID).name(BRAND_NAME_2).build();
+		
+		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+		when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.of(brand2));
+		 when(messageService.getMessage(eq(BRAND_EXISTS_MESSAGE_KEY), any(Locale.class)))
+         .thenReturn(BRAND_EXISTS_MESSAGE);
+		// Act
+		ApiServiceException ex = assertThrows(ApiServiceException.class,
+				() -> brandsService.updateBrand(updateBrandDTO));
+		// Assert
+		assertEquals(BRAND_EXISTS_MESSAGE, ex.getMessage());
+		assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+	}
+	
+	@Test
+	void testUpdateBrandSuccessfully() {
+		// Arrange
+		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().brandId(BRAND_ID).name(BRAND_NAME_2).build();
+		
+		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+		when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.empty());
+		
+		// Act
+		brandsService.updateBrand(updateBrandDTO);
+		// Assert
+		verify(brandRepository, times(1)).save(any());
+	}
 }

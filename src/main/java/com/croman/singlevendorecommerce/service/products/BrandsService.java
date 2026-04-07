@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.croman.singlevendorecommerce.dto.products.BrandByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
+import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
@@ -29,6 +30,7 @@ public class BrandsService {
 
 	private final BrandRepository brandRepository;
 	private final MessageService messageService;
+	private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
 	
 	@Transactional(readOnly = true)
 	public PageResponse<BrandDTO> getBrands(int page, int size, String term) {
@@ -84,13 +86,34 @@ public class BrandsService {
 
 		if (brandOpt.isPresent()) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("brand_exists", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage(BRAND_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
 		}
 
 		Brand brand = Brand.builder().name(name).build();
 
 		brandRepository.save(brand);
 
+	}
+	
+	@Transactional
+	public void updateBrand(UpdateBrandDTO updateBrandDTO) {
+		Long brandId = updateBrandDTO.getBrandId();
+		String newName = updateBrandDTO.getName();
+		Brand brand = brandRepository.findById(brandId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage("brand_does_not_exists", LocaleUtils.getDefaultLocale())));
+		
+		Optional<Brand> existingBrandOpt = brandRepository.findByName(newName);
+	
+		boolean brandExists = existingBrandOpt.isPresent() && !existingBrandOpt.get().equals(brand);
+	
+		if (brandExists) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage(BRAND_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
+		}
+		
+		brand.setName(newName);
+		brandRepository.save(brand);
 	}
 
 }

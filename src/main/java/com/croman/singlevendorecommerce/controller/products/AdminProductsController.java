@@ -17,6 +17,7 @@ import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
+import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateMaterialDTO;
 import com.croman.singlevendorecommerce.service.message.MessageService;
@@ -236,6 +237,27 @@ public class AdminProductsController {
 		brandsService.createBrand(createBrandDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("brand_created", HttpStatus.CREATED));
+	}
+	
+	@PatchMapping("brands")
+	@Operation(summary = "Update brand", responses = {
+		    @ApiResponse(
+		        responseCode = "200", 
+		        description = "Brand updated successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> createBrand(@RequestBody UpdateBrandDTO updateBrandDTO) {
+		brandsService.updateBrand(updateBrandDTO);
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(apiResponseService.getApiResponseMessage("brand_updated", HttpStatus.CREATED));
 	}
 	
 }

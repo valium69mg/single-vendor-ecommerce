@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "3ba1e38f-ebd2-4ffa-9982-f351ff5140b0",
+    "_postman_id": "6eac31f0-9439-47af-acab-b6d02d0d7b8a",
     "name": "single-vendor-ecommerce",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "39397080"
@@ -91,12 +91,15 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/api/v1/users/register/admin",
+              "raw": "http://3.80.104.36:80/api/v1/users/register/admin",
               "protocol": "http",
               "host": [
-                "localhost"
+                "3",
+                "80",
+                "104",
+                "36"
               ],
-              "port": "8080",
+              "port": "80",
               "path": [
                 "api",
                 "v1",
@@ -151,7 +154,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "{{jwt-token}}",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYXJsb3N0cmFucXVpbGluby5jckBnbWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzU0OTcwMjUsImV4cCI6MTc3NTUwMDYyNX0.36mEfXRqbGrV7NepvjLhiaCV2xnHRuKva_w5mGzcz7k",
                     "type": "text"
                   }
                 ],
@@ -223,13 +226,13 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9tYW5AaWJsLm14Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NzEyODE4NTgsImV4cCI6MTc3MTI4MjIxOH0.Ds2usHCDjSxaE8rPn9BctQAXpOimseLmxoHZzGJ5ZU8",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYXJsb3N0cmFucXVpbGluby5jckBnbWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzU0OTcwMjUsImV4cCI6MTc3NTUwMDYyNX0.36mEfXRqbGrV7NepvjLhiaCV2xnHRuKva_w5mGzcz7k",
                     "type": "text"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"englishName\": \"Videogames\",\r\n    \"spanishName\": \"Videojuegos\"\r\n}",
+                  "raw": "{\r\n    \"englishName\": \"Toast\",\r\n    \"spanishName\": \"Pan tostado\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -385,7 +388,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "{{jwt-token}}",
+                    "value": "{{token}}",
                     "type": "text"
                   }
                 ],
@@ -578,7 +581,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "{{jwt-token}}",
+                    "value": "{{token}}",
                     "type": "text"
                   }
                 ],
@@ -606,7 +609,7 @@
                     },
                     {
                       "key": "term",
-                      "value": "patit",
+                      "value": "",
                       "type": "text",
                       "disabled": true
                     }
@@ -622,7 +625,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "{{jwt-token}}",
+                    "value": "{{token}}",
                     "type": "text"
                   }
                 ],
@@ -651,13 +654,51 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "{{jwt-token}}",
+                    "value": "{{token}}",
                     "type": "text"
                   }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\r\n    \"name\": \"D4C\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/api/v1/admin/products/brands",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "products",
+                    "brands"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "products/brands",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"brandId\": 1,\r\n    \"name\": \"D4C\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -694,7 +735,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "{{jwt-token}}",
+                    "value": "{{token}}",
                     "type": "text"
                   }
                 ],
@@ -760,6 +801,34 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "health",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }
