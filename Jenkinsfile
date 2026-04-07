@@ -69,7 +69,7 @@ pipeline {
                 }
             }
         }
-        
+        /*
         stage('Deploy') {
             agent any
             steps {
@@ -83,7 +83,7 @@ pipeline {
                 }
             }
         }
-        
+        */
 
     }
     
