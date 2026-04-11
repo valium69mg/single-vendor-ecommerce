@@ -16,13 +16,12 @@ spring:
     hikari:
       maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
       minimum-idle: ${DB_POOL_MIN_IDLE:2}
-      idle-timeout: ${DB_POOL_IDLE_TIMEOUT_MS:60000}          # 60s
-      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}   # 30s
-      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}        # 30m
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT_MS:60000}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
       pool-name: ${DB_POOL_NAME:SingleVendorPool}
       auto-commit: ${DB_AUTO_COMMIT:true}
       schema: ${DB_SCHEMA:public}
-
 
   jpa:
     hibernate:
@@ -37,10 +36,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     schemas: public
-  
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 storage:
   local:
