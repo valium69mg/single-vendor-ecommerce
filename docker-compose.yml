@@ -74,6 +74,8 @@ services:
       - singlevendor_network
     env_file:
       - .env
+    volumes:
+    - ${FILE_DIRECTORY}:${FILE_DIRECTORY} 
     depends_on:
       redis:
         condition: service_healthy
@@ -112,6 +114,8 @@ services:
     image: carlostranquilinocr98/single-vendor-ecommerce-thumbnail-worker:latest
     container_name: singlevendor_thumbnail_worker
     restart: always
+    networks:
+    - singlevendor_network
     env_file:
       - .env
     volumes:
