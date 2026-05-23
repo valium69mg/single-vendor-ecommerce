@@ -17,6 +17,7 @@ import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
+import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateMaterialDTO;
@@ -24,9 +25,11 @@ import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.products.BrandsService;
 import com.croman.singlevendorecommerce.service.products.CategoryService;
 import com.croman.singlevendorecommerce.service.products.MaterialsService;
+import com.croman.singlevendorecommerce.service.products.ProductService;
 import com.croman.singlevendorecommerce.utils.ApiResponseService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,8 +44,36 @@ public class AdminProductsController {
 	private final CategoryService categoryService;
 	private final MaterialsService materialsService;
 	private final BrandsService brandsService;
+	private final ProductService productService;
 	private final ApiResponseService apiResponseService;
 	private final MessageService messageService;
+
+	@PostMapping
+	@Operation(summary = "Create product", responses = {
+		    @ApiResponse(
+		        responseCode = "201",
+		        description = "Product created successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request / duplicate SKU",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Category, brand, material or attribute value not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> createProduct(@Valid @RequestBody CreateProductDTO createProductDTO) {
+		productService.createProduct(createProductDTO);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(apiResponseService.getApiResponseMessage("product_created", HttpStatus.CREATED));
+	}
 
 	@PostMapping("categories")
 	@Operation(summary = "Create category", responses = {
