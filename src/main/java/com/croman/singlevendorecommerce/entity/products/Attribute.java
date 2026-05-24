@@ -5,22 +5,20 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.croman.singlevendorecommerce.dto.products.AttributeType;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "attributes")
@@ -30,10 +28,9 @@ public class Attribute {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "attribute_id")
     private Long attributeId;
-	
-	@Enumerated(EnumType.STRING)
+
     @Column(name = "attribute_type", nullable = false, length = 50, unique = true)
-    private AttributeType attributeType;
+    private String attributeType;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false)

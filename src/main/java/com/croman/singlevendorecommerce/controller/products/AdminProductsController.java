@@ -14,14 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
+import com.croman.singlevendorecommerce.dto.products.CreateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
+import com.croman.singlevendorecommerce.dto.products.UpdateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateMaterialDTO;
 import com.croman.singlevendorecommerce.service.message.MessageService;
+import com.croman.singlevendorecommerce.service.products.AttributesService;
 import com.croman.singlevendorecommerce.service.products.BrandsService;
 import com.croman.singlevendorecommerce.service.products.CategoryService;
 import com.croman.singlevendorecommerce.service.products.MaterialsService;
@@ -44,6 +47,7 @@ public class AdminProductsController {
 	private final CategoryService categoryService;
 	private final MaterialsService materialsService;
 	private final BrandsService brandsService;
+	private final AttributesService attributesService;
 	private final ProductService productService;
 	private final ApiResponseService apiResponseService;
 	private final MessageService messageService;
@@ -294,7 +298,7 @@ public class AdminProductsController {
 	@DeleteMapping("brands/{id}")
 	@Operation(summary = "Delete brand", responses = {
 		    @ApiResponse(
-		        responseCode = "204", 
+		        responseCode = "204",
 		        description = "Material deleted successfully",
 		        content = @Content(mediaType = "application/json",
 		        schema = @Schema(implementation = DefaultApiResponse.class))
@@ -310,5 +314,74 @@ public class AdminProductsController {
 		brandsService.deleteBrand(id);
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
-	
+
+	@PostMapping("attributes")
+	@Operation(summary = "Create attribute", responses = {
+		    @ApiResponse(
+		        responseCode = "201",
+		        description = "Attribute created successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request / duplicate attribute type",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> createAttribute(@Valid @RequestBody CreateAttributeDTO createAttributeDTO) {
+		attributesService.createAttribute(createAttributeDTO);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(apiResponseService.getApiResponseMessage("attribute_created", HttpStatus.CREATED));
+	}
+
+	@PatchMapping("attributes/{id}")
+	@Operation(summary = "Update attribute", responses = {
+		    @ApiResponse(
+		        responseCode = "200",
+		        description = "Attribute updated successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Attribute not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> patchAttribute(@PathVariable long id,
+			@RequestBody UpdateAttributeDTO updateAttributeDTO) {
+		attributesService.updateAttribute(id, updateAttributeDTO);
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(apiResponseService.getApiResponseMessage("attribute_updated", HttpStatus.OK));
+	}
+
+	@DeleteMapping("attributes/{id}")
+	@Operation(summary = "Delete attribute", responses = {
+		    @ApiResponse(
+		        responseCode = "204",
+		        description = "Attribute deleted successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Attribute not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> deleteAttribute(@PathVariable long id) {
+		attributesService.deleteAttribute(id);
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+	}
+
 }

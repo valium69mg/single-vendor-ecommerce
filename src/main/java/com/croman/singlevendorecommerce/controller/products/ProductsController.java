@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
+import com.croman.singlevendorecommerce.dto.products.AttributeByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.AttributesDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandDTO;
@@ -205,6 +206,29 @@ public class ProductsController {
 			@RequestParam(defaultValue = "50") int size) {
 		return ResponseEntity.status(HttpStatus.OK)
 				.body(attributesService.getAttributes(LocaleUtils.APP_DEFAULT_LANG, page, size));
+	}
+
+	@GetMapping("attributes/{id}")
+	@Operation(summary = "Get attribute by id", responses = {
+		    @ApiResponse(
+		        responseCode = "200",
+		        description = "Content successfully returned",
+		        content = @Content(
+		            mediaType = "application/json",
+		            schema = @Schema(implementation = AttributeByIdDTO.class)
+		        )
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Attribute not found",
+		        content = @Content(
+		            mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)
+		        )
+		    )
+		})
+	public ResponseEntity<AttributeByIdDTO> getAttributeById(@PathVariable long id) {
+		return ResponseEntity.status(HttpStatus.OK).body(attributesService.getAttributeById(id));
 	}
 
 }

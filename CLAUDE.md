@@ -1,5 +1,11 @@
 # CLAUDE.md — single-vendor-ecommerce-backend
 
+## Commit conventions
+
+Never include references to Claude, Sonnet, Anthropic, or any AI model in commit messages (no `Co-Authored-By` lines, no model names).
+
+---
+
 ## Project overview
 
 Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Built as a monolithic layered application using Spring Boot 3.x + Java 21. The full system also includes a React frontend and a separate thumbnail-worker microservice; this repo is the backend only.
