@@ -146,43 +146,6 @@
 					"name": "categories",
 					"item": [
 						{
-							"name": "product",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "{{jwt-token}}",
-										"type": "text"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"Reloj del hombre araña\",\n  \"shortDescription\": \"Un reloj bien perron\",\n  \"longDescription\": \"Un relon chingon\",\n  \"status\": \"ACTIVE\",\n  \"featured\": true,\n  \"brandId\": 1,\n  \"categoryId\": 6,\n  \"materialIds\": [\n    20\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"{{$randomUUID}}\",\n      \"price\": 1,\n      \"discountPrice\": 0.01,\n      \"stock\": 0,\n      \"weightGrams\": 1,\n      \"attributeValueIds\": [\n        1\n      ]\n    }\n  ]\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "http://localhost:8080/api/v1/admin/products",
-									"protocol": "http",
-									"host": [
-										"localhost"
-									],
-									"port": "8080",
-									"path": [
-										"api",
-										"v1",
-										"admin",
-										"products"
-									]
-								}
-							},
-							"response": []
-						},
-						{
 							"name": "products/categories",
 							"request": {
 								"method": "GET",
@@ -309,7 +272,7 @@
 										{
 											"key": "file",
 											"type": "file",
-											"src": "/home/carlostr/Documents/carlos.jpg"
+											"src": []
 										}
 									]
 								},
@@ -825,6 +788,151 @@
 											"key": "size",
 											"value": "10"
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "products/attributes/id",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{jwt-token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/v1/products/attributes/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"v1",
+										"products",
+										"attributes",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "products/attributes",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{jwt-token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"attributeType\": \"FINISH\",\n    \"spanishName\": \"ACABADO\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/v1/admin/products/attributes",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"products",
+										"attributes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "products/attributes",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{jwt-token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"spanishName\": \"Acabadisimo\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/v1/admin/products/attributes/4",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"products",
+										"attributes",
+										"4"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "products/attributes",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{jwt-token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/v1/admin/products/attributes/4",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"products",
+										"attributes",
+										"4"
 									]
 								}
 							},
