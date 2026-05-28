@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 public class MaterialByIdDTO {
 
 	private long materialId;
-	private String englishName;
-	private String spanishName;
-	
+	private String name;
+
 }

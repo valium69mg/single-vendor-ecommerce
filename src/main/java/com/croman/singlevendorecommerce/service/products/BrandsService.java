@@ -37,12 +37,11 @@ public class BrandsService {
 	public PageResponse<BrandDTO> getBrands(int page, int size, String term) {
 		Pageable pageable;
 		Page<Brand> allBrands;
+		pageable = PaginationUtils.getPageable(page, size, "brandId");
 		if (term.isBlank()) {
-			pageable = PaginationUtils.getPageable(page, size, "brandId");
 			allBrands = brandRepository.findAll(pageable);
 		} else {
-			pageable = PaginationUtils.getPageable(page, size, "brand_id");
-			allBrands = brandRepository.searchByNameOrTranslation(term, pageable);
+			allBrands = brandRepository.searchByName(term, pageable);
 		}
 		
 		List<BrandDTO> brandDTOs = new ArrayList<>();

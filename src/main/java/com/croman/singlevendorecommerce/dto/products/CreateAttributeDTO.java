@@ -19,5 +19,5 @@ public class CreateAttributeDTO {
 
 	@NotBlank
 	@Size(min = 2, max = 60)
-	private String spanishName;
+	private String name;
 }

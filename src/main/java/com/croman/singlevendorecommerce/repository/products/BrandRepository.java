@@ -15,22 +15,9 @@ public interface BrandRepository extends JpaRepository<Brand, Long> {
 	@Query("SELECT b FROM Brand b WHERE LOWER(b.name) = LOWER(:name)")
 	Optional<Brand> findByName(@Param("name") String name);
 	
-	@Query(value = """
-			SELECT b.* FROM brands b
-			WHERE b.name ILIKE CONCAT('%', :term, '%')
-			OR EXISTS (
-			SELECT 1 FROM translations t
-			WHERE t.register_id = b.brand_id
-			AND t.translation ILIKE CONCAT('%', :term, '%')
-			)""",
-		    countQuery = """
-			SELECT COUNT(*) FROM brands b
-			WHERE b.name ILIKE CONCAT('%', :term, '%')
-			OR EXISTS (
-			SELECT 1 FROM translations t
-			WHERE t.register_id = b.brand_id
-			AND t.translation ILIKE CONCAT('%', :term, '%'))""",
-		    nativeQuery = true)
-		Page<Brand> searchByNameOrTranslation(@Param("term") String term, Pageable pageable);
+	@Query("""
+			SELECT b FROM Brand b
+			WHERE LOWER(b.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
+	Page<Brand> searchByName(@Param("term") String term, Pageable pageable);
 	
 }

@@ -104,9 +104,9 @@ src/main/java/com/croman/singlevendorecommerce/
 
 src/main/resources/
 ├── application.yaml              # All config with env-var placeholders
-├── db/migration/                 # Flyway scripts (V1__ … V19__)
-├── messages.properties           # i18n keys (English base)
-└── messages_es.properties        # i18n keys (Spanish)
+├── db/migration/                 # Flyway scripts (V1__ … V21__)
+├── messages.properties           # system/error message keys (English base/fallback)
+└── messages_es.properties        # system/error message keys (Spanish, default locale)
 ```
 
 ---
@@ -169,9 +169,9 @@ Login lockout: 5 failed attempts within the last 1 hour → HTTP 423 Locked.
 
 Migrations live in `src/main/resources/db/migration/` and run automatically on startup. **Never modify an existing migration.** Always create a new `V<n>__description.sql` file.
 
-Current schema includes: `users`, `refresh_tokens`, `login_attempts`, `user_roles`, `languages`, `translations`, `categories`, `brands`, `materials`, `attributes`, `attribute_values`, `products`, `product_materials`, `product_variants`, `product_variant_attributes`.
+Current schema includes: `users`, `refresh_tokens`, `login_attempts`, `user_roles`, `categories`, `brands`, `materials`, `attributes`, `attribute_values`, `products`, `product_materials`, `product_variants`, `product_variant_attributes`.
 
-Translation system: names for categories, materials, and attribute values are stored in the `translations` table with `(register_id, language_id, type)`. The `type` column is a `TranslatorPropertyType` enum value.
+Catalog language: the store is **Spanish-only**. Category, material, and attribute display names — and color attribute values — are stored directly in Spanish in each entity's own column (`categories.name`, `materials.name`, `attributes.name`, `attribute_values.value`). `attributes.attribute_type` remains an internal code (`COLOR`/`SIZE`/`CARAT`). The former translation subsystem (`languages`/`translations` tables, `Language`/`Translation` entities, `TranslationService`/`LanguageService`, `TranslatorPropertyType`) was removed in migration `V21`. Do not reintroduce per-entity translation tables; add columns to the entity instead.
 
 ---
 
@@ -190,10 +190,10 @@ Tests use Mockito (`@ExtendWith(MockitoExtension.class)`). Integration tests are
 
 - Authentication: login with email/password, JWT issuance, login-attempt tracking, account lockout
 - User registration (email/password), role assignment
-- Categories: CRUD (admin), paginated list with search + translation, image upload with thumbnail queuing
-- Materials: CRUD (admin), paginated list with search + translation
+- Categories: CRUD (admin) with soft delete + restore, paginated list with search (Spanish name), image upload with thumbnail queuing
+- Materials: CRUD (admin), paginated list with search (Spanish name)
 - Brands: CRUD (admin), paginated list with search
-- Attributes & AttributeValues: read-only endpoints (SIZE, COLOR, CARAT seeded)
+- Attributes & AttributeValues: read-only endpoints (SIZE, COLOR, CARAT seeded); attribute create/update accept a single Spanish `name`
 - Product entity + variants + product_materials schema (migrations done)
 - File storage service (local disk) + thumbnail job publishing via Redis
 - Swagger/OpenAPI documentation on all existing endpoints

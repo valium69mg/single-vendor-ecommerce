@@ -13,24 +13,11 @@ import com.croman.singlevendorecommerce.entity.products.Material;
 public interface MaterialRepository extends JpaRepository<Material, Long>{
 
 	@Query("SELECT m FROM Material m WHERE LOWER(m.name) = LOWER(:name)")
-	Optional<Material> findByName(@Param("name") String englishName);
-	
-	@Query(value = """
-			SELECT m.* FROM materials m
-			WHERE m.name ILIKE CONCAT('%', :term, '%')
-			OR EXISTS (
-			SELECT 1 FROM translations t
-			WHERE t.register_id = m.material_id
-			AND t.translation ILIKE CONCAT('%', :term, '%')
-			)""",
-		    countQuery = """
-			SELECT COUNT(*) FROM materials m
-			WHERE m.name ILIKE CONCAT('%', :term, '%')
-			OR EXISTS (
-			SELECT 1 FROM translations t
-			WHERE t.register_id = m.material_id
-			AND t.translation ILIKE CONCAT('%', :term, '%'))""",
-		    nativeQuery = true)
-		Page<Material> searchByNameOrTranslation(@Param("term") String term, Pageable pageable);
+	Optional<Material> findByName(@Param("name") String name);
+
+	@Query("""
+			SELECT m FROM Material m
+			WHERE LOWER(m.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
+	Page<Material> searchByName(@Param("term") String term, Pageable pageable);
 
 }

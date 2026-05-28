@@ -229,7 +229,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"englishName\": \"Hoops\",\r\n    \"spanishName\": \"Pan tostado\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"Argollas\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -308,7 +308,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"spanishName\": \"Videojuegos y Consolas\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"Videojuegos y Consolas\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -347,7 +347,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"spanishName\": \"Videojuegos y Consolas\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"Videojuegos y Consolas\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -494,7 +494,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"englishName\": \"Plastic\",\r\n    \"spanishName\": \"Plástico\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"Plástico\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -532,7 +532,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"englishName\": \"Gold\",\r\n    \"spanishName\": \"Oro\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"Oro\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -571,7 +571,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"englishName\": \"Gold\",\r\n    \"spanishName\": \"Oro\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"Oro\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -865,7 +865,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"attributeType\": \"FINISH\",\n    \"spanishName\": \"ACABADO\"\n}",
+                  "raw": "{\n    \"attributeType\": \"FINISH\",\n    \"name\": \"ACABADO\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -903,7 +903,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"spanishName\": \"Acabadisimo\"\n}",
+                  "raw": "{\n    \"name\": \"Acabadisimo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

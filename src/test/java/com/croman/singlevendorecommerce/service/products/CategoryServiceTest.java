@@ -4,16 +4,13 @@ import com.croman.singlevendorecommerce.dto.products.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
-import com.croman.singlevendorecommerce.dto.translations.TranslatorPropertyType;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailJobPublisher;
-import com.croman.singlevendorecommerce.service.translations.TranslationService;
 import com.croman.singlevendorecommerce.utils.FileUtils;
-import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -49,11 +45,8 @@ class CategoryServiceTest {
 	private CategoryRepository categoryRepository;
 
 	@Mock
-	private TranslationService translationService;
-
-	@Mock
 	private MessageService messageService;
-	
+
 	@Mock
 	private StorageService storageService;
 
@@ -69,108 +62,73 @@ class CategoryServiceTest {
 	// ─── Fixtures ────────────────────────────────────────────────────────────
 
 	private static final Long CATEGORY_ID = 1L;
-	private static final String ENGLISH_NAME = "Electronics";
-	private static final String SPANISH_NAME = "Electrónica";
-	private static final String DEFAULT_LANG = LocaleUtils.DATABASE_DEFAULT_LANG;
-	private static final String SPANISH_LANG = LocaleUtils.ES;
+	private static final String NAME = "Electrónica";
 
 	private Category category;
 
 	@BeforeEach
 	void setUp() {
-		category = Category.builder().categoryId(CATEGORY_ID).name(ENGLISH_NAME).build();
+		category = Category.builder().categoryId(CATEGORY_ID).name(NAME).build();
 	}
 
 	// ─── getCategories ───────────────────────────────────────────────────────
 
 	@Test
-	void testGetCategoriesWithDefaultLanguageReturnsOriginalNames() {
+	void testGetCategoriesReturnsNames() {
 	    Page<Category> page = new PageImpl<>(List.of(category));
 	    when(categoryRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
 
 	    PageResponse<CategoryDTO> response =
-	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
+	            categoryService.getCategories(0, 10, "");
 
 	    List<CategoryDTO> result = response.getContent();
 
 	    assertThat(result).hasSize(1);
 	    assertThat(result.get(0).getCategoryId()).isEqualTo(CATEGORY_ID);
-	    assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
-
-	    verifyNoInteractions(translationService);
+	    assertThat(result.get(0).getName()).isEqualTo(NAME);
 	}
-	
-	@Test
-	void testGetCategoriesWithSpanishLanguageReturnsTranslatedNames() {
-	    Page<Category> page = new PageImpl<>(List.of(category));
 
-	    HashMap<Integer, String> translations = new HashMap<>();
-	    translations.put(CATEGORY_ID.intValue(), SPANISH_NAME);
-
-	    when(categoryRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
-
-	    when(translationService.batchTranslate(
-	            eq(SPANISH_LANG),
-	            eq(TranslatorPropertyType.CATEGORY),
-	            anyList()))
-	            .thenReturn(translations);
-
-	    PageResponse<CategoryDTO> response =
-	            categoryService.getCategories(SPANISH_LANG, 0, 10, "");
-
-	    List<CategoryDTO> result = response.getContent();
-
-	    assertThat(result).hasSize(1);
-	    assertThat(result.get(0).getName()).isEqualTo(SPANISH_NAME);
-	}
-	
 	@Test
 	void testGetCategoriesReturnsEmptyListWhenNoCategoriesExist() {
 	    when(categoryRepository.findAllNotDeleted(any(Pageable.class)))
 	            .thenReturn(Page.empty());
 
 	    PageResponse<CategoryDTO> response =
-	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
+	            categoryService.getCategories(0, 10, "");
 
 	    assertThat(response.getContent()).isEmpty();
 	}
-	
+
 	@Test
 	void testGetCategoriesWithSearchTermUsesSearchQuery() {
 	    Page<Category> page = new PageImpl<>(List.of(category));
 
-	    when(categoryRepository.searchByNameOrTranslation(eq("shoe"), any(Pageable.class)))
+	    when(categoryRepository.searchByName(eq("anillo"), any(Pageable.class)))
 	            .thenReturn(page);
 
 	    PageResponse<CategoryDTO> response =
-	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "shoe");
+	            categoryService.getCategories(0, 10, "anillo");
 
 	    List<CategoryDTO> result = response.getContent();
 
 	    assertThat(result).hasSize(1);
-	    assertThat(result.get(0).getName()).isEqualTo(ENGLISH_NAME);
+	    assertThat(result.get(0).getName()).isEqualTo(NAME);
 
 	    verify(categoryRepository)
-	            .searchByNameOrTranslation(eq("shoe"), any(Pageable.class));
+	            .searchByName(eq("anillo"), any(Pageable.class));
 	}
 
 
 	// ─── getCategoryById ─────────────────────────────────────────────────────
 
 	@Test
-	void testGetCategoryByIdReturnsBothEnglishAndSpanishNames() {
-		HashMap<Integer, String> translations = new HashMap<>();
-		translations.put(CATEGORY_ID.intValue(), SPANISH_NAME);
-
+	void testGetCategoryByIdReturnsName() {
 		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
-		when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.CATEGORY), anyList()))
-				.thenReturn(translations);
 
 		CategoryByIdDTO result = categoryService.getCategoryById(CATEGORY_ID);
 
 		assertThat(result.getCategoryId()).isEqualTo(CATEGORY_ID);
-		assertThat(result.getEnglishName()).isEqualTo(ENGLISH_NAME);
-		assertThat(result.getSpanishName()).isEqualTo(SPANISH_NAME);
+		assertThat(result.getName()).isEqualTo(NAME);
 	}
 
 	@Test
@@ -185,24 +143,21 @@ class CategoryServiceTest {
 	// ─── createCategoryDTO ───────────────────────────────────────────────────
 
 	@Test
-	void testCreateCategoryDTOSavesAndCreatesTranslation() {
-		CreateCategoryDTO dto = CreateCategoryDTO.builder().englishName(ENGLISH_NAME).spanishName(SPANISH_NAME).build();
+	void testCreateCategoryDTOSaves() {
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name(NAME).build();
 
-		when(categoryRepository.findByName(ENGLISH_NAME)).thenReturn(Optional.empty());
-		when(categoryRepository.save(any(Category.class))).thenReturn(category);
+		when(categoryRepository.findByName(NAME)).thenReturn(Optional.empty());
 
 		categoryService.createCategoryDTO(dto);
 
-		verify(categoryRepository).save(any(Category.class));
-		verify(translationService).createTranslation(CATEGORY_ID.intValue(), SPANISH_LANG,
-				TranslatorPropertyType.CATEGORY, SPANISH_NAME);
+		verify(categoryRepository).save(argThat(c -> NAME.equals(c.getName())));
 	}
 
 	@Test
 	void testCreateCategoryDTOThrowsWhenCategoryAlreadyExists() {
-		CreateCategoryDTO dto = CreateCategoryDTO.builder().englishName(ENGLISH_NAME).spanishName(SPANISH_NAME).build();
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name(NAME).build();
 
-		when(categoryRepository.findByName(ENGLISH_NAME)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName(NAME)).thenReturn(Optional.of(category));
 		when(messageService.getMessage(eq("category_already_exists"), any(Locale.class)))
 				.thenReturn("Category already exists");
 
@@ -210,15 +165,14 @@ class CategoryServiceTest {
 				.hasMessageContaining("Category already exists");
 
 		verify(categoryRepository, never()).save(any());
-		verifyNoInteractions(translationService);
 	}
 
 	@Test
 	void testCreateCategoryDTOThrowsConflictWhenNameBelongsToSoftDeletedCategory() {
-		CreateCategoryDTO dto = CreateCategoryDTO.builder().englishName(ENGLISH_NAME).spanishName(SPANISH_NAME).build();
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name(NAME).build();
 
 		category.setDeletedAt(LocalDateTime.now());
-		when(categoryRepository.findByName(ENGLISH_NAME)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName(NAME)).thenReturn(Optional.of(category));
 		when(messageService.getMessage(eq("category_was_deleted"), any(Locale.class)))
 				.thenReturn("A category with this name was previously deleted");
 
@@ -229,64 +183,53 @@ class CategoryServiceTest {
 						.containsEntry("categoryId", CATEGORY_ID));
 
 		verify(categoryRepository, never()).save(any());
-		verifyNoInteractions(translationService);
 	}
 
 	// ─── updateCategory ──────────────────────────────────────────────────────
 
 	@Test
-	void testUpdateCategoryUpdatesEnglishNameOnly() {
-		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().englishName("New Electronics").build();
+	void testUpdateCategoryUpdatesName() {
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name("Nueva Electrónica").build();
 
 		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName("Nueva Electrónica")).thenReturn(Optional.empty());
 
 		categoryService.updateCategory(CATEGORY_ID, dto);
 
-		verify(categoryRepository).save(argThat(c -> "New Electronics".equals(c.getName())));
-		verify(translationService, never()).updateTranslation(anyInt(), anyString(), any(), anyString());
+		verify(categoryRepository).save(argThat(c -> "Nueva Electrónica".equals(c.getName())));
 	}
 
 	@Test
-	void testUpdateCategoryUpdatesSpanishNameOnly() {
-		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().spanishName("Nueva Electrónica").build();
+	void testUpdateCategoryThrowsWhenNameAlreadyTaken() {
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name("Collares").build();
 
+		Category other = Category.builder().categoryId(2L).name("Collares").build();
 		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
-
-		categoryService.updateCategory(CATEGORY_ID, dto);
-
-		verify(categoryRepository, never()).save(any());
-		verify(translationService).updateTranslation(CATEGORY_ID.intValue(), SPANISH_LANG,
-				TranslatorPropertyType.CATEGORY, "Nueva Electrónica");
-	}
-
-	@Test
-	void testUpdateCategoryUpdatesBothNames() {
-		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().englishName("New Electronics")
-				.spanishName("Nueva Electrónica").build();
-
-		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
-
-		categoryService.updateCategory(CATEGORY_ID, dto);
-
-		verify(categoryRepository).save(any(Category.class));
-		verify(translationService).updateTranslation(anyInt(), anyString(), any(), anyString());
-	}
-
-	@Test
-	void testUpdateCategoryThrowsWhenBothNamesAreNull() {
-		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().build();
-		when(messageService.getMessage(eq("missing_language_names"), any(Locale.class)))
-				.thenReturn("Missing language names");
+		when(categoryRepository.findByName("Collares")).thenReturn(Optional.of(other));
+		when(messageService.getMessage(eq("name_already_taken"), any(Locale.class)))
+				.thenReturn("Name already taken");
 
 		assertThatThrownBy(() -> categoryService.updateCategory(CATEGORY_ID, dto))
-				.isInstanceOf(ApiServiceException.class).hasMessageContaining("Missing language names");
+				.isInstanceOf(ApiServiceException.class).hasMessageContaining("Name already taken");
+
+		verify(categoryRepository, never()).save(any());
+	}
+
+	@Test
+	void testUpdateCategoryThrowsWhenNameIsNull() {
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().build();
+		when(messageService.getMessage(eq("missing_name"), any(Locale.class)))
+				.thenReturn("A name must be provided");
+
+		assertThatThrownBy(() -> categoryService.updateCategory(CATEGORY_ID, dto))
+				.isInstanceOf(ApiServiceException.class).hasMessageContaining("A name must be provided");
 
 		verifyNoInteractions(categoryRepository);
 	}
 
 	@Test
 	void testUpdateCategoryThrowsWhenCategoryNotFound() {
-		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().englishName(ENGLISH_NAME).build();
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name(NAME).build();
 
 		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
 		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
@@ -317,7 +260,7 @@ class CategoryServiceTest {
 
 		verify(categoryRepository, never()).save(any());
 	}
-	
+
 	// ─── restoreCategory ─────────────────────────────────────────────────────
 
 	@Test

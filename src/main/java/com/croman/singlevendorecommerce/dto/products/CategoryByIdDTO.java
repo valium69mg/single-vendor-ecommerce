@@ -14,8 +14,7 @@ import lombok.NoArgsConstructor;
 public class CategoryByIdDTO {
 
 	private long categoryId;
-	private String englishName;
-	private String spanishName;
+	private String name;
 	private int products;
 	private int unitsSold;
 	private BigDecimal revenue;

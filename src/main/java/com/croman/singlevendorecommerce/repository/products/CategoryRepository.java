@@ -13,29 +13,15 @@ import com.croman.singlevendorecommerce.entity.products.Category;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
 	@Query("SELECT c FROM Category c WHERE LOWER(c.name) = LOWER(:name)")
-	Optional<Category> findByName(@Param("name") String englishName);
+	Optional<Category> findByName(@Param("name") String name);
 
 	@Query("SELECT c FROM Category c WHERE c.deletedAt IS NULL")
 	Page<Category> findAllNotDeleted(Pageable pageable);
 
-	@Query(value = """
-			SELECT c.* FROM categories c
-			WHERE c.deleted_at IS NULL
-			AND (c.name ILIKE CONCAT('%', :term, '%')
-			OR EXISTS (
-			SELECT 1 FROM translations t
-			WHERE t.register_id = c.category_id
-			AND t.translation ILIKE CONCAT('%', :term, '%')
-			))""",
-		    countQuery = """
-			SELECT COUNT(*) FROM categories c
-			WHERE c.deleted_at IS NULL
-			AND (c.name ILIKE CONCAT('%', :term, '%')
-			OR EXISTS (
-			SELECT 1 FROM translations t
-			WHERE t.register_id = c.category_id
-			AND t.translation ILIKE CONCAT('%', :term, '%')))""",
-		    nativeQuery = true)
-		Page<Category> searchByNameOrTranslation(@Param("term") String term, Pageable pageable);
+	@Query("""
+			SELECT c FROM Category c
+			WHERE c.deletedAt IS NULL
+			AND LOWER(c.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
+	Page<Category> searchByName(@Param("term") String term, Pageable pageable);
 
 }

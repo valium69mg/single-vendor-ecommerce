@@ -19,14 +19,12 @@ import com.croman.singlevendorecommerce.dto.products.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
-import com.croman.singlevendorecommerce.dto.translations.TranslatorPropertyType;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailJobPublisher;
-import com.croman.singlevendorecommerce.service.translations.TranslationService;
 import com.croman.singlevendorecommerce.utils.FileUtils;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
@@ -41,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 public class CategoryService {
 
 	private final CategoryRepository categoryRepository;
-	private final TranslationService translationService;
 	private final MessageService messageService;
 	private final StorageService storageService;
 	private final ThumbnailJobPublisher thumbnailJobPublisher;
@@ -50,39 +47,20 @@ public class CategoryService {
 	private static final Random RANDOM = new Random();
 
 	@Transactional(readOnly = true)
-	public PageResponse<CategoryDTO> getCategories(String languageName, int page, int size, String term) {
+	public PageResponse<CategoryDTO> getCategories(int page, int size, String term) {
 
 	    Page<Category> categoryPage;
 
 	    if (!term.isBlank()) {
-	    	 Pageable pageable = PaginationUtils.getPageable(page, size, "category_id");
-	        categoryPage = categoryRepository.searchByNameOrTranslation(term, pageable);
+	    	 Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
+	        categoryPage = categoryRepository.searchByName(term, pageable);
 	    } else {
 	    	 Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
 	        categoryPage = categoryRepository.findAllNotDeleted(pageable);
 	    }
 
-	    List<Category> allCategories = categoryPage.getContent();
-
-	    Map<Integer, String> tempTranslateHashMap = null;
-
-	    if (!languageName.equals(LocaleUtils.DATABASE_DEFAULT_LANG)) {
-	        List<Long> categoryIds = allCategories.stream()
-	                .map(Category::getCategoryId)
-	                .distinct()
-	                .toList();
-
-	        tempTranslateHashMap = translationService.batchTranslate(
-	                languageName,
-	                TranslatorPropertyType.CATEGORY,
-	                categoryIds
-	        );
-	    }
-
-	    final Map<Integer, String> batchTranslateHashMap = tempTranslateHashMap;
-
-	    List<CategoryDTO> categoryDTOs = allCategories.stream()
-	            .map(category -> mapCategoryToDTO(category, batchTranslateHashMap))
+	    List<CategoryDTO> categoryDTOs = categoryPage.getContent().stream()
+	            .map(this::mapCategoryToDTO)
 	            .toList();
 
 	    return PageResponse.<CategoryDTO>builder()
@@ -94,25 +72,20 @@ public class CategoryService {
 	            .last(categoryPage.isLast())
 	            .build();
 	}
-	
+
 	@Transactional(readOnly = true)
 	public CategoryByIdDTO getCategoryById(Long categoryId) {
 
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
-		
-		Map<Integer, String> batchTranslateHashMap = translationService.batchTranslate(LocaleUtils.ES,
-				TranslatorPropertyType.CATEGORY, List.of(category.getCategoryId()));
-		
-		return mapCategoryToByIdDTO(category, batchTranslateHashMap);
+
+		return mapCategoryToByIdDTO(category);
 
 	}
 
-	private CategoryDTO mapCategoryToDTO(Category category, Map<Integer, String> batchTranslateHashMap) {
-		Integer key = category.getCategoryId().intValue();
-		String name = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
-		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(name)
+	private CategoryDTO mapCategoryToDTO(Category category) {
+		return CategoryDTO.builder().categoryId(category.getCategoryId()).name(category.getName())
 				.products(RANDOM.nextInt(101)).unitsSold(RANDOM.nextInt(101))
 				.revenue(new BigDecimal(RANDOM.nextInt(101))).averagePrice(new BigDecimal(RANDOM.nextInt(101)))
 				.stock(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
@@ -120,25 +93,22 @@ public class CategoryService {
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
 				.build();
 	}
-	
-	private CategoryByIdDTO mapCategoryToByIdDTO(Category category, Map<Integer, String> batchTranslateHashMap) {
-		Integer key = category.getCategoryId().intValue();
-		String spanishName = batchTranslateHashMap != null ? batchTranslateHashMap.get(key) : category.getName();
-		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).englishName(category.getName())
-				.products(RANDOM.nextInt(101)).spanishName(spanishName).unitsSold(RANDOM.nextInt(101))
+
+	private CategoryByIdDTO mapCategoryToByIdDTO(Category category) {
+		return CategoryByIdDTO.builder().categoryId(category.getCategoryId()).name(category.getName())
+				.products(RANDOM.nextInt(101)).unitsSold(RANDOM.nextInt(101))
 				.revenue(new BigDecimal(RANDOM.nextInt(101))).averagePrice(new BigDecimal(RANDOM.nextInt(101)))
 				.stock(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
 				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
 				.build();
 	}
-	
+
 	@Transactional
 	public void createCategoryDTO(CreateCategoryDTO createCategoryDTO) {
-		String englishName = createCategoryDTO.getEnglishName();
-		String spanishName = createCategoryDTO.getSpanishName();
-			
-		Optional<Category> categoryOpt = categoryRepository.findByName(englishName);
+		String name = createCategoryDTO.getName();
+
+		Optional<Category> categoryOpt = categoryRepository.findByName(name);
 
 		if (categoryOpt.isPresent()) {
 			Category existing = categoryOpt.get();
@@ -150,17 +120,13 @@ public class CategoryService {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("category_already_exists", LocaleUtils.getDefaultLocale()));
 		}
-		
-		Category category = Category.builder().name(englishName).build();
-		
-		category = categoryRepository.save(category);
-		
-		translationService.createTranslation(category.getCategoryId().intValue(), LocaleUtils.ES,
-				TranslatorPropertyType.CATEGORY, spanishName);
-		
-		
+
+		Category category = Category.builder().name(name).build();
+
+		categoryRepository.save(category);
+
 	}
-	
+
 	@Transactional
 	public void uploadImage(MultipartFile file, Long categoryId) {
 	    try {
@@ -171,14 +137,14 @@ public class CategoryService {
 	        storageService.delete(category.getFileUrl());
 	        storageService.delete(FileUtils.toMediumThumbnailKey(category.getFileUrl()));
 	        storageService.delete(FileUtils.toSmallThumbnailKey(category.getFileUrl()));
-	        
+
 	        String imageId = UUID.randomUUID().toString();
 	        String originalFilename = file.getOriginalFilename();
 	        String extension = FileUtils.getFileExtension(originalFilename);
 	        String key = CATEGORY_SUB_DIRECTORY + imageId + extension;
 
 	        category.setFileUrl(key);
-	        
+
 	        storageService.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
 
 	        thumbnailJobPublisher.publishJob(key);
@@ -192,43 +158,35 @@ public class CategoryService {
 	    }
 	}
 
-	
+
 	@Transactional
 	public void updateCategory(Long categoryId, UpdateCategoryDTO updateCategoryDTO) {
-		String englishName = updateCategoryDTO.getEnglishName();
-		String spanishName = updateCategoryDTO.getSpanishName();
+		String name = updateCategoryDTO.getName();
 
-		if (englishName == null && spanishName == null) {
+		if (name == null) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("missing_language_names", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage("missing_name", LocaleUtils.getDefaultLocale()));
 		}
 
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 
-		updateEnglishName(category, englishName);
-
-		if (spanishName != null) {
-			translationService.updateTranslation(categoryId.intValue(), LocaleUtils.ES, TranslatorPropertyType.CATEGORY,
-					spanishName);
-		}
+		updateName(category, name);
 
 	}
-	
-	private void updateEnglishName(Category category, String englishName) {
-		Optional<Category> existingCategoryOpt = categoryRepository.findByName(englishName);
+
+	private void updateName(Category category, String name) {
+		Optional<Category> existingCategoryOpt = categoryRepository.findByName(name);
 		boolean nameAlreadyExists = existingCategoryOpt.isPresent()
 				&& existingCategoryOpt.get().getDeletedAt() == null
 				&& !existingCategoryOpt.get().equals(category);
 		if (nameAlreadyExists) {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
-					messageService.getMessage("english_name_already_taken", LocaleUtils.getDefaultLocale()));
+					messageService.getMessage("name_already_taken", LocaleUtils.getDefaultLocale()));
 		}
-		if (englishName != null) {
-			category.setName(englishName);
-			categoryRepository.save(category);
-		}
+		category.setName(name);
+		categoryRepository.save(category);
 	}
 
 	@Transactional
@@ -245,13 +203,13 @@ public class CategoryService {
 		category.setDeletedAt(null);
 		categoryRepository.save(category);
 	}
-	
+
 	@Transactional
 	public void deleteCategory(Long categoryId) {
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
-		
+
 		category.setDeletedAt(LocalDateTime.now());
 
 		categoryRepository.save(category);

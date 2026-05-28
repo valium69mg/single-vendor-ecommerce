@@ -84,7 +84,7 @@ class BrandsServiceTest {
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getBrandId()).isEqualTo(BRAND_ID);
         assertThat(result.getContent().get(0).getName()).isEqualTo(BRAND_NAME);
-        verify(brandRepository, never()).searchByNameOrTranslation(any(), any());
+        verify(brandRepository, never()).searchByName(any(), any());
     }
 
     @Test
@@ -94,13 +94,13 @@ class BrandsServiceTest {
         PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, "");
 
         assertThat(result.getContent()).isEmpty();
-        verify(brandRepository, never()).searchByNameOrTranslation(any(), any());
+        verify(brandRepository, never()).searchByName(any(), any());
     }
     
     @Test
     void testGetBrandsBySearchTerm() {
     	Page<Brand> page = new PageImpl<>(List.of(brand));
-    	when(brandRepository.searchByNameOrTranslation(eq(SEARCH_TERM), any(Pageable.class))).thenReturn(page);
+    	when(brandRepository.searchByName(eq(SEARCH_TERM), any(Pageable.class))).thenReturn(page);
     	
     	PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, SEARCH_TERM);
     	

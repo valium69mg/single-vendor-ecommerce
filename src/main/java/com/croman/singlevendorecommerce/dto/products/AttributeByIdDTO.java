@@ -15,7 +15,7 @@ public class AttributeByIdDTO {
 
 	private long attributeId;
 	private String attributeType;
-	private String spanishName;
+	private String name;
 	private List<ValueDTO> attributeValues;
 
 	@Data

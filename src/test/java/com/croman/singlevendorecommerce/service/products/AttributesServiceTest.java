@@ -1,18 +1,14 @@
 package com.croman.singlevendorecommerce.service.products;
 
 import com.croman.singlevendorecommerce.dto.products.AttributeByIdDTO;
-import com.croman.singlevendorecommerce.dto.products.AttributeType;
 import com.croman.singlevendorecommerce.dto.products.AttributesDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateAttributeDTO;
-import com.croman.singlevendorecommerce.dto.translations.TranslatorPropertyType;
 import com.croman.singlevendorecommerce.entity.products.Attribute;
 import com.croman.singlevendorecommerce.entity.products.AttributeValue;
 import com.croman.singlevendorecommerce.repository.products.AttributeRepository;
 import com.croman.singlevendorecommerce.repository.products.AttributeValueRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
-import com.croman.singlevendorecommerce.service.translations.TranslationService;
-import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -37,9 +32,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -53,9 +47,6 @@ class AttributesServiceTest {
     private AttributeValueRepository attributeValueRepository;
 
     @Mock
-    private TranslationService translationService;
-
-    @Mock
     private MessageService messageService;
 
     @InjectMocks
@@ -67,11 +58,8 @@ class AttributesServiceTest {
     private static final Long   SIZE_ATTRIBUTE_ID        = 2L;
     private static final Long   COLOR_VALUE_ID           = 10L;
     private static final Long   SIZE_VALUE_ID            = 20L;
-    private static final String DEFAULT_LANG             = LocaleUtils.DATABASE_DEFAULT_LANG;
-    private static final String SPANISH_LANG             = LocaleUtils.ES;
-    private static final String COLOR_TRANSLATED         = "Color";
-    private static final String SIZE_TRANSLATED          = "Talla";
-    private static final String COLOR_VALUE_TRANSLATED   = "Rojo";
+    private static final String COLOR_NAME               = "Color";
+    private static final String SIZE_NAME                = "Talla";
     private static final String ATTRIBUTE_NOT_FOUND_MSG  = "Attribute not found";
     private static final String ATTRIBUTE_NOT_FOUND_KEY  = "attribute_not_found";
     private static final String ATTRIBUTE_EXISTS_MSG     = "Attribute already exists";
@@ -85,41 +73,42 @@ class AttributesServiceTest {
 
     @BeforeEach
     void setUp() {
-        colorAttribute = new Attribute(COLOR_ATTRIBUTE_ID, "COLOR", NOW, NOW);
-        sizeAttribute  = new Attribute(SIZE_ATTRIBUTE_ID,  "SIZE",  NOW, NOW);
-        colorValue     = new AttributeValue(COLOR_VALUE_ID, colorAttribute, "Red", NOW, NOW);
-        sizeValue      = new AttributeValue(SIZE_VALUE_ID,  sizeAttribute,  "M",   NOW, NOW);
+        colorAttribute = new Attribute(COLOR_ATTRIBUTE_ID, "COLOR", COLOR_NAME, NOW, NOW);
+        sizeAttribute  = new Attribute(SIZE_ATTRIBUTE_ID,  "SIZE",  SIZE_NAME,  NOW, NOW);
+        colorValue     = new AttributeValue(COLOR_VALUE_ID, colorAttribute, "Rojo", NOW, NOW);
+        sizeValue      = new AttributeValue(SIZE_VALUE_ID,  sizeAttribute,  "M",    NOW, NOW);
     }
 
-    // ─── getAttributes – default language ────────────────────────────────────
+    // ─── getAttributes ────────────────────────────────────────────────────────
 
     @Test
-    void testGetAttributesWithDefaultLanguageReturnsAttributeTypeAsName() {
+    void testGetAttributesReturnsNameAndValues() {
         Page<Attribute> page = new PageImpl<>(List.of(colorAttribute));
         when(attributeRepository.findAll(any(Pageable.class))).thenReturn(page);
         when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(colorValue));
 
-        List<AttributesDTO> result = attributesService.getAttributes(DEFAULT_LANG, 0, 10);
+        List<AttributesDTO> result = attributesService.getAttributes(0, 10);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getAttributeId()).isEqualTo(COLOR_ATTRIBUTE_ID);
-        assertThat(result.get(0).getName()).isEqualTo(AttributeType.COLOR.toString());
+        assertThat(result.get(0).getName()).isEqualTo(COLOR_NAME);
         assertThat(result.get(0).getAttributeValues()).hasSize(1);
-        assertThat(result.get(0).getAttributeValues().get(0).getValue()).isEqualTo("Red");
-        verifyNoInteractions(translationService);
+        assertThat(result.get(0).getAttributeValues().get(0).getValue()).isEqualTo("Rojo");
     }
 
     @Test
-    void testGetAttributesWithDefaultLanguageReturnsMultipleAttributesWithTheirValues() {
+    void testGetAttributesReturnsMultipleAttributesWithTheirValues() {
         Page<Attribute> page = new PageImpl<>(List.of(colorAttribute, sizeAttribute));
         when(attributeRepository.findAll(any(Pageable.class))).thenReturn(page);
         when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(colorValue, sizeValue));
 
-        List<AttributesDTO> result = attributesService.getAttributes(DEFAULT_LANG, 0, 10);
+        List<AttributesDTO> result = attributesService.getAttributes(0, 10);
 
         assertThat(result).hasSize(2);
         assertThat(result).extracting(AttributesDTO::getAttributeId)
                 .containsExactly(COLOR_ATTRIBUTE_ID, SIZE_ATTRIBUTE_ID);
+        assertThat(result).extracting(AttributesDTO::getName)
+                .containsExactly(COLOR_NAME, SIZE_NAME);
     }
 
     @Test
@@ -127,112 +116,25 @@ class AttributesServiceTest {
         when(attributeRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
         when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of());
 
-        List<AttributesDTO> result = attributesService.getAttributes(DEFAULT_LANG, 0, 10);
+        List<AttributesDTO> result = attributesService.getAttributes(0, 10);
 
         assertThat(result).isEmpty();
-        verifyNoInteractions(translationService);
-    }
-
-    // ─── getAttributes – Spanish, COLOR type ─────────────────────────────────
-
-    @Test
-    void testGetAttributesWithSpanishLanguageTranslatesAttributeAndColorValue() {
-        Page<Attribute> page = new PageImpl<>(List.of(colorAttribute));
-        HashMap<Integer, String> attributeTranslations = new HashMap<>();
-        attributeTranslations.put(COLOR_ATTRIBUTE_ID.intValue(), COLOR_TRANSLATED);
-
-        HashMap<Integer, String> colorValueTranslations = new HashMap<>();
-        colorValueTranslations.put(COLOR_VALUE_ID.intValue(), COLOR_VALUE_TRANSLATED);
-
-        when(attributeRepository.findAll(any(Pageable.class))).thenReturn(page);
-        when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(colorValue));
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.ATTRIBUTE), anyList()))
-                .thenReturn(attributeTranslations);
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.COLOR), anyList()))
-                .thenReturn(colorValueTranslations);
-
-        List<AttributesDTO> result = attributesService.getAttributes(SPANISH_LANG, 0, 10);
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo(COLOR_TRANSLATED);
-        assertThat(result.get(0).getAttributeValues().get(0).getValue()).isEqualTo(COLOR_VALUE_TRANSLATED);
-    }
-
-    @Test
-    void testGetAttributesWithSpanishLanguageTranslatesAttributeButNotNonColorValues() {
-        Page<Attribute> page = new PageImpl<>(List.of(sizeAttribute));
-        HashMap<Integer, String> attributeTranslations = new HashMap<>();
-        attributeTranslations.put(SIZE_ATTRIBUTE_ID.intValue(), SIZE_TRANSLATED);
-
-        when(attributeRepository.findAll(any(Pageable.class))).thenReturn(page);
-        when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(sizeValue));
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.ATTRIBUTE), anyList()))
-                .thenReturn(attributeTranslations);
-
-        List<AttributesDTO> result = attributesService.getAttributes(SPANISH_LANG, 0, 10);
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo(SIZE_TRANSLATED);
-        assertThat(result.get(0).getAttributeValues().get(0).getValue()).isEqualTo("M");
-        verify(translationService, never()).batchTranslate(anyString(), eq(TranslatorPropertyType.COLOR), anyList());
-    }
-
-    @Test
-    void testGetAttributesWithSpanishLanguageFallsBackToOriginalValueWhenColorTranslationMissing() {
-        Page<Attribute> page = new PageImpl<>(List.of(colorAttribute));
-        HashMap<Integer, String> attributeTranslations = new HashMap<>();
-        attributeTranslations.put(COLOR_ATTRIBUTE_ID.intValue(), COLOR_TRANSLATED);
-
-        HashMap<Integer, String> colorValueTranslations = new HashMap<>();
-
-        when(attributeRepository.findAll(any(Pageable.class))).thenReturn(page);
-        when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(colorValue));
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.ATTRIBUTE), anyList()))
-                .thenReturn(attributeTranslations);
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.COLOR), anyList()))
-                .thenReturn(colorValueTranslations);
-
-        List<AttributesDTO> result = attributesService.getAttributes(SPANISH_LANG, 0, 10);
-
-        assertThat(result.get(0).getAttributeValues().get(0).getValue()).isEqualTo("Red");
-    }
-
-    @Test
-    void testGetAttributesWithSpanishLanguageAndNoColorValuesSkipsColorTranslation() {
-        Page<Attribute> page = new PageImpl<>(List.of(sizeAttribute));
-        HashMap<Integer, String> attributeTranslations = new HashMap<>();
-        attributeTranslations.put(SIZE_ATTRIBUTE_ID.intValue(), SIZE_TRANSLATED);
-
-        when(attributeRepository.findAll(any(Pageable.class))).thenReturn(page);
-        when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(sizeValue));
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.ATTRIBUTE), anyList()))
-                .thenReturn(attributeTranslations);
-
-        List<AttributesDTO> result = attributesService.getAttributes(SPANISH_LANG, 0, 10);
-
-        assertThat(result).hasSize(1);
-        verify(translationService, never()).batchTranslate(anyString(), eq(TranslatorPropertyType.COLOR), anyList());
     }
 
     // ─── getAttributeById ─────────────────────────────────────────────────────
 
     @Test
     void testGetAttributeByIdReturnsDTO() {
-        HashMap<Integer, String> translation = new HashMap<>();
-        translation.put(COLOR_ATTRIBUTE_ID.intValue(), COLOR_TRANSLATED);
-
         when(attributeRepository.findById(COLOR_ATTRIBUTE_ID)).thenReturn(Optional.of(colorAttribute));
         when(attributeValueRepository.findByAttributeIdIn(anyList())).thenReturn(List.of(colorValue));
-        when(translationService.batchTranslate(eq(SPANISH_LANG), eq(TranslatorPropertyType.ATTRIBUTE), anyList()))
-                .thenReturn(translation);
 
         AttributeByIdDTO result = attributesService.getAttributeById(COLOR_ATTRIBUTE_ID);
 
         assertThat(result.getAttributeId()).isEqualTo(COLOR_ATTRIBUTE_ID);
         assertThat(result.getAttributeType()).isEqualTo("COLOR");
-        assertThat(result.getSpanishName()).isEqualTo(COLOR_TRANSLATED);
+        assertThat(result.getName()).isEqualTo(COLOR_NAME);
         assertThat(result.getAttributeValues()).hasSize(1);
-        assertThat(result.getAttributeValues().get(0).getValue()).isEqualTo("Red");
+        assertThat(result.getAttributeValues().get(0).getValue()).isEqualTo("Rojo");
     }
 
     @Test
@@ -249,33 +151,28 @@ class AttributesServiceTest {
     // ─── createAttribute ──────────────────────────────────────────────────────
 
     @Test
-    void testCreateAttributeSavesAndCreatesTranslation() {
+    void testCreateAttributeSaves() {
         CreateAttributeDTO dto = CreateAttributeDTO.builder()
                 .attributeType("TEXTURE")
-                .spanishName("Textura")
+                .name("Textura")
                 .build();
 
         when(attributeRepository.findByAttributeType("TEXTURE")).thenReturn(Optional.empty());
-        when(attributeRepository.save(any())).thenReturn(
-                Attribute.builder().attributeId(5L).attributeType("TEXTURE").build());
 
         attributesService.createAttribute(dto);
 
-        verify(attributeRepository).save(argThat(a -> "TEXTURE".equals(a.getAttributeType())));
-        verify(translationService).createTranslation(eq(5), eq(SPANISH_LANG),
-                eq(TranslatorPropertyType.ATTRIBUTE), eq("Textura"));
+        verify(attributeRepository).save(argThat(a ->
+                "TEXTURE".equals(a.getAttributeType()) && "Textura".equals(a.getName())));
     }
 
     @Test
     void testCreateAttributeNormalizesTypeToUpperCase() {
         CreateAttributeDTO dto = CreateAttributeDTO.builder()
                 .attributeType("texture")
-                .spanishName("Textura")
+                .name("Textura")
                 .build();
 
         when(attributeRepository.findByAttributeType("TEXTURE")).thenReturn(Optional.empty());
-        when(attributeRepository.save(any())).thenReturn(
-                Attribute.builder().attributeId(5L).attributeType("TEXTURE").build());
 
         attributesService.createAttribute(dto);
 
@@ -286,7 +183,7 @@ class AttributesServiceTest {
     void testCreateAttributeThrowsWhenAlreadyExists() {
         CreateAttributeDTO dto = CreateAttributeDTO.builder()
                 .attributeType("COLOR")
-                .spanishName("Color")
+                .name("Color")
                 .build();
 
         when(attributeRepository.findByAttributeType("COLOR")).thenReturn(Optional.of(colorAttribute));
@@ -299,28 +196,27 @@ class AttributesServiceTest {
         assertEquals(ATTRIBUTE_EXISTS_MSG, ex.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
         verify(attributeRepository, never()).save(any());
-        verifyNoInteractions(translationService);
     }
 
     // ─── updateAttribute ──────────────────────────────────────────────────────
 
     @Test
-    void testUpdateAttributeUpdatesTranslationSuccessfully() {
-        UpdateAttributeDTO dto = UpdateAttributeDTO.builder().spanishName("Color Actualizado").build();
+    void testUpdateAttributeUpdatesNameSuccessfully() {
+        UpdateAttributeDTO dto = UpdateAttributeDTO.builder().name("Color Actualizado").build();
 
-        when(attributeRepository.existsById(COLOR_ATTRIBUTE_ID)).thenReturn(true);
+        when(attributeRepository.findById(COLOR_ATTRIBUTE_ID)).thenReturn(Optional.of(colorAttribute));
 
         attributesService.updateAttribute(COLOR_ATTRIBUTE_ID, dto);
 
-        verify(translationService).updateTranslation(eq(COLOR_ATTRIBUTE_ID.intValue()), eq(SPANISH_LANG),
-                eq(TranslatorPropertyType.ATTRIBUTE), eq("Color Actualizado"));
+        verify(attributeRepository).save(argThat(a -> "Color Actualizado".equals(a.getName())));
+        assertThat(colorAttribute.getName()).isEqualTo("Color Actualizado");
     }
 
     @Test
     void testUpdateAttributeThrowsWhenNotFound() {
-        UpdateAttributeDTO dto = UpdateAttributeDTO.builder().spanishName("X").build();
+        UpdateAttributeDTO dto = UpdateAttributeDTO.builder().name("X").build();
 
-        when(attributeRepository.existsById(COLOR_ATTRIBUTE_ID)).thenReturn(false);
+        when(attributeRepository.findById(COLOR_ATTRIBUTE_ID)).thenReturn(Optional.empty());
         when(messageService.getMessage(eq(ATTRIBUTE_NOT_FOUND_KEY), any(Locale.class)))
                 .thenReturn(ATTRIBUTE_NOT_FOUND_MSG);
 
@@ -329,33 +225,31 @@ class AttributesServiceTest {
 
         assertEquals(ATTRIBUTE_NOT_FOUND_MSG, ex.getMessage());
         assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
-        verifyNoInteractions(translationService);
+        verify(attributeRepository, never()).save(any());
     }
 
     @Test
-    void testUpdateAttributeThrowsWhenSpanishNameIsNull() {
-        UpdateAttributeDTO dto = UpdateAttributeDTO.builder().spanishName(null).build();
+    void testUpdateAttributeThrowsWhenNameIsNull() {
+        UpdateAttributeDTO dto = UpdateAttributeDTO.builder().name(null).build();
 
-        when(messageService.getMessage(eq("missing_language_names"), any(Locale.class)))
-                .thenReturn("At least one name must be provided");
+        when(messageService.getMessage(eq("missing_name"), any(Locale.class)))
+                .thenReturn("A name must be provided");
 
         ApiServiceException ex = assertThrows(ApiServiceException.class,
                 () -> attributesService.updateAttribute(COLOR_ATTRIBUTE_ID, dto));
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
-        verify(attributeRepository, never()).existsById(anyLong());
+        verify(attributeRepository, never()).findById(anyLong());
     }
 
     // ─── deleteAttribute ──────────────────────────────────────────────────────
 
     @Test
-    void testDeleteAttributeDeletesTranslationAndAttribute() {
+    void testDeleteAttributeDeletesAttribute() {
         when(attributeRepository.existsById(COLOR_ATTRIBUTE_ID)).thenReturn(true);
 
         attributesService.deleteAttribute(COLOR_ATTRIBUTE_ID);
 
-        verify(translationService).deleteTranslation(eq(COLOR_ATTRIBUTE_ID.intValue()), eq(SPANISH_LANG),
-                eq(TranslatorPropertyType.ATTRIBUTE));
         verify(attributeRepository).deleteById(COLOR_ATTRIBUTE_ID);
     }
 
@@ -370,7 +264,6 @@ class AttributesServiceTest {
 
         assertEquals(ATTRIBUTE_NOT_FOUND_MSG, ex.getMessage());
         assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
-        verify(translationService, never()).deleteTranslation(anyInt(), anyString(), any());
         verify(attributeRepository, never()).deleteById(any());
     }
 }

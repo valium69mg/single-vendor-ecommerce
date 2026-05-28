@@ -32,6 +32,9 @@ public class Attribute {
     @Column(name = "attribute_type", nullable = false, length = 50, unique = true)
     private String attributeType;
 
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;

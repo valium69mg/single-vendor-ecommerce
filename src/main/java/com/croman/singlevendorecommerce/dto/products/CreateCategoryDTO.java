@@ -13,11 +13,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateCategoryDTO {
 
-	@NotNull(message = "Category english name must not be null")
-	@Size(min = 3, max = 60, message = "Categoty english name must be between 3 and 60 characters")
-	private String englishName;
-	@NotNull(message = "Category spanish name must not be null")
-	@Size(min = 3, max = 60, message = "Categoty spanish name must be between 3 and 60 characters")
-	private String spanishName;
-	
+	@NotNull(message = "Category name must not be null")
+	@Size(min = 3, max = 60, message = "Category name must be between 3 and 60 characters")
+	private String name;
+
 }

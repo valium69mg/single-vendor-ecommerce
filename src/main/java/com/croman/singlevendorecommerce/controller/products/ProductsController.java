@@ -27,7 +27,6 @@ import com.croman.singlevendorecommerce.service.products.AttributesService;
 import com.croman.singlevendorecommerce.service.products.BrandsService;
 import com.croman.singlevendorecommerce.service.products.CategoryService;
 import com.croman.singlevendorecommerce.service.products.MaterialsService;
-import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -73,7 +72,6 @@ public class ProductsController {
 
 	    return ResponseEntity.status(HttpStatus.OK)
 	            .body(categoryService.getCategories(
-	                    LocaleUtils.APP_DEFAULT_LANG,
 	                    page,
 	                    size,
 	                    term
@@ -125,8 +123,7 @@ public class ProductsController {
 		    @Valid
 		    @Size(min = 0, max = 60, message = "Search term must max of 60 characters")
 		    String term) {
-		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(LocaleUtils.APP_DEFAULT_LANG,
-				page, size, term));
+		return ResponseEntity.status(HttpStatus.OK).body(materialsService.getMaterials(page, size, term));
 	}
 	
 	@GetMapping("materials/{id}")
@@ -205,7 +202,7 @@ public class ProductsController {
 	public ResponseEntity<List<AttributesDTO>> getAttributes(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "50") int size) {
 		return ResponseEntity.status(HttpStatus.OK)
-				.body(attributesService.getAttributes(LocaleUtils.APP_DEFAULT_LANG, page, size));
+				.body(attributesService.getAttributes(page, size));
 	}
 
 	@GetMapping("attributes/{id}")
