@@ -952,7 +952,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Reloj del hombre araña\",\n  \"shortDescription\": \"Un reloj bien perron\",\n  \"longDescription\": \"Un relon chingon\",\n  \"status\": \"ACTIVE\",\n  \"featured\": true,\n  \"brandId\": 1,\n  \"categoryId\": 6,\n  \"materialIds\": [\n    20\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"{{$randomUUID}}\",\n      \"price\": 1,\n      \"discountPrice\": 0.01,\n      \"stock\": 0,\n      \"weightGrams\": 1,\n      \"attributeValueIds\": [\n        1\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"name\": \"Un producto de prueba\",\n  \"shortDescription\": \"Un product bien perron\",\n  \"longDescription\": \"Un product chingon\",\n  \"status\": \"ACTIVE\",\n  \"featured\": true,\n  \"brandId\": 1,\n  \"categoryId\": 6,\n  \"materialIds\": [\n    \n  ],\n  \"variants\": [\n    {\n      \"sku\": \"{{$randomUUID}}\",\n      \"price\": 1,\n      \"discountPrice\": 0.01,\n      \"stock\": 0,\n      \"weightGrams\": 1,\n      \"attributeValueIds\": [\n        1\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1009,6 +1009,45 @@
                 "admin",
                 "products",
                 "ac166939-6f0c-4f18-b6b7-c160fc6f9731"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "id/materials",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{jwt-token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"materialIds\": [1, 2, 3, 4]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/admin/products/ac166939-6f0c-4f18-b6b7-c160fc6f9731/materials",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                "ac166939-6f0c-4f18-b6b7-c160fc6f9731",
+                "materials"
               ]
             }
           },

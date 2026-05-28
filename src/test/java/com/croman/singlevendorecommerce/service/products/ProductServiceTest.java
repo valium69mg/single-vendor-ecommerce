@@ -31,12 +31,14 @@ import org.springframework.http.HttpStatus;
 
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductVariantDTO;
+import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductStatus;
 import com.croman.singlevendorecommerce.entity.products.AttributeValue;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.entity.products.Material;
 import com.croman.singlevendorecommerce.entity.products.Product;
+import com.croman.singlevendorecommerce.entity.products.ProductMaterial;
 import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 import com.croman.singlevendorecommerce.repository.products.AttributeValueRepository;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
@@ -80,6 +82,7 @@ class ProductServiceTest {
     private static final String MATERIAL_NOT_FOUND_MSG        = "Material not found";
     private static final String ATTRIBUTE_VALUE_NOT_FOUND_MSG = "Attribute value not found";
     private static final String SKU_EXISTS_MSG                = "SKU already exists";
+    private static final String PRODUCT_NOT_FOUND_MSG         = "Product not found";
 
     private Category       category;
     private Brand          brand;
@@ -568,6 +571,236 @@ class ProductServiceTest {
                 List.of(variantDTO(SKU, null), variantDTO(SKU_2, null))));
 
         verify(productVariantRepository, times(1)).findExistingSkus(anyCollection());
+    }
+
+    // ─── updateProduct – happy paths ──────────────────────────────────────────
+
+    @Test
+    void testUpdateProductSavesAllFieldsOntoExistingEntity() {
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name("Updated Name")
+                .shortDescription("Short")
+                .longDescription("Long")
+                .status(ProductStatus.INACTIVE)
+                .featured(true)
+                .categoryId(CATEGORY_ID)
+                .brandId(BRAND_ID)
+                .build();
+
+        assertDoesNotThrow(() -> productService.updateProduct(savedProduct.getProductId(), dto));
+
+        verify(productRepository).save(argThat(p ->
+                "Updated Name".equals(p.getName())
+                && "Short".equals(p.getShortDescription())
+                && "Long".equals(p.getLongDescription())
+                && ProductStatus.INACTIVE == p.getStatus()
+                && Boolean.TRUE.equals(p.getFeatured())
+                && p.getCategory() == category
+                && p.getBrand() == brand
+        ));
+    }
+
+    @Test
+    void testUpdateProductDoesNotQueryCategoryWhenCategoryIdIsNull() {
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name(PRODUCT_NAME).status(ProductStatus.ACTIVE).build();
+
+        productService.updateProduct(savedProduct.getProductId(), dto);
+
+        verifyNoInteractions(categoryRepository);
+    }
+
+    @Test
+    void testUpdateProductDoesNotQueryBrandWhenBrandIdIsNull() {
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name(PRODUCT_NAME).status(ProductStatus.ACTIVE).build();
+
+        productService.updateProduct(savedProduct.getProductId(), dto);
+
+        verifyNoInteractions(brandRepository);
+    }
+
+    // ─── updateProduct – error paths ──────────────────────────────────────────
+
+    @Test
+    void testUpdateProductThrowsNotFoundWhenProductDoesNotExist() {
+        UUID unknownId = UUID.randomUUID();
+        when(productRepository.findById(unknownId)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name(PRODUCT_NAME).status(ProductStatus.ACTIVE).build();
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.updateProduct(unknownId, dto));
+
+        assertEquals(PRODUCT_NOT_FOUND_MSG, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void testUpdateProductThrowsNotFoundWhenCategoryIdProvidedButNotFound() {
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("category_not_found"), any(Locale.class)))
+                .thenReturn(CATEGORY_NOT_FOUND_MSG);
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name(PRODUCT_NAME).status(ProductStatus.ACTIVE).categoryId(CATEGORY_ID).build();
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.updateProduct(savedProduct.getProductId(), dto));
+
+        assertEquals(CATEGORY_NOT_FOUND_MSG, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void testUpdateProductThrowsNotFoundWhenBrandIdProvidedButNotFound() {
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("brand_does_not_exists"), any(Locale.class)))
+                .thenReturn(BRAND_NOT_FOUND_MSG);
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name(PRODUCT_NAME).status(ProductStatus.ACTIVE).brandId(BRAND_ID).build();
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.updateProduct(savedProduct.getProductId(), dto));
+
+        assertEquals(BRAND_NOT_FOUND_MSG, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    // ─── updateMaterials – error paths ────────────────────────────────────────
+
+    @Test
+    void testUpdateMaterialsThrowsNotFoundWhenProductDoesNotExist() {
+        UUID unknownId = UUID.randomUUID();
+        when(productRepository.findById(unknownId)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.updateMaterials(unknownId, List.of(MATERIAL_ID)));
+
+        assertEquals(PRODUCT_NOT_FOUND_MSG, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productMaterialRepository, never()).saveAll(anyList());
+        verify(productMaterialRepository, never()).deleteByProductAndMaterialIn(any(), anyList());
+    }
+
+    @Test
+    void testUpdateMaterialsThrowsNotFoundWhenMaterialDoesNotExist() {
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(materialRepository.findAllById(anyList())).thenReturn(List.of());
+        when(messageService.getMessage(eq("material_not_found"), any(Locale.class)))
+                .thenReturn(MATERIAL_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.updateMaterials(savedProduct.getProductId(), List.of(MATERIAL_ID)));
+
+        assertEquals(MATERIAL_NOT_FOUND_MSG, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productMaterialRepository, never()).saveAll(anyList());
+        verify(productMaterialRepository, never()).deleteByProductAndMaterialIn(any(), anyList());
+    }
+
+    // ─── updateMaterials – add-only ───────────────────────────────────────────
+
+    @Test
+    void testUpdateMaterialsAddsNewMaterialsWhenProductHasNone() {
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(materialRepository.findAllById(anyList())).thenReturn(List.of(material));
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId())).thenReturn(List.of());
+        when(productMaterialRepository.saveAll(anyList())).thenReturn(List.of());
+
+        productService.updateMaterials(savedProduct.getProductId(), List.of(MATERIAL_ID));
+
+        verify(productMaterialRepository).saveAll(argThat(pms -> {
+            List<ProductMaterial> list = (List<ProductMaterial>) pms;
+            return list.size() == 1
+                    && list.get(0).getMaterial() == material
+                    && list.get(0).getProduct() == savedProduct;
+        }));
+        verify(productMaterialRepository, never()).deleteByProductAndMaterialIn(any(), anyList());
+    }
+
+    // ─── updateMaterials – delete-only ────────────────────────────────────────
+
+    @Test
+    void testUpdateMaterialsDeletesAllExistingMaterialsWhenIncomingListIsEmpty() {
+        ProductMaterial existing = new ProductMaterial();
+        existing.setProduct(savedProduct);
+        existing.setMaterial(material);
+
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of(existing));
+
+        productService.updateMaterials(savedProduct.getProductId(), List.of());
+
+        verify(productMaterialRepository, never()).saveAll(anyList());
+        verify(productMaterialRepository).deleteByProductAndMaterialIn(eq(savedProduct), argThat(mats -> {
+            List<Material> list = (List<Material>) mats;
+            return list.size() == 1 && list.get(0) == material;
+        }));
+    }
+
+    // ─── updateMaterials – add and delete ─────────────────────────────────────
+
+    @Test
+    void testUpdateMaterialsAddsNewAndDeletesRemovedMaterialsWhenIncomingDiffersFromExisting() {
+        Material material2 = Material.builder().materialId(5L).name("Silver").build();
+        ProductMaterial existing = new ProductMaterial();
+        existing.setProduct(savedProduct);
+        existing.setMaterial(material); // materialId=3 will be removed
+
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(materialRepository.findAllById(anyList())).thenReturn(List.of(material2));
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of(existing));
+        when(productMaterialRepository.saveAll(anyList())).thenReturn(List.of());
+
+        productService.updateMaterials(savedProduct.getProductId(), List.of(5L));
+
+        verify(productMaterialRepository).saveAll(argThat(pms -> {
+            List<ProductMaterial> list = (List<ProductMaterial>) pms;
+            return list.size() == 1 && list.get(0).getMaterial() == material2;
+        }));
+        verify(productMaterialRepository).deleteByProductAndMaterialIn(eq(savedProduct), argThat(mats -> {
+            List<Material> list = (List<Material>) mats;
+            return list.size() == 1 && list.get(0) == material;
+        }));
+    }
+
+    // ─── updateMaterials – no changes ─────────────────────────────────────────
+
+    @Test
+    void testUpdateMaterialsDoesNothingWhenIncomingListMatchesExistingMaterials() {
+        ProductMaterial existing = new ProductMaterial();
+        existing.setProduct(savedProduct);
+        existing.setMaterial(material);
+
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(materialRepository.findAllById(anyList())).thenReturn(List.of(material));
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of(existing));
+
+        productService.updateMaterials(savedProduct.getProductId(), List.of(MATERIAL_ID));
+
+        verify(productMaterialRepository, never()).saveAll(anyList());
+        verify(productMaterialRepository, never()).deleteByProductAndMaterialIn(any(), anyList());
     }
 
 }
