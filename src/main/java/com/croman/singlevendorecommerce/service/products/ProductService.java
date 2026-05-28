@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductVariantDTO;
+import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
 import com.croman.singlevendorecommerce.entity.products.AttributeValue;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.entity.products.Category;
@@ -107,6 +109,21 @@ public class ProductService {
                 .toList();
         productMaterialRepository.saveAll(pms);
     }
+    
+	@Transactional
+	public void updateProduct(UUID productId, ProductBasicInfoDTO dto) {
+		Category category = resolveCategory(dto.getCategoryId());
+		Brand brand = resolveBrand(dto.getBrandId());
+		Product product = resolveProduct(productId);
+		product.setName(dto.getName());
+		product.setShortDescription(dto.getShortDescription());
+		product.setLongDescription(dto.getLongDescription());
+		product.setStatus(dto.getStatus());
+		product.setFeatured(dto.isFeatured());
+		product.setBrand(brand);
+		product.setCategory(category);
+		productRepository.save(product);
+	}
 
     private Category resolveCategory(Long categoryId) {
         if (categoryId == null) return null;
@@ -120,6 +137,14 @@ public class ProductService {
         return brandRepository.findById(brandId)
                 .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
                         messageService.getMessage("brand_does_not_exists", LocaleUtils.getDefaultLocale())));
+    }
+    
+    private Product resolveProduct(UUID productId) {
+    	if (productId == null) return null;
+    	return productRepository.findById(productId)
+    			.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                        messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
+    	
     }
 
     private List<Material> resolveMaterials(List<Long> materialIds) {

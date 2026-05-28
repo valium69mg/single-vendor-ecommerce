@@ -1,6 +1,8 @@
 package com.croman.singlevendorecommerce.controller.products;
 
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +21,7 @@ import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
+import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
@@ -77,6 +80,34 @@ public class AdminProductsController {
 		productService.createProduct(createProductDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("product_created", HttpStatus.CREATED));
+	}
+	
+	@PatchMapping("{productId}")
+	@Operation(summary = "Update product", responses = {
+		    @ApiResponse(
+		        responseCode = "200",
+		        description = "Product updated successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request / duplicate SKU",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Category or brand not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> updateProduct(@Valid @RequestBody ProductBasicInfoDTO dto,
+			@PathVariable UUID productId) {
+		productService.updateProduct(productId, dto);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(apiResponseService.getApiResponseMessage("product_updated", HttpStatus.CREATED));
 	}
 
 	@PostMapping("categories")
