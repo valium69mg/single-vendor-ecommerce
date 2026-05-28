@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -123,6 +124,64 @@ public class ProductService {
 		product.setBrand(brand);
 		product.setCategory(category);
 		productRepository.save(product);
+	}
+	
+	@Transactional
+	public void updateMaterials(UUID productId, List<Long> materialIds) {
+		Product product = resolveProduct(productId);
+		List<Material> incomingMaterials = resolveMaterials(materialIds);
+		List<ProductMaterial> productMaterials = productMaterialRepository.findByProductProductId(productId);
+
+		List<Material> materialsToAdd = resolveMaterialsToAdd(incomingMaterials, productMaterials);
+		List<ProductMaterial> productMaterialsToAdd = materialsToAdd.stream()
+                .map(m -> {
+                    ProductMaterial pm = new ProductMaterial();
+                    pm.setProduct(product);
+                    pm.setMaterial(m);
+                    return pm;
+                })
+                .toList();
+		if (!productMaterialsToAdd.isEmpty()) {
+			productMaterialRepository.saveAll(productMaterialsToAdd);
+		}
+		
+		List<Material> materialsToDelete = resolveMaterialsToDelete(incomingMaterials, productMaterials);
+		if (!materialsToDelete.isEmpty()) {
+			productMaterialRepository.deleteByProductAndMaterialIn(product, materialsToDelete);
+		}
+		
+	}
+	
+	private List<Material> resolveMaterialsToDelete(List<Material> incomingMaterials, List<ProductMaterial> productMaterials) {
+		List<Material> materials = productMaterials.stream().map(ProductMaterial::getMaterial).distinct().toList();
+		Map<Long, Material> incomingMaterialsById = incomingMaterials.stream().collect(Collectors.toMap(
+				Material::getMaterialId,
+				Function.identity()
+			));
+		List<Material> removedMaterials = new ArrayList<>();
+		for (Material existingMaterial : materials) {
+			boolean materialErased = !incomingMaterialsById.containsKey(existingMaterial.getMaterialId());
+			if (materialErased) {
+				removedMaterials.add(existingMaterial);
+			}
+		}
+		return removedMaterials;
+	}
+	
+	private List<Material> resolveMaterialsToAdd(List<Material> incomingMaterials, List<ProductMaterial> productMaterials) {
+		List<Material> materials = productMaterials.stream().map(ProductMaterial::getMaterial).distinct().toList();
+		Map<Long, Material> existingMaterialsById = materials.stream().collect(Collectors.toMap(
+				Material::getMaterialId,
+				Function.identity()
+			));
+		List<Material> addedMaterials = new ArrayList<>();
+		for (Material incomingMaterial : incomingMaterials) {
+			boolean materialAdded = !existingMaterialsById.containsKey(incomingMaterial.getMaterialId());
+			if (materialAdded) {
+				addedMaterials.add(incomingMaterial);
+			}
+		}
+		return addedMaterials;
 	}
 
     private Category resolveCategory(Long categoryId) {

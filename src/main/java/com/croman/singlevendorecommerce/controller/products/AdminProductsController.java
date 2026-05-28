@@ -22,6 +22,7 @@ import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
+import com.croman.singlevendorecommerce.dto.products.UpdateProductMaterialsDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
@@ -108,6 +109,33 @@ public class AdminProductsController {
 		productService.updateProduct(productId, dto);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("product_updated", HttpStatus.CREATED));
+	}
+
+	@PatchMapping("{productId}/materials")
+	@Operation(summary = "Update product materials", responses = {
+		    @ApiResponse(
+		        responseCode = "200",
+		        description = "Product materials updated successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Product or material not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> updateProductMaterials(@PathVariable UUID productId,
+			@Valid @RequestBody UpdateProductMaterialsDTO dto) {
+		productService.updateMaterials(productId, dto.getMaterialIds());
+		return ResponseEntity.ok(apiResponseService.getApiResponseMessage("product_materials_updated", HttpStatus.OK));
 	}
 
 	@PostMapping("categories")
