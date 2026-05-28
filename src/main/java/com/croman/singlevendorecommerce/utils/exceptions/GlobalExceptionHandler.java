@@ -18,8 +18,11 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ApiServiceException.class)
 	public ResponseEntity<Map<String, Object>> handleApiServiceException(ApiServiceException ex) {
-		return ResponseEntity.status(ex.getStatusCode())
-				.body(Map.of(STATUS_FIELD, ex.getStatusCode(), "error", ex.getMessage()));
+		Map<String, Object> body = new HashMap<>();
+		body.put(STATUS_FIELD, ex.getStatusCode());
+		body.put("error", ex.getMessage());
+		body.putAll(ex.getMetadata());
+		return ResponseEntity.status(ex.getStatusCode()).body(body);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

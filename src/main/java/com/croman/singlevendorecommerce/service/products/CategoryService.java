@@ -1,6 +1,7 @@
 package com.croman.singlevendorecommerce.service.products;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,7 +59,7 @@ public class CategoryService {
 	        categoryPage = categoryRepository.searchByNameOrTranslation(term, pageable);
 	    } else {
 	    	 Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
-	        categoryPage = categoryRepository.findAll(pageable);
+	        categoryPage = categoryRepository.findAllNotDeleted(pageable);
 	    }
 
 	    List<Category> allCategories = categoryPage.getContent();
@@ -138,8 +139,14 @@ public class CategoryService {
 		String spanishName = createCategoryDTO.getSpanishName();
 			
 		Optional<Category> categoryOpt = categoryRepository.findByName(englishName);
-		
+
 		if (categoryOpt.isPresent()) {
+			Category existing = categoryOpt.get();
+			if (existing.getDeletedAt() != null) {
+				throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+						messageService.getMessage("category_was_deleted", LocaleUtils.getDefaultLocale()),
+						Map.of("categoryId", existing.getCategoryId()));
+			}
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("category_already_exists", LocaleUtils.getDefaultLocale()));
 		}
@@ -211,15 +218,32 @@ public class CategoryService {
 	
 	private void updateEnglishName(Category category, String englishName) {
 		Optional<Category> existingCategoryOpt = categoryRepository.findByName(englishName);
-		boolean nameAlreadyExists = existingCategoryOpt.isPresent() && !existingCategoryOpt.get().equals(category);
+		boolean nameAlreadyExists = existingCategoryOpt.isPresent()
+				&& existingCategoryOpt.get().getDeletedAt() == null
+				&& !existingCategoryOpt.get().equals(category);
 		if (nameAlreadyExists) {
-			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(), 
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("english_name_already_taken", LocaleUtils.getDefaultLocale()));
 		}
 		if (englishName != null) {
 			category.setName(englishName);
 			categoryRepository.save(category);
 		}
+	}
+
+	@Transactional
+	public void restoreCategory(Long categoryId) {
+		Category category = categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
+
+		if (category.getDeletedAt() == null) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("category_not_deleted", LocaleUtils.getDefaultLocale()));
+		}
+
+		category.setDeletedAt(null);
+		categoryRepository.save(category);
 	}
 	
 	@Transactional
@@ -228,9 +252,9 @@ public class CategoryService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 		
-		translationService.deleteTranslation(categoryId.intValue(), LocaleUtils.ES, TranslatorPropertyType.CATEGORY);
+		category.setDeletedAt(LocalDateTime.now());
 
-		categoryRepository.delete(category);
+		categoryRepository.save(category);
 
 	}
 

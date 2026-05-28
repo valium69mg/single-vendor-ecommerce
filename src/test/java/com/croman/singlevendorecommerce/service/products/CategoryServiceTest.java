@@ -30,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -85,7 +86,7 @@ class CategoryServiceTest {
 	@Test
 	void testGetCategoriesWithDefaultLanguageReturnsOriginalNames() {
 	    Page<Category> page = new PageImpl<>(List.of(category));
-	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
+	    when(categoryRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
 
 	    PageResponse<CategoryDTO> response =
 	            categoryService.getCategories(DEFAULT_LANG, 0, 10, "");
@@ -106,7 +107,7 @@ class CategoryServiceTest {
 	    HashMap<Integer, String> translations = new HashMap<>();
 	    translations.put(CATEGORY_ID.intValue(), SPANISH_NAME);
 
-	    when(categoryRepository.findAll(any(Pageable.class))).thenReturn(page);
+	    when(categoryRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
 
 	    when(translationService.batchTranslate(
 	            eq(SPANISH_LANG),
@@ -125,7 +126,7 @@ class CategoryServiceTest {
 	
 	@Test
 	void testGetCategoriesReturnsEmptyListWhenNoCategoriesExist() {
-	    when(categoryRepository.findAll(any(Pageable.class)))
+	    when(categoryRepository.findAllNotDeleted(any(Pageable.class)))
 	            .thenReturn(Page.empty());
 
 	    PageResponse<CategoryDTO> response =
@@ -212,6 +213,25 @@ class CategoryServiceTest {
 		verifyNoInteractions(translationService);
 	}
 
+	@Test
+	void testCreateCategoryDTOThrowsConflictWhenNameBelongsToSoftDeletedCategory() {
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().englishName(ENGLISH_NAME).spanishName(SPANISH_NAME).build();
+
+		category.setDeletedAt(LocalDateTime.now());
+		when(categoryRepository.findByName(ENGLISH_NAME)).thenReturn(Optional.of(category));
+		when(messageService.getMessage(eq("category_was_deleted"), any(Locale.class)))
+				.thenReturn("A category with this name was previously deleted");
+
+		assertThatThrownBy(() -> categoryService.createCategoryDTO(dto))
+				.isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("A category with this name was previously deleted")
+				.satisfies(ex -> assertThat(((ApiServiceException) ex).getMetadata())
+						.containsEntry("categoryId", CATEGORY_ID));
+
+		verify(categoryRepository, never()).save(any());
+		verifyNoInteractions(translationService);
+	}
+
 	// ─── updateCategory ──────────────────────────────────────────────────────
 
 	@Test
@@ -278,14 +298,13 @@ class CategoryServiceTest {
 	// ─── deleteCategory ──────────────────────────────────────────────────────
 
 	@Test
-	void testDeleteCategoryDeletesTranslationAndCategory() {
+	void testDeleteCategorySetsSoftDeleteTimestamp() {
 		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
 
 		categoryService.deleteCategory(CATEGORY_ID);
 
-		verify(translationService).deleteTranslation(CATEGORY_ID.intValue(), SPANISH_LANG,
-				TranslatorPropertyType.CATEGORY);
-		verify(categoryRepository).delete(category);
+		assertThat(category.getDeletedAt()).isNotNull();
+		verify(categoryRepository).save(category);
 	}
 
 	@Test
@@ -296,10 +315,47 @@ class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.deleteCategory(CATEGORY_ID)).isInstanceOf(ApiServiceException.class)
 				.hasMessageContaining("Category not found");
 
-		verify(categoryRepository, never()).delete(any());
-		verifyNoInteractions(translationService);
+		verify(categoryRepository, never()).save(any());
 	}
 	
+	// ─── restoreCategory ─────────────────────────────────────────────────────
+
+	@Test
+	void testRestoreCategoryClearsDeletedAt() {
+		category.setDeletedAt(LocalDateTime.now());
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+
+		categoryService.restoreCategory(CATEGORY_ID);
+
+		assertThat(category.getDeletedAt()).isNull();
+		verify(categoryRepository).save(category);
+	}
+
+	@Test
+	void testRestoreCategoryThrowsWhenCategoryNotDeleted() {
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(messageService.getMessage(eq("category_not_deleted"), any(Locale.class)))
+				.thenReturn("Category is not deleted");
+
+		assertThatThrownBy(() -> categoryService.restoreCategory(CATEGORY_ID))
+				.isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("Category is not deleted");
+
+		verify(categoryRepository, never()).save(any());
+	}
+
+	@Test
+	void testRestoreCategoryThrowsWhenCategoryNotFound() {
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
+		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
+
+		assertThatThrownBy(() -> categoryService.restoreCategory(CATEGORY_ID))
+				.isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("Category not found");
+
+		verify(categoryRepository, never()).save(any());
+	}
+
 	@Test
 	void testUploadImageUploadsFileAndPublishesThumbnailJob() throws Exception {
 	    // Arrange

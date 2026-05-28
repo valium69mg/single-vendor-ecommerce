@@ -227,6 +227,32 @@ public class AdminProductsController {
 				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.OK));
 	}
 	
+	@PatchMapping("categories/{id}/restore")
+	@Operation(summary = "Restore category", responses = {
+		    @ApiResponse(
+		        responseCode = "200",
+		        description = "Category restored successfully",
+		        content = @Content(mediaType = "application/json",
+		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Category is not deleted",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Category not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<DefaultApiResponse> restoreCategory(@PathVariable long id) {
+		categoryService.restoreCategory(id);
+		return ResponseEntity.ok(apiResponseService.getApiResponseMessage("category_restored", HttpStatus.OK));
+	}
+
 	@DeleteMapping("categories/{id}")
 	@Operation(summary = "Delete category", responses = {
 		    @ApiResponse(

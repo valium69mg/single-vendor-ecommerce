@@ -223,13 +223,13 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYXJsb3N0cmFucXVpbGluby5jckBnbWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzU0OTcwMjUsImV4cCI6MTc3NTUwMDYyNX0.36mEfXRqbGrV7NepvjLhiaCV2xnHRuKva_w5mGzcz7k",
+                    "value": "{{jwt-token}}",
                     "type": "text"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"englishName\": \"Toast\",\r\n    \"spanishName\": \"Pan tostado\"\r\n}",
+                  "raw": "{\r\n    \"englishName\": \"Hoops\",\r\n    \"spanishName\": \"Pan tostado\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -355,7 +355,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/api/v1/admin/products/categories/10",
+                  "raw": "http://localhost:8080/api/v1/admin/products/categories/9",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -367,7 +367,38 @@
                     "admin",
                     "products",
                     "categories",
-                    "10"
+                    "9"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "products/categories/id/restore",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{jwt-token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/api/v1/admin/products/categories/9/restore",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "products",
+                    "categories",
+                    "9",
+                    "restore"
                   ]
                 }
               },
@@ -1015,7 +1046,7 @@
           "response": []
         },
         {
-          "name": "id/materials",
+          "name": "product/id/materials",
           "request": {
             "method": "PATCH",
             "header": [
