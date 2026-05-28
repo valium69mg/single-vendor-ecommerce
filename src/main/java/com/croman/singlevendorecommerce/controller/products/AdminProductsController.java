@@ -107,8 +107,8 @@ public class AdminProductsController {
 	public ResponseEntity<DefaultApiResponse> updateProduct(@Valid @RequestBody ProductBasicInfoDTO dto,
 			@PathVariable UUID productId) {
 		productService.updateProduct(productId, dto);
-		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(apiResponseService.getApiResponseMessage("product_updated", HttpStatus.CREATED));
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(apiResponseService.getApiResponseMessage("product_updated", HttpStatus.OK));
 	}
 
 	@PatchMapping("{productId}/materials")
@@ -309,7 +309,7 @@ public class AdminProductsController {
 	public ResponseEntity<DefaultApiResponse> deleteMaterial(@PathVariable long id) {
 		materialsService.deleteMaterial(id);
 		return ResponseEntity.status(HttpStatus.NO_CONTENT)
-				.body(apiResponseService.getApiResponseMessage("category_deleted", HttpStatus.NO_CONTENT));
+				.body(apiResponseService.getApiResponseMessage("material_deleted", HttpStatus.NO_CONTENT));
 	}
 	
 	@PostMapping("brands")

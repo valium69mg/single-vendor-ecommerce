@@ -21,6 +21,7 @@ public class ProductBasicInfoDTO {
     @Size(max = 500)
     private String shortDescription;
 
+    @Size(max = 5000)
     private String longDescription;
 
     @NotNull
