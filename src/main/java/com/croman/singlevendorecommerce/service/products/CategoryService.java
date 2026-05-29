@@ -24,7 +24,7 @@ import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
-import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailJobPublisher;
+import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
 import com.croman.singlevendorecommerce.utils.FileUtils;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
@@ -41,7 +41,7 @@ public class CategoryService {
 	private final CategoryRepository categoryRepository;
 	private final MessageService messageService;
 	private final StorageService storageService;
-	private final ThumbnailJobPublisher thumbnailJobPublisher;
+	private final ThumbnailService thumbnailService;
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 	private static final String CATEGORY_SUB_DIRECTORY = "categories/";
 	private static final Random RANDOM = new Random();
@@ -147,7 +147,7 @@ public class CategoryService {
 
 	        storageService.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
 
-	        thumbnailJobPublisher.publishJob(key);
+	        thumbnailService.generateThumbnails(key);
 
 	        log.debug("Image uploaded for category {} with ID {}", categoryId, imageId);
 

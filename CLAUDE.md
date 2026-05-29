@@ -8,7 +8,7 @@ Never include references to Claude, Sonnet, Anthropic, or any AI model in commit
 
 ## Project overview
 
-Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Built as a monolithic layered application using Spring Boot 3.x + Java 21. The full system also includes a React frontend and a separate thumbnail-worker microservice; this repo is the backend only.
+Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Built as a monolithic layered application using Spring Boot 3.x + Java 21. The full system also includes a React frontend; this repo is the backend only.
 
 Full requirements document: `../requerimientos-ecommerce-joyeria.md`
 
@@ -23,12 +23,11 @@ Full requirements document: `../requerimientos-ecommerce-joyeria.md`
 | Database | PostgreSQL 16 |
 | ORM | Hibernate / Spring Data JPA |
 | Migrations | Flyway (`src/main/resources/db/migration/`) |
-| Cache / queues | Redis 7 (Spring Data Redis) |
+| Image processing | Thumbnailator (synchronous in-process resize to 200×200 and 400×400) |
 | Auth | JWT (HS256, custom `JwtUtil`) |
 | API docs | Springdoc OpenAPI / Swagger UI (`/swagger-ui.html`) |
 | Build | Maven (`target/single-vendor-ecommerce.jar`) |
 | Containerization | Docker + Docker Compose |
-| Thumbnail worker | Separate service (`carlostranquilinocr98/single-vendor-ecommerce-thumbnail-worker`) communicates via Redis |
 
 ---
 
@@ -39,9 +38,9 @@ Full requirements document: `../requerimientos-ecommerce-joyeria.md`
 - Java 21 + Maven (for building only)
 - Copy `.env.example` → `.env` and adjust values
 
-### Start infrastructure (Postgres, Redis, pgAdmin)
+### Start infrastructure (Postgres, pgAdmin)
 ```bash
-docker compose up postgres redis pgadmin -d
+docker compose up postgres pgadmin -d
 ```
 
 ### Build and run the backend
@@ -52,7 +51,7 @@ docker compose up backend -d
 java -jar target/single-vendor-ecommerce.jar
 ```
 
-### Full stack (including frontend and thumbnail worker)
+### Full stack (including frontend)
 ```bash
 docker compose up -d
 ```
@@ -76,7 +75,6 @@ Key vars (see `.env.example` for all):
 | Variable | Description |
 |---|---|
 | `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` | PostgreSQL connection |
-| `REDIS_HOST` / `REDIS_PORT` | Redis connection |
 | `JWT_SECRET` | HMAC secret for JWT signing |
 | `JWT_EXPIRATION` | Token TTL in milliseconds (default 3600000 = 1h) |
 | `FILE_DIRECTORY` | Absolute path on host for file storage (must match volume mount) |
@@ -89,7 +87,7 @@ Key vars (see `.env.example` for all):
 
 ```
 src/main/java/com/croman/singlevendorecommerce/
-├── config/          # Spring beans: SecurityConfig, RedisConfig, WebConfig, MessageConfig
+├── config/          # Spring beans: SecurityConfig, WebConfig, MessageConfig
 ├── controller/      # REST controllers grouped by domain
 │   ├── auth/        # AuthController  → /api/v1/auth/
 │   ├── products/    # ProductsController (public) + AdminProductsController (admin)
@@ -136,7 +134,7 @@ Success responses return the DTO directly (no wrapper). Error responses go throu
 All user-facing strings come from `MessageService` (delegates to Spring's `MessageSource`). Always use `LocaleUtils.getDefaultLocale()` (currently `es`). Never hardcode Spanish strings in Java code.
 
 ### File storage
-`StorageService` (interface) → `LocalStorageService` (implementation). Files are stored at `FILE_DIRECTORY` on disk; the path is persisted in the DB. After upload, a Redis job is published via `ThumbnailJobPublisher` for the thumbnail-worker to process asynchronously.
+`StorageService` (interface) → `LocalStorageService` (implementation). Files are stored at `FILE_DIRECTORY` on disk; the path is persisted in the DB. After upload, `ThumbnailService` synchronously generates 200×200 and 400×400 variants in-process using Thumbnailator and writes them back to the same storage directory with `_200` and `_400` suffixes before the filename extension (e.g. `categories/uuid_200.jpg`). Key helpers live in `FileUtils.toSmallThumbnailKey()` and `FileUtils.toMediumThumbnailKey()`.
 
 ### JWT authentication
 `JwtUtil` signs/verifies tokens. `JwtAuthenticationFilter` extracts the token from the `Authorization: Bearer <token>` header and sets the `SecurityContext`. Roles come from the `user_roles` table and are used for Spring Security `hasRole()` checks.
@@ -190,12 +188,12 @@ Tests use Mockito (`@ExtendWith(MockitoExtension.class)`). Integration tests are
 
 - Authentication: login with email/password, JWT issuance, login-attempt tracking, account lockout
 - User registration (email/password), role assignment
-- Categories: CRUD (admin) with soft delete + restore, paginated list with search (Spanish name), image upload with thumbnail queuing
+- Categories: CRUD (admin) with soft delete + restore, paginated list with search (Spanish name), image upload with synchronous thumbnail generation (200×200 and 400×400)
 - Materials: CRUD (admin), paginated list with search (Spanish name)
 - Brands: CRUD (admin), paginated list with search
 - Attributes & AttributeValues: read-only endpoints (SIZE, COLOR, CARAT seeded); attribute create/update accept a single Spanish `name`
 - Product entity + variants + product_materials schema (migrations done)
-- File storage service (local disk) + thumbnail job publishing via Redis
+- File storage service (local disk) + synchronous in-process thumbnail generation via Thumbnailator
 - Swagger/OpenAPI documentation on all existing endpoints
 
 ## What is NOT yet implemented (pending per requirements)

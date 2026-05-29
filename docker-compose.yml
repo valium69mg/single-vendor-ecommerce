@@ -46,24 +46,6 @@ services:
     mem_limit: 512m
     cpus: "0.5"
 
-  redis:
-    image: redis:7
-    container_name: singlevendor_redis
-    restart: always
-    networks:
-      - singlevendor_network
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-    mem_limit: 512m
-    cpus: "0.5"
-
   backend:
     image: carlostranquilinocr98/single-vendor-ecommerce:latest
     container_name: singlevendor_backend
@@ -77,8 +59,6 @@ services:
     volumes:
     - ${FILE_DIRECTORY}:${FILE_DIRECTORY} 
     depends_on:
-      redis:
-        condition: service_healthy
       postgres:
         condition: service_healthy
     healthcheck:
@@ -103,28 +83,6 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:80/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-    mem_limit: 512m
-    cpus: "0.5"
-
-  thumbnail-worker:
-    image: carlostranquilinocr98/single-vendor-ecommerce-thumbnail-worker:latest
-    container_name: singlevendor_thumbnail_worker
-    restart: always
-    networks:
-    - singlevendor_network
-    env_file:
-      - .env
-    volumes:
-      - ${FILE_DIRECTORY}:${FILE_DIRECTORY}
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

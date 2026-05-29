@@ -9,7 +9,7 @@ import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
-import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailJobPublisher;
+import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
 import com.croman.singlevendorecommerce.utils.FileUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
@@ -51,7 +51,7 @@ class CategoryServiceTest {
 	private StorageService storageService;
 
 	@Mock
-	private ThumbnailJobPublisher thumbnailJobPublisher;
+	private ThumbnailService thumbnailService;
 
 	@Mock
 	private MultipartFile multipartFile;
@@ -317,7 +317,7 @@ class CategoryServiceTest {
 	}
 
 	@Test
-	void testUploadImageUploadsFileAndPublishesThumbnailJob() throws Exception {
+	void testUploadImageUploadsFileAndGeneratesThumbnails() throws Exception {
 	    // Arrange
 	    String existingFileUrl = "categories/old-image.jpg";
 	    category.setFileUrl(existingFileUrl);
@@ -359,8 +359,8 @@ class CategoryServiceTest {
 	            .endsWith(".png")
 	            .matches("categories/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.png");
 
-	    // Verify thumbnail job published with same key
-	    verify(thumbnailJobPublisher).publishJob(actualKey);
+	    // Verify thumbnails were generated with same key
+	    verify(thumbnailService).generateThumbnails(actualKey);
 
 	    // Verify category was updated with the new key
 	    assertThat(category.getFileUrl())
