@@ -178,10 +178,16 @@ public class CategoryService {
 
 	private void updateName(Category category, String name) {
 		Optional<Category> existingCategoryOpt = categoryRepository.findByName(name);
-		boolean nameAlreadyExists = existingCategoryOpt.isPresent()
-				&& existingCategoryOpt.get().getDeletedAt() == null
+		
+		boolean categoryExistsWithSameName = existingCategoryOpt.isPresent()
 				&& !existingCategoryOpt.get().equals(category);
-		if (nameAlreadyExists) {
+		
+		if (categoryExistsWithSameName) {
+			if (existingCategoryOpt.get().getDeletedAt() != null) {
+				throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+						messageService.getMessage("category_was_deleted", LocaleUtils.getDefaultLocale()),
+						Map.of("categoryId", existingCategoryOpt.get().getCategoryId()));
+			}
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("name_already_taken", LocaleUtils.getDefaultLocale()));
 		}

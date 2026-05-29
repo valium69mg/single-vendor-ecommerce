@@ -214,6 +214,23 @@ class CategoryServiceTest {
 
 		verify(categoryRepository, never()).save(any());
 	}
+	
+	@Test
+	void testUpdateCategoryThrowsWhenNameAlreadyTakenByDeletedCategory() {
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name("Anillos").build();
+		Category other = Category.builder().categoryId(2L).name("Anillos").deletedAt(LocalDateTime.now().minusDays(1))
+				.build();
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName("Anillos")).thenReturn(Optional.of(other));
+		when(messageService.getMessage(eq("category_was_deleted"), any(Locale.class)))
+			.thenReturn("Una categoría con este nombre fue eliminada anteriormente. Restáurala o elige un nombre diferente");
+
+		assertThatThrownBy(() -> categoryService.updateCategory(CATEGORY_ID, dto))
+				.isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("Una categoría con este nombre fue eliminada anteriormente. Restáurala o elige un nombre diferente");
+
+		verify(categoryRepository, never()).save(any());
+	}
 
 	@Test
 	void testUpdateCategoryThrowsWhenNameIsNull() {
