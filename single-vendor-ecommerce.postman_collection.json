@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "c2538278-0e2b-48f6-80a7-71815d3d429f",
+    "_postman_id": "befe199f-507b-4ebf-8869-097a40ae5def",
     "name": "single-vendor-ecommerce",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "39397080"
@@ -199,7 +199,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/api/v1/products/categories/9",
+                  "raw": "http://localhost:8080/api/v1/products/categories/11",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -210,7 +210,7 @@
                     "v1",
                     "products",
                     "categories",
-                    "9"
+                    "11"
                   ]
                 }
               },
@@ -713,7 +713,7 @@
               "response": []
             },
             {
-              "name": "products/brands",
+              "name": "products/brands/1",
               "request": {
                 "method": "PATCH",
                 "header": [
@@ -725,7 +725,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"brandId\": 1,\r\n    \"name\": \"D4C\"\r\n}",
+                  "raw": "{\r\n    \"name\": \"D4C\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -733,7 +733,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/api/v1/admin/products/brands",
+                  "raw": "http://localhost:8080/api/v1/admin/products/brands/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -744,7 +744,8 @@
                     "v1",
                     "admin",
                     "products",
-                    "brands"
+                    "brands",
+                    "1"
                   ]
                 }
               },

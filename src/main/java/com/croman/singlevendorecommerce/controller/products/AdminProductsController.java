@@ -359,10 +359,10 @@ public class AdminProductsController {
 				.body(apiResponseService.getApiResponseMessage("brand_created", HttpStatus.CREATED));
 	}
 	
-	@PatchMapping("brands")
+	@PatchMapping("brands/{id}")
 	@Operation(summary = "Update brand", responses = {
 		    @ApiResponse(
-		        responseCode = "200", 
+		        responseCode = "200",
 		        description = "Brand updated successfully",
 		        content = @Content(mediaType = "application/json",
 		        schema = @Schema(implementation = DefaultApiResponse.class))
@@ -372,12 +372,19 @@ public class AdminProductsController {
 		        description = "Bad request",
 		        content = @Content(mediaType = "application/json",
 		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Brand not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
 		    )
 		})
-	public ResponseEntity<DefaultApiResponse> createBrand(@RequestBody UpdateBrandDTO updateBrandDTO) {
-		brandsService.updateBrand(updateBrandDTO);
+	public ResponseEntity<DefaultApiResponse> updateBrand(@PathVariable long id,
+			@RequestBody UpdateBrandDTO updateBrandDTO) {
+		brandsService.updateBrand(id, updateBrandDTO);
 		return ResponseEntity.status(HttpStatus.OK)
-				.body(apiResponseService.getApiResponseMessage("brand_updated", HttpStatus.CREATED));
+				.body(apiResponseService.getApiResponseMessage("brand_updated", HttpStatus.OK));
 	}
 	
 	@DeleteMapping("brands/{id}")

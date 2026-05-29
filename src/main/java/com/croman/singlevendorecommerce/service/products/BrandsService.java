@@ -96,8 +96,7 @@ public class BrandsService {
 	}
 	
 	@Transactional
-	public void updateBrand(UpdateBrandDTO updateBrandDTO) {
-		Long brandId = updateBrandDTO.getBrandId();
+	public void updateBrand(long brandId, UpdateBrandDTO updateBrandDTO) {
 		String newName = updateBrandDTO.getName();
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),

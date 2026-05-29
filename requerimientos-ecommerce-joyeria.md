@@ -35,41 +35,62 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 #### 2.1.1 Registro de Usuarios
 **RF-AUTH-001:** El sistema debe permitir registro con email/contraseña
 - Validación de formato de email
-- Password mínimo 8 caracteres (1 mayúscula, 1 minúscula, 1 número, 1 caracter especial)
-- Envío automático de email de verificación
+- Password mínimo 8 caracteres, máximo 64 caracteres (1 mayúscula, 1 minúscula, 1 número, 1 caracter especial)
+- Caracteres especiales aceptados: `@ $ ! % * ? &` (exactamente estos siete)
+- Envío automático de email de verificación al registrarse
 - Token de verificación con expiración de 24 horas
-- La cuenta no estará activa hasta verificar el email
+- La cuenta no estará activa (`isValidated = false`) hasta verificar el email
+- Los tokens de verificación se almacenan en la tabla `email_verification_tokens` (patrón idéntico a `refresh_tokens`: `token`, `expires_at`, `used_at`, `revoked`, `created_at`, FK a `users`)
+
+**RF-AUTH-001a:** Verificación de email
+- Endpoint: `GET /api/v1/auth/verify-email?token={token}`
+- Token válido y no usado → marcar `used_at`, actualizar `isValidated = true`, responder 200
+- Token ya usado → 400 "La cuenta ya fue verificada"
+- Token expirado → 400 "El enlace ha expirado" (el frontend muestra opción de reenviar)
+
+**RF-AUTH-001b:** Reenvío de email de verificación
+- Endpoint: `POST /api/v1/auth/resend-verification` con body `{ "email": "..." }`
+- La respuesta es siempre 200 independientemente de si el email existe (no revelar existencia de usuarios)
+- Si la cuenta ya está verificada → no enviar nada, responder 200 silenciosamente
+- Validaciones antes de emitir nuevo token:
+  - **Cooldown de 5 minutos:** si el token más reciente del usuario fue creado hace menos de 5 minutos → 429 "Espera unos minutos antes de solicitar un nuevo enlace"
+  - **Límite diario de 5 reenvíos:** contar tokens creados en las últimas 24 horas; si ≥ 5 → 429 "Has alcanzado el límite de reenvíos. Intenta de nuevo en 24 horas"
+- Si pasan ambas validaciones:
+  - Revocar (`revoked = true`) todos los tokens pendientes anteriores del usuario
+  - Crear nuevo token (UUID, `expires_at = now + 24h`)
+  - Enviar email de verificación de forma asíncrona
 
 **RF-AUTH-002:** El sistema debe permitir registro con Google OAuth 2.0
 - Integración con Google Sign-In
 - Extracción automática de datos del perfil (nombre, email, foto)
 - Creación automática de cuenta verificada
-
-**RF-AUTH-003:** El sistema debe permitir registro con Facebook OAuth 2.0
-- Integración con Facebook Login
-- Extracción automática de datos del perfil
-- Creación automática de cuenta verificada
+- **Conflicto de email:** si el email retornado por Google ya existe en el sistema como cuenta email/contraseña → responder 409 con mensaje "Ya existe una cuenta con este email. Inicia sesión con tu email y contraseña." No crear cuenta ni vincular cuentas automáticamente.
 
 #### 2.1.2 Inicio de Sesión
 **RF-AUTH-004:** El sistema debe permitir login con email/contraseña
 - Implementación de JWT (Access Token + Refresh Token)
-- Access Token: expiración 15 minutos
-- Refresh Token: expiración 7 días, almacenado en httpOnly cookie
+- Access Token: expiración 15 minutos, retornado en el cuerpo de la respuesta
+- Refresh Token: expiración 7 días, el servidor lo establece automáticamente como cookie httpOnly con los siguientes atributos:
+  - `Name`: `refresh_token`
+  - `HttpOnly`: `true` (inaccesible desde JavaScript)
+  - `Secure`: `true` (solo enviado sobre HTTPS)
+  - `SameSite`: `Strict` (solo en requests del mismo sitio, protección CSRF)
+  - `Path`: `/api/v1/auth` (la cookie solo viaja a endpoints de autenticación, no a cada llamada de API)
+  - `Domain`: no establecer (usa el host exacto por defecto, no aplica a subdominios)
+  - `Max-Age`: `604800` segundos (7 días, sincronizado con la expiración del token)
 - Validación de cuenta verificada antes de permitir login
 
-**RF-AUTH-005:** El sistema debe permitir login con Google/Facebook
+**RF-AUTH-005:** El sistema debe permitir login con Google
 - Proceso de autenticación OAuth
 - Generación de JWT tras validación exitosa
 
 **RF-AUTH-006:** Límite de intentos de login fallidos
-- Máximo 5 intentos fallidos consecutivos
-- Bloqueo temporal de cuenta por 30 minutos tras 5 intentos
+- Máximo 5 intentos fallidos en una ventana deslizante de 1 hora (no consecutivos — cualquier intento fallido en los últimos 60 minutos cuenta)
+- Al alcanzar el límite → HTTP 423 con mensaje "Cuenta suspendida, intente más tarde"
+- El bloqueo se libera automáticamente conforme los intentos envejecen fuera de la ventana de 1 hora; no hay un temporizador de desbloqueo separado
 - Notificación por email de bloqueo de cuenta
-- Opción de desbloqueo mediante recuperación de contraseña
+- Opción de desbloqueo anticipado mediante recuperación de contraseña
 
-**RF-AUTH-007:** Implementar CAPTCHA en login y registro
-- Google reCAPTCHA v3 en formularios de registro
-- reCAPTCHA v2 (checkbox) tras 3 intentos de login fallidos
 
 #### 2.1.3 Recuperación de Contraseña
 **RF-AUTH-008:** El sistema debe permitir recuperación de contraseña
@@ -77,13 +98,13 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - Envío de token de recuperación (válido 1 hora)
 - Enlace único de restablecimiento
 - Formulario de nueva contraseña
-- Invalidación de todas las sesiones activas tras cambio
+- Invalidación de todas las sesiones activas tras cambio: marcar `revoked = true` en **todos** los registros de `refresh_tokens` del usuario, sin excepción (incluida la sesión actual)
 
 #### 2.1.4 Gestión de Tokens
 **RF-AUTH-009:** Endpoint de refresh token
 - Validación de refresh token desde cookie
 - Generación de nuevo access token
-- Rotación de refresh token (opcional pero recomendado)
+- Rotación de refresh token obligatoria: al emitir un nuevo access token, el refresh token usado se revoca (`revoked = true`) y se emite uno nuevo con `Max-Age` de 7 días; el nuevo token reemplaza la cookie httpOnly
 
 **RF-AUTH-010:** Logout
 - Invalidación de refresh token
@@ -105,17 +126,58 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 #### 2.2.1 Perfil de Usuario
 **RF-USER-001:** El usuario debe poder ver y editar su perfil
 - Nombre completo
-- Email (no editable si es el de autenticación)
-- Teléfono
-- Foto de perfil (opcional)
+- Email (no editable)
+- Teléfono (opcional): formato E.164 internacional — `+` seguido de 7 a 15 dígitos, sin espacios ni guiones (regex: `^\+[1-9]\d{6,14}$`); sin restricción de país
+- Foto de perfil (opcional): formatos aceptados JPG, JPEG, PNG; tamaño máximo 2MB; se genera automáticamente un thumbnail 200×200 (mismo mecanismo que imágenes de categorías)
 
 **RF-USER-002:** Gestión de direcciones de envío
 - CRUD completo de direcciones
-- Múltiples direcciones guardadas
+- Máximo 10 direcciones guardadas por usuario; al intentar agregar una undécima → 400 "Has alcanzado el límite de 10 direcciones"
 - Marcar dirección como predeterminada
-- Campos: nombre destinatario, calle, número exterior/interior, colonia, código postal, ciudad, estado, referencias
+- Campos: nombre destinatario, calle, número exterior (obligatorio), número interior (opcional), colonia, código postal, ciudad, estado, referencias
+- El campo **código postal** es siempre exactamente 5 dígitos (formato SEPOMEX); validación por regex `^\d{5}$`; almacenado como VARCHAR(5) — nunca como entero (para preservar ceros iniciales, ej. `01000`)
+- El campo **estado** es un dropdown de selección única alimentado por el catálogo oficial de 32 entidades federativas del INEGI (código numérico + nombre); no se permite texto libre
+- Catálogo de estados (código INEGI — nombre):
+
+| Código | Estado |
+|--------|--------|
+| 01 | Aguascalientes |
+| 02 | Baja California |
+| 03 | Baja California Sur |
+| 04 | Campeche |
+| 05 | Coahuila de Zaragoza |
+| 06 | Colima |
+| 07 | Chiapas |
+| 08 | Chihuahua |
+| 09 | Ciudad de México |
+| 10 | Durango |
+| 11 | Guanajuato |
+| 12 | Guerrero |
+| 13 | Hidalgo |
+| 14 | Jalisco |
+| 15 | México |
+| 16 | Michoacán de Ocampo |
+| 17 | Morelos |
+| 18 | Nayarit |
+| 19 | Nuevo León |
+| 20 | Oaxaca |
+| 21 | Puebla |
+| 22 | Querétaro |
+| 23 | Quintana Roo |
+| 24 | San Luis Potosí |
+| 25 | Sinaloa |
+| 26 | Sonora |
+| 27 | Tabasco |
+| 28 | Tamaulipas |
+| 29 | Tlaxcala |
+| 30 | Veracruz de Ignacio de la Llave |
+| 31 | Yucatán |
+| 32 | Zacatecas |
+
+- Este mismo catálogo se usa en el módulo de envíos (RF-SHIP-001) para el mapeo de zonas tarifarias
 
 **RF-USER-003:** Lista de deseos (Wishlist)
+- Máximo 50 productos por wishlist; al intentar agregar un producto 51 → 400 "Has alcanzado el límite de 50 productos en tu lista de deseos"
 - Agregar/eliminar productos
 - Ver lista completa
 - Notificación si producto en wishlist baja de precio (opcional v2)
@@ -125,14 +187,13 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - Ver todas las órdenes realizadas
 - Filtrar por estado (en proceso, pagada, enviada, entregada, cancelada)
 - Ver detalle completo de cada orden
-- Descargar resumen de orden (PDF)
 
 #### 2.2.2 Checkout de Invitado
 **RF-USER-005:** Compra sin registro
 - Solicitar email obligatorio
-- Enviar email de confirmación de compra
-- Enlace único para rastreo de orden
-- No se guarda historial después de completar la compra
+- Enviar email de confirmación de compra con enlace único de rastreo
+- La orden **sí se persiste** en base de datos sin `user_id` (sin asociación a perfil); no existe "historial de invitado" — la única forma de acceder a la orden es mediante el enlace único enviado al email
+- El enlace único de rastreo es válido por **90 días** desde la fecha de creación de la orden; tras ese plazo el endpoint retorna 404
 
 ### 2.3 Módulo de Productos
 
@@ -142,58 +203,54 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - Nombre (max 200 caracteres)
 - Descripción corta (max 500 caracteres)
 - Descripción larga (texto enriquecido, max 5000 caracteres)
-- SKU (único, alfanumérico)
-- Precio base (decimal, 2 decimales)
-- Precio con descuento (opcional)
 - Categoría (relación con tabla categorías)
 - Marca
 - Material(es) (relación many-to-many)
-- Garantía (en meses, entero)
-- Stock total
 - Estado (activo, inactivo, agotado)
 - Fecha de creación
 - Fecha de última actualización
-- Peso (para cálculo de envío, en gramos)
 - Destacado (boolean para productos en home)
+- **[PENDIENTE]** Slug: campo VARCHAR único en la tabla `products`, auto-generado a partir del nombre en creación (minúsculas, espacios → guiones, caracteres especiales y acentos eliminados, sin guiones dobles ni al inicio/fin); editable por admin con advertencia de links rotos; requerido para la ruta `/product/:slug` (RF-FE-002). Requiere nueva migración Flyway y lógica de generación en `ProductService`. Pendiente de implementación.
+
+> **Nota de diseño:** SKU, precio, precio con descuento, stock y peso se gestionan exclusivamente a nivel de variante (ver RF-PROD-002). Todo producto debe tener al menos una variante; los productos sin opciones configurables usan una variante por defecto sin atributos adicionales.
 
 #### 2.3.2 Variantes de Producto
-**RF-PROD-002:** Sistema de variantes
-- Un producto puede tener múltiples variantes
+**RF-PROD-002:** Sistema de variantes — todo producto tiene al menos una variante obligatoria
+- Todo producto debe tener al menos una variante (variante por defecto); eliminar la última variante de un producto no está permitido → 400 "El producto debe tener al menos una variante"
+- La variante por defecto no requiere atributos configurables (talla, color, etc.)
+- Un producto puede tener múltiples variantes cuando aplica
 - Atributos de variante:
-  - Talla (ej: 5, 6, 7 para anillos)
-  - Color (ej: oro, plata, oro rosa)
-  - SKU específico de variante
+  - SKU (alfanumérico, máximo 100 caracteres, globalmente único a nivel de variante — no puede repetirse entre distintos productos ni entre variantes del mismo producto)
+  - Precio (decimal, 2 decimales)
+  - Precio con descuento (opcional): debe ser estrictamente menor al precio regular; no se permite precio con descuento ≥ precio regular → 400 "El precio con descuento debe ser menor al precio regular"
   - Stock específico
-  - Precio diferencial (opcional, +/- del precio base)
-- Control de stock independiente por variante
+  - Peso (para cálculo de envío, en gramos)
+  - Valores de atributo opcionales: Talla (ej: 5, 6, 7 para anillos), Color (ej: oro, plata, oro rosa), Quilates
+- Control de stock independiente por variante; el stock nunca puede ser negativo
+- **Control de concurrencia:** el decremento de stock se realiza mediante una actualización atómica en base de datos: `UPDATE product_variants SET stock = stock - :quantity WHERE variant_id = :id AND stock >= :quantity`; si las filas afectadas son 0, el stock era insuficiente → 409 "Stock insuficiente para completar la operación"; no se usan bloqueos explícitos ni columna `@Version`
+- El precio mínimo entre todas las variantes se usa como precio de referencia en el catálogo ("Desde $X")
 
 #### 2.3.3 Multimedia
 **RF-PROD-003:** Gestión de imágenes de producto
 - Máximo 10 imágenes por producto
 - Formatos aceptados: JPG, PNG, WEBP
 - Tamaño máximo por imagen: 5MB
-- Orden de imágenes configurable
-- Imagen principal obligatoria
+
+- Imagen principal obligatoria: campo booleano `is_primary` en `product_images`; la primera imagen subida se marca automáticamente como principal (`is_primary = true`); el admin puede cambiarla designando cualquier otra imagen como principal, lo que desmarca la anterior; siempre debe existir exactamente una imagen con `is_primary = true` por producto
 - Almacenamiento en sistema de archivos del servidor (path en BD)
 - Generación automática de thumbnails (200x200, 400x400)
 
-**RF-PROD-004:** Gestión de videos de producto
-- Máximo 2 videos por producto
-- Formatos aceptados: MP4, WEBM
-- Tamaño máximo por video: 50MB
-- Almacenamiento en sistema de archivos
-- Thumbnail automático del primer frame
+
 
 #### 2.3.4 Categorías
-**RF-PROD-005:** Sistema de categorías jerárquico
-- Categorías padre e hijas (máximo 2 niveles)
+**RF-PROD-005:** Sistema de categorías plano (sin jerarquía)
 - CRUD completo de categorías desde admin
-- Atributos: nombre, slug, descripción, imagen, estado (activa/inactiva)
-- Un producto pertenece a una sola categoría
+- Atributos: nombre, imagen, estado (activa/inactiva)
+- Un producto pertenece a una sola categoría; no existen subcategorías ni categorías padre
 
 #### 2.3.5 Reviews y Calificaciones
 **RF-PROD-006:** Sistema de reseñas de clientes
-- Solo usuarios con orden "entregada" del producto pueden dejar review
+- Solo usuarios con al menos una orden en estado ENTREGADA que contenga **específicamente la variante comprada** del producto pueden dejar review; comprar una variante distinta del mismo producto no otorga el derecho
 - Un review por usuario por producto
 - Atributos:
   - Calificación (1-5 estrellas)
@@ -214,20 +271,22 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 **RF-CART-001:** Carrito para usuarios autenticados
 - Persistencia en base de datos
 - Mantener carrito entre sesiones
-- Agregar/actualizar cantidad/eliminar items
+- Máximo 20 líneas de producto distintas por carrito; al intentar agregar una línea 21 → 400 "Has alcanzado el límite de 20 productos en el carrito"
+- Agregar/actualizar cantidad/eliminar items; cantidad máxima por línea de producto: 10 unidades → al intentar superar ese límite → 400 "La cantidad máxima por producto es 10"
 - Validación de stock disponible al agregar
 - Actualización automática si stock cambia
 
 **RF-CART-002:** Carrito para usuarios invitados
 - Gestión del lado del cliente (localStorage)
 - Validación de stock en backend al hacer checkout
-- Conversión a carrito de usuario si se registra/loggea durante checkout
+- Al iniciar sesión durante el checkout, el carrito del invitado (localStorage) **reemplaza completamente** el carrito guardado en base de datos — el carrito previo del usuario se descarta sin excepción
+- Tras la fusión, cada línea se valida contra stock disponible; si la cantidad supera el stock, se ajusta al máximo disponible y se muestra advertencia al usuario
 
-**RF-CART-003:** Validaciones de carrito
-- Stock disponible antes de checkout
-- Precio actualizado (en caso de cambios)
-- Variantes correctas del producto
-- Productos activos (no eliminados)
+**RF-CART-003:** Validaciones de carrito — tres puntos de validación, sin sistema de reserva
+- **Punto 1 — Al agregar al carrito:** verificar stock disponible; no permitir agregar si stock = 0
+- **Punto 2 — Al entrar al checkout:** re-validar todas las líneas del carrito contra stock actual; si alguna línea supera el stock disponible, ajustar cantidad y notificar al usuario antes de continuar
+- **Punto 3 — Al confirmar pago:** decremento atómico de stock (ver RF-PROD-002); si stock insuficiente en este punto → 409 "Lo sentimos, ese artículo ya no está disponible"
+- En todos los puntos también validar: precio actualizado, variante activa, producto activo y no eliminado
 
 **RF-CART-004:** Aplicación de cupones
 - Endpoint para validar código de cupón
@@ -255,35 +314,50 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - Número de orden único (ej: ORD-2026020401234)
 - Estados: EN_PROCESO → PAGADA → ENVIADA → ENTREGADA / CANCELADA
 - Captura completa de:
-  - Items (snapshot del producto al momento de compra)
-  - Precios al momento de compra
   - Dirección de envío completa
   - Método de pago utilizado
   - Cupón aplicado
   - Costo de envío
   - Subtotal, descuento, total
+  - Items en tabla `order_items` con el siguiente schema de snapshot (write-once, nunca se actualiza):
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `order_item_id` | BIGSERIAL PK | |
+| `order_id` | FK → orders NOT NULL | |
+| `product_id` | FK → products nullable | Null si el producto es eliminado después de la compra |
+| `variant_id` | FK → product_variants nullable | Null si la variante es eliminada después de la compra |
+| `product_name_snapshot` | VARCHAR(200) NOT NULL | Nombre del producto al momento de compra |
+| `sku_snapshot` | VARCHAR(100) NOT NULL | SKU al momento de compra |
+| `unit_price_snapshot` | DECIMAL(10,2) NOT NULL | Precio unitario pagado |
+| `discount_price_snapshot` | DECIMAL(10,2) nullable | Precio con descuento si aplicaba |
+| `variant_label_snapshot` | VARCHAR(255) nullable | Descripción legible de la variante, ej. "Talla 7 / Oro Rosa" |
+| `quantity` | INTEGER NOT NULL | |
+| `subtotal` | DECIMAL(10,2) NOT NULL | `unit_price_snapshot × quantity`, denormalizado para reportes |
 - Timestamp de creación
 
 #### 2.5.2 Procesamiento de Pagos
 **RF-ORDER-003:** Integración con Stripe
 - Creación de Payment Intent
+- **Verificación de firma de webhook obligatoria:** todo request al endpoint de webhook de Stripe debe validarse con `Webhook.constructEvent(payload, stripeSignatureHeader, STRIPE_WEBHOOK_SECRET)` del SDK de Stripe; si la firma no coincide → 400 y descartar el request; sin esta validación cualquiera puede falsificar un evento `payment_intent.succeeded`
 - Webhooks para estados de pago:
-  - payment_intent.succeeded → actualizar orden a PAGADA
-  - payment_intent.payment_failed → mantener en EN_PROCESO, notificar usuario
+  - `payment_intent.succeeded` → actualizar orden a PAGADA
+  - `payment_intent.payment_failed` → mantener en EN_PROCESO, notificar usuario
+- `STRIPE_WEBHOOK_SECRET` definido como variable de entorno (nunca hardcodeado)
 - Almacenamiento seguro de transaction ID
 - No almacenar datos de tarjeta (PCI compliance)
 
 **RF-ORDER-004:** Integración con PayPal
 - Creación de orden en PayPal
 - Captura de pago tras aprobación
-- Webhooks de PayPal para confirmación
+- **Verificación de firma de webhook obligatoria:** validar cada webhook de PayPal usando el SDK oficial de PayPal (`WebhookEvent.validateReceivedEvent`) con `PAYPAL_WEBHOOK_ID` como variable de entorno; requests sin firma válida → 400 y descartar
+- Webhooks de PayPal para confirmación de pago
 - Almacenamiento de transaction ID
 
 **RF-ORDER-005:** Manejo de fallos de pago
-- Reintentos automáticos (3 intentos máximo)
-- Notificación al usuario de fallo
-- Orden permanece en estado EN_PROCESO
-- Permitir reintento manual de pago
+- No existen reintentos automáticos — Stripe no reintenta pagos únicos fallidos
+- Al recibir webhook `payment_intent.payment_failed`: orden permanece en EN_PROCESO, se notifica al usuario por email y se muestra error en frontend con el motivo devuelto por Stripe ("Fondos insuficientes", "Tarjeta inválida", etc.)
+- El usuario puede reintentar manualmente desde la página de detalle de su orden — el PaymentIntent existente pasa a `requires_payment_method` y el usuario puede ingresar una tarjeta diferente
 
 #### 2.5.3 Gestión de Estados
 **RF-ORDER-006:** Transiciones de estado
@@ -295,10 +369,12 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 
 **RF-ORDER-007:** Cancelación de órdenes
 - Usuario puede cancelar si estado = EN_PROCESO o PAGADA
-- Si estado = PAGADA, iniciar proceso de reembolso
-- Admin puede cancelar cualquier orden no enviada
-- Registro de motivo de cancelación
-- Restauración de stock de productos
+- Admin puede cancelar si estado = EN_PROCESO o PAGADA; ENVIADA y ENTREGADA no pueden cancelarse — el cliente debe abrir una devolución (RF-ORDER-008)
+- Registro de motivo de cancelación obligatorio
+- Restauración de stock de productos al cancelar
+- Lógica de reembolso según estado al momento de cancelación:
+  - **EN_PROCESO → CANCELADA:** sin reembolso (nunca se cobró); cancelación inmediata
+  - **PAGADA → CANCELADA:** reembolso completo automático vía Stripe API (`stripe.refunds.create({ payment_intent: pi_xxx })`); el admin ve confirmación en UI antes de ejecutar: "¿Confirmar cancelación? Se iniciará un reembolso automático de $X MXN. Esta acción no se puede deshacer."; se notifica al cliente por email que el reembolso fue iniciado (5–10 días hábiles en aparecer en tarjeta)
 
 **RF-ORDER-008:** Devoluciones
 - Usuario solicita devolución desde su historial de órdenes
@@ -333,17 +409,25 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 **RF-INV-001:** Control de stock en tiempo real
 - Descuento automático de stock al confirmar pago
 - Restauración de stock al cancelar orden
-- Alertas de inventario bajo (configurable por producto)
-- Stock reservado durante checkout (15 minutos timeout)
+- Alertas de inventario bajo visibles desde el dashboard de administración (umbral global definido en configuración del sistema, no por producto)
+- Sin sistema de reserva de stock; la disponibilidad se valida en tres puntos del flujo de compra (ver RF-CART-003)
 
 **RF-INV-002:** Ajustes manuales de inventario
 - Admin puede ajustar stock manualmente
-- Registro de movimientos de inventario:
-  - Tipo: VENTA, CANCELACION, AJUSTE_MANUAL, DEVOLUCION
-  - Cantidad
-  - Usuario que realizó el cambio
-  - Timestamp
-  - Notas/motivo
+- Todo cambio de stock genera un registro en la tabla `inventory_movements` con el siguiente schema:
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `movement_id` | BIGSERIAL PK | |
+| `variant_id` | FK → product_variants NOT NULL | Variante afectada |
+| `movement_type` | VARCHAR(20) NOT NULL | Enum: `VENTA`, `CANCELACION`, `AJUSTE_MANUAL`, `DEVOLUCION` |
+| `quantity_change` | INTEGER NOT NULL | Positivo = entrada de stock, negativo = salida |
+| `stock_before` | INTEGER NOT NULL | Stock antes del movimiento |
+| `stock_after` | INTEGER NOT NULL | Stock después del movimiento |
+| `order_id` | FK → orders nullable | Referencia a orden si aplica (VENTA, CANCELACION, DEVOLUCION) |
+| `performed_by` | FK → users nullable | Admin que realizó el ajuste; null si fue automático por el sistema |
+| `notes` | VARCHAR(500) nullable | Motivo del ajuste manual |
+| `created_at` | TIMESTAMP NOT NULL | |
 
 **RF-INV-003:** Validaciones de stock
 - No permitir cantidad negativa
@@ -354,11 +438,19 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 ### 2.7 Módulo de Envíos
 
 **RF-SHIP-001:** Cálculo de costo de envío
-- Tarifas fijas configurables por:
-  - Zona/Estado de destino
-  - Paquetería (DHL, FedEx)
-  - Peso del paquete
-- Tabla de configuración de tarifas en BD
+- Peso total del envío = suma de `weight_grams` de todas las variantes en la orden + **100g fijos de empaque base**
+- Tarifas fijas configurables desde admin por combinación de: zona (estado de destino) × paquetería (DHL, FedEx) × bracket de peso
+- Brackets de peso:
+
+| Bracket | Rango |
+|---|---|
+| 1 | 0 – 250g |
+| 2 | 251g – 500g |
+| 3 | 501g – 1,000g |
+| 4 | 1,001g+ |
+
+- Cada uno de los 32 estados mapea directamente a su propia tarifa — no existe agrupación por zonas; el catálogo de estados de RF-USER-002 es la referencia
+- Tabla `shipping_rates` en BD con columnas: `state_code` VARCHAR(2), `carrier` VARCHAR(10) (`DHL`/`FEDEX`), `weight_bracket` INTEGER (1–4), `price` DECIMAL(10,2); combinación `(state_code, carrier, weight_bracket)` es única
 
 **RF-SHIP-002:** Gestión de envíos
 - Admin asigna paquetería al procesar orden
@@ -424,7 +516,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - Atributos:
   - Código único (alfanumérico, mayúsculas)
   - Tipo: porcentaje o monto fijo
-  - Valor del descuento
+  - Valor del descuento: si tipo es porcentaje, máximo 99% (no se permite 100% ni mayor); si tipo es monto fijo, debe ser mayor a $0 MXN
   - Fecha inicio de vigencia
   - Fecha fin de vigencia
   - Usos máximos totales (opcional)
@@ -456,15 +548,13 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 **RF-ADMIN-001:** CRUD completo de productos
 - Crear producto con variantes
 - Editar producto y variantes
-- Subir/eliminar imágenes y videos
+- Subir/eliminar imágenes
 - Activar/desactivar productos
 - Eliminar productos (soft delete)
 - Vista de productos con stock bajo
 
 **RF-ADMIN-002:** Gestión de categorías
 - CRUD completo de categorías
-- Gestión de jerarquía (categorías padre/hija)
-- Reordenar categorías
 
 **RF-ADMIN-003:** Gestión de inventario
 - Ver stock actual por producto/variante
@@ -540,8 +630,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
   - Total de órdenes
   - Ticket promedio
   - Productos vendidos
-- Exportar a CSV/Excel
-
+  
 **RF-ADMIN-011:** Reporte de productos
 - Productos más vendidos (cantidad y monto)
 - Productos menos vendidos
@@ -550,7 +639,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 
 **RF-ADMIN-012:** Reporte de inventario
 - Stock actual por producto/variante
-- Productos con stock bajo (alerta configurable)
+- Productos con stock bajo (umbral global configurable desde dashboard)
 - Valor total de inventario
 - Productos agotados
 - Filtros por categoría
@@ -593,7 +682,21 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
   - Cambios de estado de órdenes
   - Ajustes manuales de inventario
   - Aprobación/rechazo de reviews
-- Información registrada: usuario, IP, timestamp, acción, datos modificados
+- **Acceso:** solo el admin puede leer los logs vía endpoint; no existe endpoint de creación, actualización ni eliminación manual — los registros son generados exclusivamente por el sistema
+- **Retención:** 1 año; registros con `created_at < now() - 365 días` se eliminan automáticamente mediante un job programado (`@Scheduled`)
+- **Schema de la tabla `audit_logs`:**
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `audit_log_id` | BIGSERIAL PK | |
+| `action` | VARCHAR(50) NOT NULL | Enum: `LOGIN`, `LOGIN_FAILED`, `LOGOUT`, `PASSWORD_CHANGE`, `PRODUCT_CREATED`, `PRODUCT_UPDATED`, `PRODUCT_DELETED`, `ORDER_STATUS_CHANGED`, `INVENTORY_ADJUSTED`, `REVIEW_APPROVED`, `REVIEW_REJECTED`, `CATEGORY_CREATED`, `CATEGORY_UPDATED`, `CATEGORY_DELETED` |
+| `entity_type` | VARCHAR(50) nullable | Entidad afectada: `USER`, `PRODUCT`, `ORDER`, `INVENTORY`, `REVIEW`, `CATEGORY` |
+| `entity_id` | VARCHAR(100) nullable | ID de la entidad afectada (UUID o Long como string) |
+| `performed_by` | FK → users nullable | Usuario que ejecutó la acción; null si fue acción automática del sistema |
+| `ip_address` | VARCHAR(64) nullable | IP del request |
+| `old_value` | TEXT nullable | Snapshot JSON del estado anterior (para actualizaciones) |
+| `new_value` | TEXT nullable | Snapshot JSON del estado nuevo (para creaciones y actualizaciones) |
+| `created_at` | TIMESTAMP NOT NULL | Inmutable — nunca se actualiza |
 
 **RF-SEC-005:** Protección de endpoints
 - Validación de JWT en todos los endpoints protegidos
@@ -601,7 +704,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - Endpoints de admin solo accesibles con rol ADMIN
 
 **RF-SEC-006:** Protección de datos sensibles
-- Contraseñas hasheadas con BCrypt (factor 12)
+- Contraseñas hasheadas con BCrypt (factor 10)
 - Tokens de sesión seguros (httpOnly, secure, sameSite)
 - No exponer información sensible en respuestas de error
 - HTTPS obligatorio en producción
@@ -644,41 +747,43 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 
 **RF-FE-002:** Estructura de rutas
 - Rutas públicas:
+- Public routes (no auth required):
   - `/` - Home
-  - `/productos` - Catálogo general
-  - `/productos/:categoria` - Productos por categoría
-  - `/producto/:slug` - Detalle de producto
-  - `/login` - Inicio de sesión
-  - `/registro` - Registro de usuario
-  - `/recuperar-password` - Recuperación de contraseña
-  - `/verificar-email/:token` - Verificación de email
-  - `/carrito` - Carrito de compras
-  - `/checkout` - Proceso de pago
-  - `/orden/:numero` - Seguimiento de orden (invitados)
-  - `/buscar` - Resultados de búsqueda
-- Rutas protegidas (requieren autenticación):
-  - `/mi-cuenta` - Perfil de usuario
-  - `/mis-ordenes` - Historial de órdenes
-  - `/mi-cuenta/direcciones` - Gestión de direcciones
-  - `/mi-cuenta/wishlist` - Lista de deseos
-  - `/orden/:id/detalle` - Detalle de orden
-  - `/orden/:id/devolucion` - Solicitar devolución
-- Rutas de administrador:
-  - `/admin` - Dashboard principal
-  - `/admin/productos` - Gestión de productos
-  - `/admin/productos/nuevo` - Crear producto
-  - `/admin/productos/:id/editar` - Editar producto
-  - `/admin/categorias` - Gestión de categorías
-  - `/admin/ordenes` - Gestión de órdenes
-  - `/admin/ordenes/:id` - Detalle de orden
-  - `/admin/devoluciones` - Gestión de devoluciones
-  - `/admin/clientes` - Gestión de clientes
-  - `/admin/reviews` - Moderación de reseñas
-  - `/admin/cupones` - Gestión de cupones
-  - `/admin/reportes/ventas` - Reporte de ventas
-  - `/admin/reportes/productos` - Reporte de productos
-  - `/admin/reportes/inventario` - Reporte de inventario
-  - `/admin/configuracion` - Configuraciones generales
+  - `/products` - General catalog
+  - `/products/:category` - Products by category
+  - `/product/:slug` - Product detail
+  - `/login` - Login
+  - `/register` - User registration
+  - `/forgot-password` - Password recovery
+  - `/verify-email/:token` - Email verification
+  - `/cart` - Shopping cart
+  - `/checkout` - Checkout flow
+  - `/order/:number` - Order tracking (guests)
+  - `/search` - Search results
+- Protected routes (require authentication):
+  - `/my-account` - User profile
+  - `/my-orders` - Order history
+  - `/my-account/addresses` - Address management
+  - `/my-account/wishlist` - Wishlist
+  - `/order/:id/detail` - Order detail
+  - `/order/:id/return` - Request return
+- Admin routes (require ADMIN role):
+  - `/admin` - Main dashboard
+  - `/admin/products` - Product management
+  - `/admin/products/new` - Create product
+  - `/admin/products/:id/edit` - Edit product
+  - `/admin/categories` - Category management
+  - `/admin/categories/:categoryId` - Category detail
+  - `/admin/orders` - Order management
+  - `/admin/orders/:id` - Order detail
+  - `/admin/returns` - Return management
+  - `/admin/customers` - Customer management
+  - `/admin/reviews` - Review moderation
+  - `/admin/coupons` - Coupon management
+  - `/admin/reports/sales` - Sales report
+  - `/admin/reports/products` - Product report
+  - `/admin/reports/inventory` - Inventory report
+  - `/admin/settings` - General settings
 
 ### 3.2 Componentes de UI Compartidos
 
@@ -751,7 +856,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
   - Imagen principal (zoom al hacer hover)
   - Thumbnails clickeables
   - Lightbox para ver en grande
-  - Videos (si existen)
+
 - Información del producto:
   - Nombre
   - SKU
@@ -813,10 +918,9 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
   - Checkbox "Recordarme"
   - Botón "Iniciar sesión"
   - Link "¿Olvidaste tu contraseña?"
-- Google reCAPTCHA (visible tras 3 intentos fallidos)
-- Botones de social login:
+
+- Botón de social login:
   - "Continuar con Google"
-  - "Continuar con Facebook"
 - Link a página de registro
 - Validaciones en tiempo real
 - Mensajes de error claros
@@ -830,7 +934,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
   - Password (con requisitos visibles)
   - Confirmar password
   - Checkbox de términos y condiciones
-  - Google reCAPTCHA v3
+
   - Botón "Crear cuenta"
 - Botones de social login
 - Link a página de login
@@ -1068,24 +1172,20 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
   - Multimedia:
     - Upload de imágenes (drag & drop, máx 10)
     - Previsualización con opción de reordenar
-    - Upload de videos (máx 2)
-  - Variantes (opcional):
-    - Tabla dinámica para agregar variantes
-    - Columnas: Talla, Color, SKU variante, Stock, Precio diferencial
+
+  - Variantes (obligatorio, mínimo una):
+    - Tabla dinámica con al menos una fila (variante por defecto pre-cargada)
+    - Columnas: SKU, Precio, Precio con descuento, Stock, Peso (g), Talla, Color, Quilates
     - Botón "Agregar variante"
+    - La variante por defecto puede dejarse sin valores de talla/color/quilates
   - Inventario:
-    - Stock inicial (si no hay variantes)
-    - Alerta de stock bajo (número)
 - Botones: "Guardar", "Guardar y crear otro", "Cancelar"
 - Validaciones en tiempo real
 
 **RF-FE-030:** Gestión de categorías
-- Lista de categorías (tabla jerárquica)
+- Lista de categorías (tabla plana)
 - CRUD con modal:
   - Nombre
-  - Slug (auto-generado, editable)
-  - Descripción
-  - Categoría padre (dropdown)
   - Imagen
   - Estado (activa/inactiva)
 - Drag & drop para reordenar
@@ -1314,7 +1414,7 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 ### 4.1 Seguridad
 
 **RNF-SEC-001:** Autenticación y autorización
-- JWT con RS256 (claves asimétricas)
+- JWT con HS256 (simétrico) — correcto para arquitectura monolítica donde un solo servicio firma y verifica; RS256 aplica si en el futuro se migra a microservicios donde múltiples servicios independientes necesitan verificar tokens; el secreto debe tener mínimo 256 bits de entropía
 - Refresh token rotation
 - Tokens almacenados en httpOnly cookies (frontend)
 - Validación de tokens en cada request protegido
@@ -1326,15 +1426,16 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 - HSTS headers
 
 **RNF-SEC-003:** Protección de datos
-- Passwords hasheadas con BCrypt (factor 12)
+- Passwords hasheadas con BCrypt (factor 10)
 - No logs de información sensible
 - Datos de pago manejados por Stripe/PayPal (PCI DSS compliant)
 - Sanitización de inputs
 
-**RNF-SEC-004:** Rate limiting (Nginx)
+**RNF-SEC-004:** Rate limiting (Nginx únicamente)
 - Login: 5 requests/minuto/IP
 - Registro: 3 requests/minuto/IP
 - Checkout: 10 requests/minuto/usuario
+- No se implementa fallback de rate limiting en Spring Boot. El backend asume que siempre está detrás de Nginx; el acceso directo al puerto 8080 debe estar bloqueado a nivel de firewall/red.
 - API general: 100 requests/minuto/IP
 
 **RNF-SEC-005:** Protección contra ataques
@@ -1346,15 +1447,23 @@ Sistema e-commerce monolítico para venta de joyería en línea, operando única
 ### 4.2 Performance
 
 **RNF-PERF-001:** Tiempos de respuesta
-- APIs: < 500ms (p95)
-- Carga de página: < 3s (3G)
-- Interactividad (TTI): < 5s
+- Medición en Spring Boot Actuator (`/actuator/metrics/http.server.requests`), bajo carga del 80% (400 usuarios concurrentes activos de un máximo de 500)
+- Targets por tipo de endpoint (p95):
+
+| Tipo de endpoint | Target p95 |
+|---|---|
+| Catálogo, producto, categorías | < 200ms |
+| Checkout, creación de orden | < 800ms |
+| Reportes y analíticas | < 2,000ms |
+
+- LCP (Largest Contentful Paint) en la página de listado de productos (`/products`): < 3s — medido con Lighthouse (perfil Slow 3G: 1.6 Mbps descarga, 150 ms RTT)
+- TTI (Time to Interactive) en la misma página: < 5s — medido con Lighthouse (perfil Slow 3G)
 
 **RNF-PERF-002:** Escalabilidad
-- Soportar 500 usuarios concurrentes
-- Capacidad de crecer a 2000 usuarios sin cambios arquitectónicos
+- Soportar 500 usuarios concurrentes realizando peticiones de lectura (catálogo, productos, categorías) — no aplica a flujos de checkout
+- Capacidad de crecer a 2000 usuarios concurrentes de lectura sin cambios arquitectónicos
 - Consultas a BD optimizadas (índices, queries eficientes)
-- Caché de datos estáticos (categorías, configuraciones)
+- Caché de assets estáticos (JS, CSS, imágenes) a nivel Nginx mediante cabeceras HTTP (`Cache-Control: public, max-age=31536000` para assets con hash en el nombre de archivo). No se usa Redis ni Spring Cache.
 
 **RNF-PERF-003:** Optimización de base de datos
 - Índices en columnas de búsqueda frecuente
@@ -1548,7 +1657,7 @@ src/
 - `products` - Productos
 - `product_variants` - Variantes de productos
 - `product_images` - Imágenes de productos
-- `product_videos` - Videos de productos
+
 - `materials` - Materiales (tabla catálogo)
 - `product_materials` - Relación many-to-many
 - `carts` - Carritos de usuarios autenticados
@@ -1571,7 +1680,7 @@ src/
 - Índices en claves foráneas
 - Índices en campos de búsqueda (email, sku, slug)
 - Índices compuestos para filtros frecuentes
-- Índice full-text en nombre y descripción de productos
+- Búsqueda en nombre y descripción de productos mediante `pg_trgm` (extensión PostgreSQL) con índice GIN — permite coincidencias parciales (`ILIKE '%term%'`) y tolerancia a errores tipográficos sin configuración de diccionario. Se activa con `CREATE EXTENSION IF NOT EXISTS pg_trgm;`
 
 ### 5.4 APIs
 
@@ -1588,30 +1697,25 @@ src/
 - Header: `Authorization: Bearer {access_token}`
 
 **Formato de respuestas:**
+
+Las respuestas son objetos planos — no existe un wrapper `{ success, data }`. Los campos presentes varían por endpoint:
+
+- Mutaciones (POST/PUT/DELETE): siempre incluyen `status` y `message`
 ```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "Operación exitosa"
-}
+{ "status": 200, "message": "Categoría creada con éxito" }
 ```
 
-**Formato de errores:**
+- Consultas (GET): retornan el DTO del recurso directamente, con sus propias propiedades
 ```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Datos inválidos",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email inválido"
-      }
-    ]
-  }
-}
+{ "categoryId": 1, "name": "Anillos", "imageUrl": "..." }
 ```
+
+- Consultas paginadas: retornan `{ "content": [...], "page": 0, "size": 20, "totalElements": 100, "totalPages": 5 }`
+
+**Formato de errores:**
+
+- Error de dominio: `{ "status": 400, "error": "El email ya está registrado" }`
+- Error de validación de campos: `{ "status": 400, "errors": { "email": "Email inválido", "password": "..." } }`
 
 **Versionado:**
 - V1: `/api/v1/...` (opcional, para facilitar futuras versiones)
@@ -1741,8 +1845,6 @@ JWT_REFRESH_EXPIRATION=604800000  # 7 días
 # OAuth
 GOOGLE_CLIENT_ID=***
 GOOGLE_CLIENT_SECRET=***
-FACEBOOK_CLIENT_ID=***
-FACEBOOK_CLIENT_SECRET=***
 
 # Stripe
 STRIPE_PUBLIC_KEY=***
@@ -1776,8 +1878,6 @@ REACT_APP_API_URL=https://tujoyeria.com/api
 REACT_APP_STRIPE_PUBLIC_KEY=***
 REACT_APP_PAYPAL_CLIENT_ID=***
 REACT_APP_GOOGLE_CLIENT_ID=***
-REACT_APP_FACEBOOK_APP_ID=***
-REACT_APP_RECAPTCHA_SITE_KEY=***
 ```
 
 ### 7.3 Proceso de Deployment
@@ -1804,7 +1904,7 @@ REACT_APP_RECAPTCHA_SITE_KEY=***
 - Logs de aplicación: `/var/log/ecommerce/`
 - Logs de Nginx: `/var/log/nginx/`
 - Logs de PostgreSQL: `/var/log/postgresql/`
-- Health check endpoint: `/api/health`
+- Health check endpoint: `/health`
 - Monitoreo básico con scripts o herramientas como Uptime Robot
 
 ---
@@ -1822,7 +1922,7 @@ REACT_APP_RECAPTCHA_SITE_KEY=***
 - Responsive básico
 
 ### Fase 2: Funcionalidades Core (3-4 semanas)
-- OAuth (Google, Facebook)
+- OAuth (Google)
 - Variantes de productos
 - Sistema de reviews
 - Lista de deseos
@@ -1896,6 +1996,7 @@ REACT_APP_RECAPTCHA_SITE_KEY=***
 - Si necesita más emails: migrar a AWS SES
 
 ### Funcionalidades futuras (post-MVP):
+- CAPTCHA (Google reCAPTCHA v3 en registro, v2 tras intentos fallidos en login) — implementar cuando se observe tráfico de bots real; la combinación actual de rate limiting en Nginx + bloqueo por intentos cubre los vectores de ataque a esta escala
 - Programa de puntos/lealtad
 - Wishlist compartida
 - Comparador de productos

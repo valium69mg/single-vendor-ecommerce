@@ -164,30 +164,30 @@ class BrandsServiceTest {
 	@Test
 	void testUpdateBrandBrandExists() {
 		// Arrange
-		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().brandId(BRAND_ID).name(BRAND_NAME_2).build();
-		
+		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
+
 		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
 		when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.of(brand2));
-		 when(messageService.getMessage(eq(BRAND_EXISTS_MESSAGE_KEY), any(Locale.class)))
-         .thenReturn(BRAND_EXISTS_MESSAGE);
+		when(messageService.getMessage(eq(BRAND_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_EXISTS_MESSAGE);
 		// Act
 		ApiServiceException ex = assertThrows(ApiServiceException.class,
-				() -> brandsService.updateBrand(updateBrandDTO));
+				() -> brandsService.updateBrand(BRAND_ID, updateBrandDTO));
 		// Assert
 		assertEquals(BRAND_EXISTS_MESSAGE, ex.getMessage());
 		assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
 	}
-	
+
 	@Test
 	void testUpdateBrandSuccessfully() {
 		// Arrange
-		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().brandId(BRAND_ID).name(BRAND_NAME_2).build();
-		
+		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
+
 		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
 		when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.empty());
-		
+
 		// Act
-		brandsService.updateBrand(updateBrandDTO);
+		brandsService.updateBrand(BRAND_ID, updateBrandDTO);
 		// Assert
 		verify(brandRepository, times(1)).save(any());
 	}
