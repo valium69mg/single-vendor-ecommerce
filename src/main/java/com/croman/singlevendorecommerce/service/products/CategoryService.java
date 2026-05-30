@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -45,6 +46,8 @@ public class CategoryService {
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 	private static final String CATEGORY_SUB_DIRECTORY = "categories/";
 	private static final Random RANDOM = new Random();
+	private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+			"image/jpeg", "image/png", "image/gif", "image/webp");
 
 	@Transactional(readOnly = true)
 	public PageResponse<CategoryDTO> getCategories(int page, int size, String term) {
@@ -130,6 +133,12 @@ public class CategoryService {
 	@Transactional
 	public void uploadImage(MultipartFile file, Long categoryId) {
 	    try {
+	        String contentType = file.getContentType();
+	        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
+	            throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+	                    messageService.getMessage("invalid_image_type", LocaleUtils.getDefaultLocale()));
+	        }
+
 	        Category category = categoryRepository.findById(categoryId)
 	                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 	                        messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
