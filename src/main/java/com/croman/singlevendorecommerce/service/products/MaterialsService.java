@@ -1,7 +1,9 @@
 package com.croman.singlevendorecommerce.service.products;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -40,7 +42,7 @@ public class MaterialsService {
 		Page<Material> allMaterials;
 
 		if (term.isEmpty()) {
-			allMaterials = materialRepository.findAll(pageable);
+			allMaterials = materialRepository.findAllNotDeleted(pageable);
 		} else {
 			allMaterials = materialRepository.searchByName(term, pageable);
 		}
@@ -83,6 +85,12 @@ public class MaterialsService {
 		Optional<Material> materialOpt = materialRepository.findByName(name);
 
 		if (materialOpt.isPresent()) {
+			Material existing = materialOpt.get();
+			if (existing.getDeletedAt() != null) {
+				throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+						messageService.getMessage("material_was_deleted", LocaleUtils.getDefaultLocale()),
+						Map.of("materialId", existing.getMaterialId()));
+			}
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("material_already_exists", LocaleUtils.getDefaultLocale()));
 		}
@@ -111,10 +119,16 @@ public class MaterialsService {
 	}
 
 	private void updateName(Material material, String name) {
-		Optional<Material> existingMaterialOptional = materialRepository.findByName(name);
-		boolean nameAlreadyExists = existingMaterialOptional.isPresent()
-				&& !existingMaterialOptional.get().equals(material);
-		if (nameAlreadyExists) {
+		Optional<Material> existingOpt = materialRepository.findByName(name);
+		boolean nameConflict = existingOpt.isPresent() && !existingOpt.get().equals(material);
+
+		if (nameConflict) {
+			Material existing = existingOpt.get();
+			if (existing.getDeletedAt() != null) {
+				throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+						messageService.getMessage("material_was_deleted", LocaleUtils.getDefaultLocale()),
+						Map.of("materialId", existing.getMaterialId()));
+			}
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("name_already_taken", LocaleUtils.getDefaultLocale()));
 		}
@@ -124,15 +138,27 @@ public class MaterialsService {
 
 	@Transactional
 	public void deleteMaterial(Long materialId) {
-		boolean exists = materialRepository.existsById(materialId);
+		Material material = materialRepository.findById(materialId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale())));
 
-		if (!exists) {
-			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
-					messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()));
+		material.setDeletedAt(LocalDateTime.now());
+		materialRepository.save(material);
+	}
+
+	@Transactional
+	public void restoreMaterial(Long materialId) {
+		Material material = materialRepository.findById(materialId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale())));
+
+		if (material.getDeletedAt() == null) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("material_not_deleted", LocaleUtils.getDefaultLocale()));
 		}
 
-		materialRepository.deleteById(materialId);
-
+		material.setDeletedAt(null);
+		materialRepository.save(material);
 	}
 
 }

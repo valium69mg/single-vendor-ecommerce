@@ -15,9 +15,13 @@ public interface MaterialRepository extends JpaRepository<Material, Long>{
 	@Query("SELECT m FROM Material m WHERE LOWER(m.name) = LOWER(:name)")
 	Optional<Material> findByName(@Param("name") String name);
 
+	@Query("SELECT m FROM Material m WHERE m.deletedAt IS NULL")
+	Page<Material> findAllNotDeleted(Pageable pageable);
+
 	@Query("""
 			SELECT m FROM Material m
-			WHERE LOWER(m.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
+			WHERE m.deletedAt IS NULL
+			AND LOWER(m.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
 	Page<Material> searchByName(@Param("term") String term, Pageable pageable);
 
 }

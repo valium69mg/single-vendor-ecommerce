@@ -1,7 +1,9 @@
 package com.croman.singlevendorecommerce.service.products;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -32,38 +34,37 @@ public class BrandsService {
 	private final MessageService messageService;
 	private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
 	private static final String BRAND_NOT_EXISTS_MESSAGE_KEY = "brand_does_not_exists";
-	
+
 	@Transactional(readOnly = true)
 	public PageResponse<BrandDTO> getBrands(int page, int size, String term) {
-		Pageable pageable;
+		Pageable pageable = PaginationUtils.getPageable(page, size, "brandId");
 		Page<Brand> allBrands;
-		pageable = PaginationUtils.getPageable(page, size, "brandId");
 		if (term.isBlank()) {
-			allBrands = brandRepository.findAll(pageable);
+			allBrands = brandRepository.findAllNotDeleted(pageable);
 		} else {
 			allBrands = brandRepository.searchByName(term, pageable);
 		}
-		
+
 		List<BrandDTO> brandDTOs = new ArrayList<>();
 		for (Brand brand : allBrands) {
 			brandDTOs.add(mapBrandToBrandDTO(brand));
 		}
-		
+
 		return PageResponse.<BrandDTO>builder()
-	            .content(brandDTOs)
-	            .page(allBrands.getNumber())
-	            .size(allBrands.getSize())
-	            .totalElements(allBrands.getTotalElements())
-	            .totalPages(allBrands.getTotalPages())
-	            .last(allBrands.isLast())
-	            .build();
+				.content(brandDTOs)
+				.page(allBrands.getNumber())
+				.size(allBrands.getSize())
+				.totalElements(allBrands.getTotalElements())
+				.totalPages(allBrands.getTotalPages())
+				.last(allBrands.isLast())
+				.build();
 	}
-	
+
 	private BrandDTO mapBrandToBrandDTO(Brand brand) {
 		return BrandDTO.builder().brandId(brand.getBrandId())
 				.name(brand.getName()).build();
 	}
-	
+
 	@Transactional(readOnly = true)
 	public BrandByIdDTO getBrandById(long brandId) {
 		Brand brand = brandRepository.findById(brandId)
@@ -71,20 +72,25 @@ public class BrandsService {
 						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
 		return mapBrandTBrandByIdDTO(brand);
 	}
-	
-	private BrandByIdDTO mapBrandTBrandByIdDTO(Brand brand){
+
+	private BrandByIdDTO mapBrandTBrandByIdDTO(Brand brand) {
 		return BrandByIdDTO.builder().brandId(brand.getBrandId())
 				.name(brand.getName()).build();
 	}
-	
+
 	@Transactional
 	public void createBrand(CreateBrandDTO createBrandDTO) {
-
 		String name = createBrandDTO.getName();
 
 		Optional<Brand> brandOpt = brandRepository.findByName(name);
 
 		if (brandOpt.isPresent()) {
+			Brand existing = brandOpt.get();
+			if (existing.getDeletedAt() != null) {
+				throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+						messageService.getMessage("brand_was_deleted", LocaleUtils.getDefaultLocale()),
+						Map.of("brandId", existing.getBrandId()));
+			}
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage(BRAND_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
 		}
@@ -92,25 +98,29 @@ public class BrandsService {
 		Brand brand = Brand.builder().name(name).build();
 
 		brandRepository.save(brand);
-
 	}
-	
+
 	@Transactional
 	public void updateBrand(long brandId, UpdateBrandDTO updateBrandDTO) {
 		String newName = updateBrandDTO.getName();
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
-		
-		Optional<Brand> existingBrandOpt = brandRepository.findByName(newName);
-	
-		boolean brandExists = existingBrandOpt.isPresent() && !existingBrandOpt.get().equals(brand);
-	
-		if (brandExists) {
+
+		Optional<Brand> existingOpt = brandRepository.findByName(newName);
+		boolean nameConflict = existingOpt.isPresent() && !existingOpt.get().equals(brand);
+
+		if (nameConflict) {
+			Brand existing = existingOpt.get();
+			if (existing.getDeletedAt() != null) {
+				throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+						messageService.getMessage("brand_was_deleted", LocaleUtils.getDefaultLocale()),
+						Map.of("brandId", existing.getBrandId()));
+			}
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage(BRAND_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
 		}
-		
+
 		brand.setName(newName);
 		brandRepository.save(brand);
 	}
@@ -121,7 +131,23 @@ public class BrandsService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
 
-		brandRepository.delete(brand);
+		brand.setDeletedAt(LocalDateTime.now());
+		brandRepository.save(brand);
 	}
-	
+
+	@Transactional
+	public void restoreBrand(Long brandId) {
+		Brand brand = brandRepository.findById(brandId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
+
+		if (brand.getDeletedAt() == null) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("brand_not_deleted", LocaleUtils.getDefaultLocale()));
+		}
+
+		brand.setDeletedAt(null);
+		brandRepository.save(brand);
+	}
+
 }

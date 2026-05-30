@@ -70,7 +70,7 @@ class MaterialsServiceTest {
     @Test
     void testGetMaterialsReturnsNames() {
         Page<Material> page = new PageImpl<>(List.of(material));
-        when(materialRepository.findAll(any(Pageable.class))).thenReturn(page);
+        when(materialRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
 
         PageResponse<MaterialDTO> result =
                 materialsService.getMaterials(0, 10, "");
@@ -79,12 +79,12 @@ class MaterialsServiceTest {
         assertThat(result.getContent().get(0).getMaterialId()).isEqualTo(MATERIAL_ID);
         assertThat(result.getContent().get(0).getName()).isEqualTo(NAME);
 
-        verify(materialRepository).findAll(any(Pageable.class));
+        verify(materialRepository).findAllNotDeleted(any(Pageable.class));
     }
 
     @Test
     void testGetMaterialsReturnsEmptyListWhenNoMaterialsExist() {
-        when(materialRepository.findAll(any(Pageable.class)))
+        when(materialRepository.findAllNotDeleted(any(Pageable.class)))
                 .thenReturn(Page.empty());
 
         PageResponse<MaterialDTO> result =
@@ -92,7 +92,7 @@ class MaterialsServiceTest {
 
         assertThat(result.getContent()).isEmpty();
 
-        verify(materialRepository).findAll(any(Pageable.class));
+        verify(materialRepository).findAllNotDeleted(any(Pageable.class));
     }
 
     @Test
@@ -182,101 +182,171 @@ class MaterialsServiceTest {
         verify(materialRepository, never()).save(any());
     }
 
+    @Test
+    void testCreateMaterialThrowsConflictWhenDeletedMaterialExists() {
+        CreateMaterialDTO dto = CreateMaterialDTO.builder().name(NAME).build();
+
+        Material deleted = Material.builder().materialId(MATERIAL_ID).name(NAME).deletedAt(NOW).build();
+        when(materialRepository.findByName(NAME)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq("material_was_deleted"), any(Locale.class)))
+                .thenReturn("Material was deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.createMaterial(dto));
+
+        assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
+        assertEquals(MATERIAL_ID, ex.getMetadata().get("materialId"));
+        verify(materialRepository, never()).save(any());
+    }
+
     // ─── updateMaterial ─────────────────────────────────────────────────────
 
     @Test
     void testUpdateMaterialSuccessfully() {
-    	Long materialId = 1L;
-    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
+        Long materialId = 1L;
+        UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
 
-    	String oldName = "Lana";
-    	Material materialEntity = new Material(materialId, oldName, NOW, NOW);
-    	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
-    	when(materialRepository.findByName(NAME)).thenReturn(Optional.empty());
+        String oldName = "Lana";
+        Material materialEntity = new Material(materialId, oldName, NOW, NOW, null);
+        when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
+        when(materialRepository.findByName(NAME)).thenReturn(Optional.empty());
 
-    	materialsService.updateMaterial(materialId, updateMaterialDTO);
+        materialsService.updateMaterial(materialId, updateMaterialDTO);
 
-    	verify(materialRepository, times(1)).save(materialEntity);
-    	assertThat(materialEntity.getName()).isEqualTo(NAME);
+        verify(materialRepository, times(1)).save(materialEntity);
+        assertThat(materialEntity.getName()).isEqualTo(NAME);
     }
 
     @Test
     void testUpdateMaterialThrowsWhenNameAlreadyTaken() {
-    	Long materialId = 1L;
-    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
+        Long materialId = 1L;
+        UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
 
-    	Material materialEntity = new Material(materialId, "Lana", NOW, NOW);
-    	Material other = new Material(2L, NAME, NOW, NOW);
-    	when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
-    	when(materialRepository.findByName(NAME)).thenReturn(Optional.of(other));
-    	when(messageService.getMessage(eq("name_already_taken"), any(Locale.class)))
-    			.thenReturn("Name already taken");
+        Material materialEntity = new Material(materialId, "Lana", NOW, NOW, null);
+        Material other = new Material(2L, NAME, NOW, NOW, null);
+        when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
+        when(materialRepository.findByName(NAME)).thenReturn(Optional.of(other));
+        when(messageService.getMessage(eq("name_already_taken"), any(Locale.class)))
+                .thenReturn("Name already taken");
 
-    	assertThatThrownBy(() -> materialsService.updateMaterial(materialId, updateMaterialDTO))
-    			.isInstanceOf(ApiServiceException.class).hasMessageContaining("Name already taken");
+        assertThatThrownBy(() -> materialsService.updateMaterial(materialId, updateMaterialDTO))
+                .isInstanceOf(ApiServiceException.class).hasMessageContaining("Name already taken");
 
-    	verify(materialRepository, never()).save(any());
+        verify(materialRepository, never()).save(any());
+    }
+
+    @Test
+    void testUpdateMaterialThrowsConflictWhenNameBelongsToDeletedMaterial() {
+        Long materialId = 1L;
+        UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
+
+        Material materialEntity = new Material(materialId, "Lana", NOW, NOW, null);
+        Material deleted = new Material(2L, NAME, NOW, NOW, NOW);
+        when(materialRepository.findById(materialId)).thenReturn(Optional.of(materialEntity));
+        when(materialRepository.findByName(NAME)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq("material_was_deleted"), any(Locale.class)))
+                .thenReturn("Material was deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.updateMaterial(materialId, updateMaterialDTO));
+
+        assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
+        assertEquals(2L, ex.getMetadata().get("materialId"));
+        verify(materialRepository, never()).save(any());
     }
 
     @Test
     void testUpdateMaterialNameMissing() {
-    	Long materialId = 1L;
-    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().build();
+        Long materialId = 1L;
+        UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().build();
 
-		when(messageService.getMessage(MISSING_NAME, LocaleUtils.getDefaultLocale()))
-				.thenReturn(MISSING_NAME);
+        when(messageService.getMessage(MISSING_NAME, LocaleUtils.getDefaultLocale()))
+                .thenReturn(MISSING_NAME);
 
-		ApiServiceException ex = assertThrows(ApiServiceException.class,
-				() -> materialsService.updateMaterial(materialId, updateMaterialDTO));
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.updateMaterial(materialId, updateMaterialDTO));
 
-		assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
-    	assertEquals(MISSING_NAME, ex.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        assertEquals(MISSING_NAME, ex.getMessage());
     }
 
     @Test
     void testUpdateMaterialMaterialNotFound() {
-    	Long materialId = 1L;
-    	UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
+        Long materialId = 1L;
+        UpdateMaterialDTO updateMaterialDTO = UpdateMaterialDTO.builder().name(NAME).build();
 
-		when(materialRepository.findById(materialId)).thenReturn(Optional.empty());
-    	when(messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()))
-				.thenReturn(MATERIAL_NOT_FOUND);
+        when(materialRepository.findById(materialId)).thenReturn(Optional.empty());
+        when(messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()))
+                .thenReturn(MATERIAL_NOT_FOUND);
 
-		ApiServiceException ex = assertThrows(ApiServiceException.class,
-				() -> materialsService.updateMaterial(materialId, updateMaterialDTO));
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.updateMaterial(materialId, updateMaterialDTO));
 
-		assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
-    	assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
     }
 
     // ─── deleteMaterial ─────────────────────────────────────────────────────
 
     @Test
     void testShouldDeleteMaterialSuccessfully() {
-    	Long materialId = 1L;
+        when(materialRepository.findById(MATERIAL_ID)).thenReturn(Optional.of(material));
 
-    	when(materialRepository.existsById(materialId)).thenReturn(true);
-    	doNothing().when(materialRepository).deleteById(materialId);
+        materialsService.deleteMaterial(MATERIAL_ID);
 
-    	materialsService.deleteMaterial(materialId);
-
-    	verify(materialRepository, times(1)).existsById(materialId);
-    	verify(materialRepository, times(1)).deleteById(materialId);
+        verify(materialRepository).save(argThat(m -> m.getDeletedAt() != null));
     }
 
     @Test
     void testShouldThrowNotFoundOnDeleteMaterial() {
-    	Long materialId = 1L;
+        when(materialRepository.findById(MATERIAL_ID)).thenReturn(Optional.empty());
+        when(messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()))
+                .thenReturn(MATERIAL_NOT_FOUND);
 
-    	when(materialRepository.existsById(materialId)).thenReturn(false);
-    	when(messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale())).thenReturn(MATERIAL_NOT_FOUND);
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.deleteMaterial(MATERIAL_ID));
 
-    	ApiServiceException ex = assertThrows(ApiServiceException.class,
-				() -> materialsService.deleteMaterial(materialId));
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
+        verify(materialRepository, never()).save(any());
+    }
 
-    	assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
-    	assertEquals(MATERIAL_NOT_FOUND, ex.getMessage());
-    	verify(materialRepository, never()).deleteById(any());
+    // ─── restoreMaterial ─────────────────────────────────────────────────────
+
+    @Test
+    void testRestoreMaterialSuccessfully() {
+        Material deleted = Material.builder().materialId(MATERIAL_ID).name(NAME).deletedAt(NOW).build();
+        when(materialRepository.findById(MATERIAL_ID)).thenReturn(Optional.of(deleted));
+
+        materialsService.restoreMaterial(MATERIAL_ID);
+
+        verify(materialRepository).save(argThat(m -> m.getDeletedAt() == null));
+    }
+
+    @Test
+    void testRestoreMaterialThrowsWhenNotDeleted() {
+        when(materialRepository.findById(MATERIAL_ID)).thenReturn(Optional.of(material));
+        when(messageService.getMessage(eq("material_not_deleted"), any(Locale.class)))
+                .thenReturn("Material is not deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.restoreMaterial(MATERIAL_ID));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        verify(materialRepository, never()).save(any());
+    }
+
+    @Test
+    void testRestoreMaterialThrowsWhenNotFound() {
+        when(materialRepository.findById(MATERIAL_ID)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq(MATERIAL_NOT_FOUND), any(Locale.class)))
+                .thenReturn("Material not found");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> materialsService.restoreMaterial(MATERIAL_ID));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(materialRepository, never()).save(any());
     }
 
 }

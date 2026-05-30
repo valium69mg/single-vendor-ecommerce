@@ -317,13 +317,19 @@ public class AdminProductsController {
 				.body(apiResponseService.getApiResponseMessage("material_updated", HttpStatus.OK));
 	}
 	
-	@DeleteMapping("materials/{id}")
-	@Operation(summary = "Delete material", responses = {
+	@PatchMapping("materials/{id}/restore")
+	@Operation(summary = "Restore material", responses = {
 		    @ApiResponse(
-		        responseCode = "200", 
-		        description = "Material deleted successfully",
+		        responseCode = "200",
+		        description = "Material restored successfully",
 		        content = @Content(mediaType = "application/json",
 		        schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Material is not deleted",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
 		    ),
 		    @ApiResponse(
 		        responseCode = "404",
@@ -332,10 +338,27 @@ public class AdminProductsController {
 		            schema = @Schema(implementation = DefaultApiResponse.class))
 		    )
 		})
-	public ResponseEntity<DefaultApiResponse> deleteMaterial(@PathVariable long id) {
+	public ResponseEntity<DefaultApiResponse> restoreMaterial(@PathVariable long id) {
+		materialsService.restoreMaterial(id);
+		return ResponseEntity.ok(apiResponseService.getApiResponseMessage("material_restored", HttpStatus.OK));
+	}
+
+	@DeleteMapping("materials/{id}")
+	@Operation(summary = "Delete material", responses = {
+		    @ApiResponse(
+		        responseCode = "204",
+		        description = "Material deleted successfully"
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Material not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<Void> deleteMaterial(@PathVariable long id) {
 		materialsService.deleteMaterial(id);
-		return ResponseEntity.status(HttpStatus.NO_CONTENT)
-				.body(apiResponseService.getApiResponseMessage("material_deleted", HttpStatus.NO_CONTENT));
+		return ResponseEntity.noContent().build();
 	}
 	
 	@PostMapping("brands")
@@ -387,24 +410,48 @@ public class AdminProductsController {
 				.body(apiResponseService.getApiResponseMessage("brand_updated", HttpStatus.OK));
 	}
 	
-	@DeleteMapping("brands/{id}")
-	@Operation(summary = "Delete brand", responses = {
+	@PatchMapping("brands/{id}/restore")
+	@Operation(summary = "Restore brand", responses = {
 		    @ApiResponse(
-		        responseCode = "204",
-		        description = "Material deleted successfully",
+		        responseCode = "200",
+		        description = "Brand restored successfully",
 		        content = @Content(mediaType = "application/json",
 		        schema = @Schema(implementation = DefaultApiResponse.class))
 		    ),
 		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Brand is not deleted",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    ),
+		    @ApiResponse(
 		        responseCode = "404",
-		        description = "Material not found",
+		        description = "Brand not found",
 		        content = @Content(mediaType = "application/json",
 		            schema = @Schema(implementation = DefaultApiResponse.class))
 		    )
 		})
-	public ResponseEntity<DefaultApiResponse> deleteBrand(@PathVariable long id) {
+	public ResponseEntity<DefaultApiResponse> restoreBrand(@PathVariable long id) {
+		brandsService.restoreBrand(id);
+		return ResponseEntity.ok(apiResponseService.getApiResponseMessage("brand_restored", HttpStatus.OK));
+	}
+
+	@DeleteMapping("brands/{id}")
+	@Operation(summary = "Delete brand", responses = {
+		    @ApiResponse(
+		        responseCode = "204",
+		        description = "Brand deleted successfully"
+		    ),
+		    @ApiResponse(
+		        responseCode = "404",
+		        description = "Brand not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))
+		    )
+		})
+	public ResponseEntity<Void> deleteBrand(@PathVariable long id) {
 		brandsService.deleteBrand(id);
-		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("attributes")

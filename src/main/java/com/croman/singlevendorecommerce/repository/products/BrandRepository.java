@@ -14,10 +14,14 @@ public interface BrandRepository extends JpaRepository<Brand, Long> {
 	
 	@Query("SELECT b FROM Brand b WHERE LOWER(b.name) = LOWER(:name)")
 	Optional<Brand> findByName(@Param("name") String name);
-	
+
+	@Query("SELECT b FROM Brand b WHERE b.deletedAt IS NULL")
+	Page<Brand> findAllNotDeleted(Pageable pageable);
+
 	@Query("""
 			SELECT b FROM Brand b
-			WHERE LOWER(b.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
+			WHERE b.deletedAt IS NULL
+			AND LOWER(b.name) LIKE LOWER(CONCAT('%', :term, '%'))""")
 	Page<Brand> searchByName(@Param("term") String term, Pageable pageable);
 	
 }

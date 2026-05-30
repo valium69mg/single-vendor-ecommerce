@@ -1,0 +1,2 @@
+ALTER TABLE materials ADD COLUMN deleted_at TIMESTAMP;
+ALTER TABLE brands ADD COLUMN deleted_at TIMESTAMP;

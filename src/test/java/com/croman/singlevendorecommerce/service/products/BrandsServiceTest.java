@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -56,7 +57,8 @@ class BrandsServiceTest {
     private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
     private static final String BRAND_NOT_EXISTS_MESSAGE_KEY = "brand_does_not_exists";
     private static final String BRAND_NOT_EXISTS_MESSAGE = "Brand does not exist";
-    
+    private static final LocalDateTime NOW = LocalDateTime.now();
+
     private Brand brand;
     private Brand brand2;
 
@@ -67,9 +69,9 @@ class BrandsServiceTest {
                 .name(BRAND_NAME)
                 .build();
         brand2 = Brand.builder()
-        		.brandId(BRAND_ID_2)
-        		.name(BRAND_NAME_2)
-        		.build();
+                .brandId(BRAND_ID_2)
+                .name(BRAND_NAME_2)
+                .build();
     }
 
     // ─── getBrands ───────────────────────────────────────────────────────────
@@ -77,7 +79,7 @@ class BrandsServiceTest {
     @Test
     void testGetBrandsReturnsMappedDTOList() {
         Page<Brand> page = new PageImpl<>(List.of(brand));
-        when(brandRepository.findAll(any(Pageable.class))).thenReturn(page);
+        when(brandRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
 
         PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, "");
 
@@ -89,22 +91,22 @@ class BrandsServiceTest {
 
     @Test
     void testGetBrandsReturnsEmptyListWhenNoBrandsExist() {
-        when(brandRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(brandRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(Page.empty());
 
         PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, "");
 
         assertThat(result.getContent()).isEmpty();
         verify(brandRepository, never()).searchByName(any(), any());
     }
-    
+
     @Test
     void testGetBrandsBySearchTerm() {
-    	Page<Brand> page = new PageImpl<>(List.of(brand));
-    	when(brandRepository.searchByName(eq(SEARCH_TERM), any(Pageable.class))).thenReturn(page);
-    	
-    	PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, SEARCH_TERM);
-    	
-    	assertThat(result.getContent()).hasSize(1);
+        Page<Brand> page = new PageImpl<>(List.of(brand));
+        when(brandRepository.searchByName(eq(SEARCH_TERM), any(Pageable.class))).thenReturn(page);
+
+        PageResponse<BrandDTO> result = brandsService.getBrands(0, 10, SEARCH_TERM);
+
+        assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getBrandId()).isEqualTo(BRAND_ID);
         assertThat(result.getContent().get(0).getName()).isEqualTo(BRAND_NAME);
         verify(brandRepository, never()).findAll();
@@ -160,60 +162,132 @@ class BrandsServiceTest {
 
         verify(brandRepository, never()).save(any());
     }
-    
-	@Test
-	void testUpdateBrandBrandExists() {
-		// Arrange
-		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
 
-		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
-		when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.of(brand2));
-		when(messageService.getMessage(eq(BRAND_EXISTS_MESSAGE_KEY), any(Locale.class)))
+    @Test
+    void testCreateBrandThrowsConflictWhenDeletedBrandExists() {
+        CreateBrandDTO dto = CreateBrandDTO.builder().name(BRAND_NAME).build();
+
+        Brand deleted = Brand.builder().brandId(BRAND_ID).name(BRAND_NAME).deletedAt(NOW).build();
+        when(brandRepository.findByName(BRAND_NAME)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq("brand_was_deleted"), any(Locale.class)))
+                .thenReturn("Brand was deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> brandsService.createBrand(dto));
+
+        assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
+        assertEquals(BRAND_ID, ex.getMetadata().get("brandId"));
+        verify(brandRepository, never()).save(any());
+    }
+
+    // ─── updateBrand ─────────────────────────────────────────────────────────
+
+    @Test
+    void testUpdateBrandBrandExists() {
+        UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
+
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.of(brand2));
+        when(messageService.getMessage(eq(BRAND_EXISTS_MESSAGE_KEY), any(Locale.class)))
                 .thenReturn(BRAND_EXISTS_MESSAGE);
-		// Act
-		ApiServiceException ex = assertThrows(ApiServiceException.class,
-				() -> brandsService.updateBrand(BRAND_ID, updateBrandDTO));
-		// Assert
-		assertEquals(BRAND_EXISTS_MESSAGE, ex.getMessage());
-		assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
-	}
 
-	@Test
-	void testUpdateBrandSuccessfully() {
-		// Arrange
-		UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> brandsService.updateBrand(BRAND_ID, updateBrandDTO));
 
-		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
-		when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.empty());
+        assertEquals(BRAND_EXISTS_MESSAGE, ex.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+    }
 
-		// Act
-		brandsService.updateBrand(BRAND_ID, updateBrandDTO);
-		// Assert
-		verify(brandRepository, times(1)).save(any());
-	}
-	
-	@Test
-	void testDeleteBrandBrandNotFound() {
-		// Arrange
-		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
-		when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
-        .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
-		// Act
-		ApiServiceException ex = assertThrows(ApiServiceException.class,
-				() ->brandsService.deleteBrand(BRAND_ID));
-		// Assert
-		verify(brandRepository, never()).delete(any());
-		assertEquals(BRAND_NOT_EXISTS_MESSAGE, ex.getMessage());
-		assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
-	}
-	
-	@Test
-	void testDeleteBrandSuccessfully() {
-		// Arrange
-		when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
-		// Act
-		brandsService.deleteBrand(BRAND_ID);
-		// Assert
-		verify(brandRepository, times(1)).delete(any());
-	}
+    @Test
+    void testUpdateBrandThrowsConflictWhenNameBelongsToDeletedBrand() {
+        UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
+
+        Brand deleted = Brand.builder().brandId(BRAND_ID_2).name(BRAND_NAME_2).deletedAt(NOW).build();
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq("brand_was_deleted"), any(Locale.class)))
+                .thenReturn("Brand was deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> brandsService.updateBrand(BRAND_ID, updateBrandDTO));
+
+        assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
+        assertEquals(BRAND_ID_2, ex.getMetadata().get("brandId"));
+    }
+
+    @Test
+    void testUpdateBrandSuccessfully() {
+        UpdateBrandDTO updateBrandDTO = UpdateBrandDTO.builder().name(BRAND_NAME_2).build();
+
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(brandRepository.findByName(BRAND_NAME_2)).thenReturn(Optional.empty());
+
+        brandsService.updateBrand(BRAND_ID, updateBrandDTO);
+
+        verify(brandRepository, times(1)).save(any());
+    }
+
+    // ─── deleteBrand ─────────────────────────────────────────────────────────
+
+    @Test
+    void testDeleteBrandBrandNotFound() {
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> brandsService.deleteBrand(BRAND_ID));
+
+        verify(brandRepository, never()).save(any());
+        assertEquals(BRAND_NOT_EXISTS_MESSAGE, ex.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testDeleteBrandSuccessfully() {
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+
+        brandsService.deleteBrand(BRAND_ID);
+
+        verify(brandRepository).save(argThat(b -> b.getDeletedAt() != null));
+    }
+
+    // ─── restoreBrand ─────────────────────────────────────────────────────────
+
+    @Test
+    void testRestoreBrandSuccessfully() {
+        Brand deleted = Brand.builder().brandId(BRAND_ID).name(BRAND_NAME).deletedAt(NOW).build();
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(deleted));
+
+        brandsService.restoreBrand(BRAND_ID);
+
+        verify(brandRepository).save(argThat(b -> b.getDeletedAt() == null));
+    }
+
+    @Test
+    void testRestoreBrandThrowsWhenNotDeleted() {
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(messageService.getMessage(eq("brand_not_deleted"), any(Locale.class)))
+                .thenReturn("Brand is not deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> brandsService.restoreBrand(BRAND_ID));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        verify(brandRepository, never()).save(any());
+    }
+
+    @Test
+    void testRestoreBrandThrowsWhenNotFound() {
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> brandsService.restoreBrand(BRAND_ID));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(brandRepository, never()).save(any());
+    }
+
 }
