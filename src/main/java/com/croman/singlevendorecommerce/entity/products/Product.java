@@ -52,6 +52,12 @@ public class Product {
     @Column(name = "featured", nullable = false)
     private Boolean featured;
 
+    @Column(name = "file_url", length = 500)
+    private String fileUrl;
+
+    @Column(name = "units_sold", nullable = false)
+    private Integer unitsSold = 0;
+
     @CreationTimestamp
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;

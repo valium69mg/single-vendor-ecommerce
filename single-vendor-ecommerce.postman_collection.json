@@ -1324,6 +1324,110 @@
 					]
 				},
 				{
+					"name": "products/list (public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/products?page=0&size=50&sortBy=newest&term=&featured=false",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "products"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "50"},
+								{"key": "sortBy", "value": "newest"},
+								{"key": "term", "value": ""},
+								{"key": "featured", "value": "false"},
+								{"key": "categoryId", "value": "", "disabled": true},
+								{"key": "brandId", "value": "", "disabled": true},
+								{"key": "materialId", "value": "", "disabled": true},
+								{"key": "createdAtStart", "value": "", "disabled": true},
+								{"key": "createdAtEnd", "value": "", "disabled": true}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "products/id (public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/products/ac166939-6f0c-4f18-b6b7-c160fc6f9731",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "products", "ac166939-6f0c-4f18-b6b7-c160fc6f9731"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "admin/products/list",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/admin/products?page=0&size=50&sortBy=newest&term=&featured=false",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "admin", "products"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "50"},
+								{"key": "sortBy", "value": "newest"},
+								{"key": "term", "value": ""},
+								{"key": "featured", "value": "false"},
+								{"key": "status", "value": "", "disabled": true},
+								{"key": "categoryId", "value": "", "disabled": true},
+								{"key": "brandId", "value": "", "disabled": true},
+								{"key": "materialId", "value": "", "disabled": true},
+								{"key": "createdAtStart", "value": "", "disabled": true},
+								{"key": "createdAtEnd", "value": "", "disabled": true}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "admin/products/id",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/admin/products/ac166939-6f0c-4f18-b6b7-c160fc6f9731",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "admin", "products", "ac166939-6f0c-4f18-b6b7-c160fc6f9731"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "admin/products/id/image",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"body": {
+							"mode": "formdata",
+							"formdata": [{"key": "file", "type": "file", "src": []}]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/admin/products/ac166939-6f0c-4f18-b6b7-c160fc6f9731/image",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "admin", "products", "ac166939-6f0c-4f18-b6b7-c160fc6f9731", "image"]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "product",
 					"request": {
 						"method": "POST",

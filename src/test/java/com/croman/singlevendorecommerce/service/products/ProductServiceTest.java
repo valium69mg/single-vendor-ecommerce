@@ -1,12 +1,15 @@
 package com.croman.singlevendorecommerce.service.products;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -16,6 +19,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -27,12 +31,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.croman.singlevendorecommerce.dto.products.AdminProductByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.AdminProductDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductVariantDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductStatus;
+import com.croman.singlevendorecommerce.dto.products.PublicProductByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicProductDTO;
+import com.croman.singlevendorecommerce.dto.utils.PageResponse;
+import com.croman.singlevendorecommerce.service.storage.StorageService;
+import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
 import com.croman.singlevendorecommerce.entity.products.AttributeValue;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.entity.products.Category;
@@ -63,6 +79,9 @@ class ProductServiceTest {
     @Mock private MaterialRepository materialRepository;
     @Mock private AttributeValueRepository attributeValueRepository;
     @Mock private MessageService messageService;
+    @Mock private StorageService storageService;
+    @Mock private ThumbnailService thumbnailService;
+    @Mock private MultipartFile multipartFile;
 
     @InjectMocks
     private ProductService productService;
@@ -801,6 +820,242 @@ class ProductServiceTest {
 
         verify(productMaterialRepository, never()).saveAll(anyList());
         verify(productMaterialRepository, never()).deleteByProductAndMaterialIn(any(), anyList());
+    }
+
+    // ─── getPublicProducts ────────────────────────────────────────────────────
+
+    @Test
+    void testGetPublicProductsReturnsPageOfActiveProducts() {
+        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(savedProduct)));
+        when(productVariantRepository.findByProductIds(anyList())).thenReturn(List.of(savedVariant));
+
+        PageResponse<PublicProductDTO> result = productService.getPublicProducts(
+                0, 10, "newest", "", null, null, null, false, null, null);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getProductId()).isEqualTo(savedProduct.getProductId());
+        assertThat(result.getContent().get(0).getName()).isEqualTo(PRODUCT_NAME);
+    }
+
+    @Test
+    void testGetPublicProductsReturnsEmptyPageWhenNoProducts() {
+        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        PageResponse<PublicProductDTO> result = productService.getPublicProducts(
+                0, 10, "newest", "", null, null, null, false, null, null);
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testGetPublicProductsSortsByPriceAscUsingInMemorySort() {
+        Product cheapProduct = Product.builder().productId(UUID.randomUUID()).name("Cheap")
+                .status(ProductStatus.ACTIVE).featured(false).build();
+        Product expensiveProduct = Product.builder().productId(UUID.randomUUID()).name("Expensive")
+                .status(ProductStatus.ACTIVE).featured(false).build();
+
+        ProductVariant cheapVariant = new ProductVariant();
+        cheapVariant.setProductVariantId(1L);
+        cheapVariant.setProduct(cheapProduct);
+        cheapVariant.setPrice(BigDecimal.valueOf(100));
+        cheapVariant.setStock(5);
+
+        ProductVariant expensiveVariant = new ProductVariant();
+        expensiveVariant.setProductVariantId(2L);
+        expensiveVariant.setProduct(expensiveProduct);
+        expensiveVariant.setPrice(BigDecimal.valueOf(500));
+        expensiveVariant.setStock(3);
+
+        when(productRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(List.of(expensiveProduct, cheapProduct));
+        when(productVariantRepository.findByProductIds(anyList()))
+                .thenReturn(List.of(expensiveVariant, cheapVariant));
+
+        PageResponse<PublicProductDTO> result = productService.getPublicProducts(
+                0, 10, "priceAsc", "", null, null, null, false, null, null);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("Cheap");
+        assertThat(result.getContent().get(1).getName()).isEqualTo("Expensive");
+    }
+
+    // ─── getPublicProductById ─────────────────────────────────────────────────
+
+    @Test
+    void testGetPublicProductByIdReturnsActiveProduct() {
+        when(productRepository.findById(savedProduct.getProductId()))
+                .thenReturn(Optional.of(savedProduct));
+        when(productVariantRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of(savedVariant));
+        when(productVariantAttributeRepository.findByVariantIn(anyList())).thenReturn(List.of());
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of());
+
+        PublicProductByIdDTO result = productService.getPublicProductById(savedProduct.getProductId());
+
+        assertThat(result.getProductId()).isEqualTo(savedProduct.getProductId());
+        assertThat(result.getName()).isEqualTo(PRODUCT_NAME);
+        assertNotNull(result.getVariants());
+    }
+
+    @Test
+    void testGetPublicProductByIdThrowsWhenNotFound() {
+        UUID id = UUID.randomUUID();
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.getPublicProductById(id));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testGetPublicProductByIdThrowsWhenProductIsInactive() {
+        Product inactive = Product.builder().productId(UUID.randomUUID()).name("Inactive")
+                .status(ProductStatus.INACTIVE).featured(false).build();
+        when(productRepository.findById(inactive.getProductId())).thenReturn(Optional.of(inactive));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.getPublicProductById(inactive.getProductId()));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    // ─── getAdminProducts ─────────────────────────────────────────────────────
+
+    @Test
+    void testGetAdminProductsReturnsAllStatuses() {
+        Product inactive = Product.builder().productId(UUID.randomUUID()).name("Inactive Ring")
+                .status(ProductStatus.INACTIVE).featured(false).build();
+
+        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(savedProduct, inactive)));
+        when(productVariantRepository.findByProductIds(anyList())).thenReturn(List.of(savedVariant));
+
+        PageResponse<AdminProductDTO> result = productService.getAdminProducts(
+                0, 10, "newest", "", null, null, null, false, null, null, null);
+
+        assertThat(result.getContent()).hasSize(2);
+    }
+
+    @Test
+    void testGetAdminProductsIncludesVariantStats() {
+        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(savedProduct)));
+        when(productVariantRepository.findByProductIds(anyList())).thenReturn(List.of(savedVariant));
+
+        PageResponse<AdminProductDTO> result = productService.getAdminProducts(
+                0, 10, "newest", "", null, null, null, false, null, null, null);
+
+        AdminProductDTO dto = result.getContent().get(0);
+        assertThat(dto.getTotalStock()).isEqualTo(savedVariant.getStock());
+        assertThat(dto.getVariantCount()).isEqualTo(1);
+    }
+
+    // ─── getAdminProductById ──────────────────────────────────────────────────
+
+    @Test
+    void testGetAdminProductByIdReturnsProductRegardlessOfStatus() {
+        Product inactive = Product.builder().productId(UUID.randomUUID()).name("Inactive Ring")
+                .status(ProductStatus.INACTIVE).featured(false).build();
+        when(productRepository.findById(inactive.getProductId())).thenReturn(Optional.of(inactive));
+        when(productVariantRepository.findByProductProductId(inactive.getProductId()))
+                .thenReturn(List.of());
+        when(productVariantAttributeRepository.findByVariantIn(anyList())).thenReturn(List.of());
+        when(productMaterialRepository.findByProductProductId(inactive.getProductId()))
+                .thenReturn(List.of());
+
+        AdminProductByIdDTO result = productService.getAdminProductById(inactive.getProductId());
+
+        assertThat(result.getProductId()).isEqualTo(inactive.getProductId());
+        assertThat(result.getStatus()).isEqualTo(ProductStatus.INACTIVE);
+    }
+
+    @Test
+    void testGetAdminProductByIdThrowsWhenNotFound() {
+        UUID id = UUID.randomUUID();
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.getAdminProductById(id));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testGetAdminProductByIdIncludesSkuAndWeightInVariants() {
+        savedVariant.setSku(SKU);
+        savedVariant.setWeightGrams(10);
+        savedVariant.setProduct(savedProduct);
+
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(productVariantRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of(savedVariant));
+        when(productVariantAttributeRepository.findByVariantIn(anyList())).thenReturn(List.of());
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of());
+
+        AdminProductByIdDTO result = productService.getAdminProductById(savedProduct.getProductId());
+
+        assertThat(result.getVariants()).hasSize(1);
+        assertThat(result.getVariants().get(0).getSku()).isEqualTo(SKU);
+        assertThat(result.getVariants().get(0).getWeightGrams()).isEqualTo(10);
+    }
+
+    // ─── uploadProductImage ───────────────────────────────────────────────────
+
+    @Test
+    void testUploadProductImageSuccessfully() throws Exception {
+        savedProduct.setFileUrl("products/old-image.jpg");
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(multipartFile.getContentType()).thenReturn("image/jpeg");
+        when(multipartFile.getOriginalFilename()).thenReturn("photo.jpg");
+        when(multipartFile.getSize()).thenReturn(10L);
+        when(multipartFile.getInputStream())
+                .thenReturn(new java.io.ByteArrayInputStream("img".getBytes()));
+
+        assertDoesNotThrow(() -> productService.uploadProductImage(multipartFile, savedProduct.getProductId()));
+
+        verify(storageService).delete("products/old-image.jpg");
+        verify(productRepository).save(any(Product.class));
+        verify(thumbnailService).generateThumbnails(any(String.class));
+    }
+
+    @Test
+    void testUploadProductImageThrowsWhenContentTypeInvalid() {
+        when(multipartFile.getContentType()).thenReturn("application/pdf");
+        when(messageService.getMessage(eq("invalid_image_type"), any(Locale.class)))
+                .thenReturn("Invalid image type");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.uploadProductImage(multipartFile, savedProduct.getProductId()));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        verify(storageService, never()).upload(any(), any(), anyLong(), any());
+    }
+
+    @Test
+    void testUploadProductImageThrowsWhenProductNotFound() {
+        UUID id = UUID.randomUUID();
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+        when(multipartFile.getContentType()).thenReturn("image/jpeg");
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.uploadProductImage(multipartFile, id));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
     }
 
 }

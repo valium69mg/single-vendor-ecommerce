@@ -1,6 +1,8 @@
 package com.croman.singlevendorecommerce.service.products;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -9,13 +11,30 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+
+import com.croman.singlevendorecommerce.dto.products.AdminProductByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.AdminProductDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateProductVariantDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
+import com.croman.singlevendorecommerce.dto.products.ProductStatus;
+import com.croman.singlevendorecommerce.dto.products.PublicProductByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicProductDTO;
+import com.croman.singlevendorecommerce.dto.utils.PageResponse;
+import com.croman.singlevendorecommerce.service.storage.StorageService;
+import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
+import com.croman.singlevendorecommerce.utils.FileUtils;
+import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.entity.products.AttributeValue;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.entity.products.Category;
@@ -24,6 +43,7 @@ import com.croman.singlevendorecommerce.entity.products.Product;
 import com.croman.singlevendorecommerce.entity.products.ProductMaterial;
 import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 import com.croman.singlevendorecommerce.entity.products.ProductVariantAttribute;
+import com.croman.singlevendorecommerce.utils.PaginationUtils;
 import com.croman.singlevendorecommerce.repository.products.AttributeValueRepository;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
@@ -42,6 +62,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProductService {
 
+    private static final String PRODUCT_SUB_DIRECTORY = "products/";
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp");
+
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductMaterialRepository productMaterialRepository;
@@ -51,6 +75,8 @@ public class ProductService {
     private final MaterialRepository materialRepository;
     private final AttributeValueRepository attributeValueRepository;
     private final MessageService messageService;
+    private final StorageService storageService;
+    private final ThumbnailService thumbnailService;
 
     @Transactional
     public void createProduct(CreateProductDTO dto) {
@@ -183,6 +209,317 @@ public class ProductService {
 		}
 		return addedMaterials;
 	}
+
+    @Transactional(readOnly = true)
+    public PageResponse<PublicProductDTO> getPublicProducts(
+            int page, int size, String sortBy, String term,
+            Long categoryId, Long brandId, Long materialId,
+            boolean featured, LocalDateTime createdAtStart, LocalDateTime createdAtEnd) {
+
+        Specification<Product> spec = ProductSpecification.build(
+                term, categoryId, brandId, materialId, featured,
+                ProductStatus.ACTIVE, createdAtStart, createdAtEnd);
+
+        return fetchPage(spec, page, size, sortBy, this::mapToPublicProductDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public PublicProductByIdDTO getPublicProductById(UUID productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                        messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
+
+        if (product.getStatus() != ProductStatus.ACTIVE) {
+            throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                    messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale()));
+        }
+
+        return mapToPublicProductByIdDTO(product);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AdminProductDTO> getAdminProducts(
+            int page, int size, String sortBy, String term,
+            Long categoryId, Long brandId, Long materialId,
+            boolean featured, ProductStatus status,
+            LocalDateTime createdAtStart, LocalDateTime createdAtEnd) {
+
+        Specification<Product> spec = ProductSpecification.build(
+                term, categoryId, brandId, materialId, featured,
+                status, createdAtStart, createdAtEnd);
+
+        return fetchPage(spec, page, size, sortBy, this::mapToAdminProductDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminProductByIdDTO getAdminProductById(UUID productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                        messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
+
+        return mapToAdminProductByIdDTO(product);
+    }
+
+    @Transactional
+    public void uploadProductImage(MultipartFile file, UUID productId) {
+        try {
+            String contentType = file.getContentType();
+            if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
+                throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+                        messageService.getMessage("invalid_image_type", LocaleUtils.getDefaultLocale()));
+            }
+
+            Product product = resolveProduct(productId);
+
+            storageService.delete(product.getFileUrl());
+            storageService.delete(FileUtils.toMediumThumbnailKey(product.getFileUrl()));
+            storageService.delete(FileUtils.toSmallThumbnailKey(product.getFileUrl()));
+
+            String imageId = UUID.randomUUID().toString();
+            String extension = FileUtils.getFileExtension(file.getOriginalFilename());
+            String key = PRODUCT_SUB_DIRECTORY + imageId + extension;
+
+            product.setFileUrl(key);
+            productRepository.save(product);
+
+            storageService.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
+            thumbnailService.generateThumbnails(key);
+
+        } catch (ApiServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+                    messageService.getMessage("image_upload_failed", LocaleUtils.getDefaultLocale()));
+        }
+    }
+
+    private <T> PageResponse<T> fetchPage(
+            Specification<Product> spec, int page, int size, String sortBy,
+            java.util.function.BiFunction<Product, Map<UUID, List<ProductVariant>>, T> mapper) {
+
+        if ("priceAsc".equals(sortBy) || "priceDesc".equals(sortBy)) {
+            List<Product> all = new ArrayList<>(productRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt")));
+            List<UUID> allIds = all.stream().map(Product::getProductId).toList();
+            Map<UUID, List<ProductVariant>> variantsByProduct = groupVariantsByProduct(allIds);
+
+            Comparator<Product> comparator = Comparator.comparing(
+                    p -> minPrice(variantsByProduct.getOrDefault(p.getProductId(), List.of())));
+            if ("priceDesc".equals(sortBy)) comparator = comparator.reversed();
+            all.sort(comparator);
+
+            int start = page * size;
+            List<Product> slice = start >= all.size() ? List.of()
+                    : all.subList(start, Math.min(start + size, all.size()));
+            List<T> dtos = slice.stream().map(p -> mapper.apply(p, variantsByProduct)).toList();
+
+            return PageResponse.<T>builder()
+                    .content(dtos).page(page).size(size)
+                    .totalElements(all.size())
+                    .totalPages((int) Math.ceil((double) all.size() / size))
+                    .last(start + size >= all.size())
+                    .build();
+        }
+
+        Sort sort = "mostSold".equals(sortBy)
+                ? Sort.by(Sort.Direction.DESC, "unitsSold")
+                : Sort.by(Sort.Direction.DESC, "createdAt");
+        Page<Product> productPage = productRepository.findAll(spec, PageRequest.of(page, size, sort));
+        List<UUID> ids = productPage.getContent().stream().map(Product::getProductId).toList();
+        Map<UUID, List<ProductVariant>> variantsByProduct = groupVariantsByProduct(ids);
+
+        List<T> dtos = productPage.getContent().stream()
+                .map(p -> mapper.apply(p, variantsByProduct)).toList();
+
+        return PageResponse.<T>builder()
+                .content(dtos).page(productPage.getNumber()).size(productPage.getSize())
+                .totalElements(productPage.getTotalElements())
+                .totalPages(productPage.getTotalPages())
+                .last(productPage.isLast())
+                .build();
+    }
+
+    private Map<UUID, List<ProductVariant>> groupVariantsByProduct(List<UUID> productIds) {
+        if (productIds.isEmpty()) return Map.of();
+        return productVariantRepository.findByProductIds(productIds).stream()
+                .collect(Collectors.groupingBy(v -> v.getProduct().getProductId()));
+    }
+
+    private BigDecimal minPrice(List<ProductVariant> variants) {
+        return variants.stream().map(ProductVariant::getPrice)
+                .min(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+    }
+
+    private BigDecimal minDiscountPrice(List<ProductVariant> variants) {
+        return variants.stream().map(ProductVariant::getDiscountPrice)
+                .filter(java.util.Objects::nonNull)
+                .min(Comparator.naturalOrder()).orElse(null);
+    }
+
+    private PublicProductDTO mapToPublicProductDTO(Product p, Map<UUID, List<ProductVariant>> variantsByProduct) {
+        List<ProductVariant> variants = variantsByProduct.getOrDefault(p.getProductId(), List.of());
+        return PublicProductDTO.builder()
+                .productId(p.getProductId())
+                .name(p.getName())
+                .shortDescription(p.getShortDescription())
+                .featured(Boolean.TRUE.equals(p.getFeatured()))
+                .category(p.getCategory() == null ? null : PublicProductDTO.CategoryRef.builder()
+                        .categoryId(p.getCategory().getCategoryId())
+                        .name(p.getCategory().getName()).build())
+                .brand(p.getBrand() == null ? null : PublicProductDTO.BrandRef.builder()
+                        .brandId(p.getBrand().getBrandId())
+                        .name(p.getBrand().getName()).build())
+                .imageUrl(p.getFileUrl())
+                .mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(p.getFileUrl()))
+                .smallThumbnailUrl(FileUtils.toSmallThumbnailKey(p.getFileUrl()))
+                .minPrice(minPrice(variants))
+                .minDiscountPrice(minDiscountPrice(variants))
+                .createdAt(p.getCreatedAt())
+                .build();
+    }
+
+    private AdminProductDTO mapToAdminProductDTO(Product p, Map<UUID, List<ProductVariant>> variantsByProduct) {
+        List<ProductVariant> variants = variantsByProduct.getOrDefault(p.getProductId(), List.of());
+        return AdminProductDTO.builder()
+                .productId(p.getProductId())
+                .name(p.getName())
+                .shortDescription(p.getShortDescription())
+                .featured(Boolean.TRUE.equals(p.getFeatured()))
+                .status(p.getStatus())
+                .category(p.getCategory() == null ? null : AdminProductDTO.CategoryRef.builder()
+                        .categoryId(p.getCategory().getCategoryId())
+                        .name(p.getCategory().getName()).build())
+                .brand(p.getBrand() == null ? null : AdminProductDTO.BrandRef.builder()
+                        .brandId(p.getBrand().getBrandId())
+                        .name(p.getBrand().getName()).build())
+                .imageUrl(p.getFileUrl())
+                .mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(p.getFileUrl()))
+                .smallThumbnailUrl(FileUtils.toSmallThumbnailKey(p.getFileUrl()))
+                .minPrice(minPrice(variants))
+                .minDiscountPrice(minDiscountPrice(variants))
+                .totalStock(variants.stream().mapToInt(ProductVariant::getStock).sum())
+                .variantCount(variants.size())
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
+                .build();
+    }
+
+    private PublicProductByIdDTO mapToPublicProductByIdDTO(Product p) {
+        List<ProductVariant> variants = productVariantRepository.findByProductProductId(p.getProductId());
+        List<ProductVariantAttribute> pvas = productVariantAttributeRepository.findByVariantIn(variants);
+        Map<Long, List<ProductVariantAttribute>> pvasByVariant = pvas.stream()
+                .collect(Collectors.groupingBy(pva -> pva.getVariant().getProductVariantId()));
+
+        BigDecimal minPrice = variants.stream().map(ProductVariant::getPrice)
+                .min(Comparator.naturalOrder()).orElse(null);
+        BigDecimal minDiscountPrice = variants.stream()
+                .map(ProductVariant::getDiscountPrice).filter(java.util.Objects::nonNull)
+                .min(Comparator.naturalOrder()).orElse(null);
+
+        List<PublicProductByIdDTO.VariantDTO> variantDTOs = variants.stream()
+                .map(v -> PublicProductByIdDTO.VariantDTO.builder()
+                        .productVariantId(v.getProductVariantId())
+                        .price(v.getPrice())
+                        .discountPrice(v.getDiscountPrice())
+                        .stock(v.getStock())
+                        .attributeValues(pvasByVariant.getOrDefault(v.getProductVariantId(), List.of())
+                                .stream().map(pva -> PublicProductByIdDTO.AttributeValueDTO.builder()
+                                        .attributeValueId(pva.getAttributeValue().getAttributeValueId())
+                                        .value(pva.getAttributeValue().getValue()).build())
+                                .toList())
+                        .build())
+                .toList();
+
+        List<ProductMaterial> productMaterials =
+                productMaterialRepository.findByProductProductId(p.getProductId());
+        List<PublicProductByIdDTO.MaterialRef> materialRefs = productMaterials.stream()
+                .map(pm -> PublicProductByIdDTO.MaterialRef.builder()
+                        .materialId(pm.getMaterial().getMaterialId())
+                        .name(pm.getMaterial().getName()).build())
+                .toList();
+
+        return PublicProductByIdDTO.builder()
+                .productId(p.getProductId())
+                .name(p.getName())
+                .shortDescription(p.getShortDescription())
+                .longDescription(p.getLongDescription())
+                .featured(Boolean.TRUE.equals(p.getFeatured()))
+                .category(p.getCategory() == null ? null : PublicProductByIdDTO.CategoryRef.builder()
+                        .categoryId(p.getCategory().getCategoryId())
+                        .name(p.getCategory().getName()).build())
+                .brand(p.getBrand() == null ? null : PublicProductByIdDTO.BrandRef.builder()
+                        .brandId(p.getBrand().getBrandId())
+                        .name(p.getBrand().getName()).build())
+                .imageUrl(p.getFileUrl())
+                .mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(p.getFileUrl()))
+                .smallThumbnailUrl(FileUtils.toSmallThumbnailKey(p.getFileUrl()))
+                .minPrice(minPrice)
+                .minDiscountPrice(minDiscountPrice)
+                .createdAt(p.getCreatedAt())
+                .materials(materialRefs)
+                .variants(variantDTOs)
+                .build();
+    }
+
+    private AdminProductByIdDTO mapToAdminProductByIdDTO(Product p) {
+        List<ProductVariant> variants = productVariantRepository.findByProductProductId(p.getProductId());
+        List<ProductVariantAttribute> pvas = productVariantAttributeRepository.findByVariantIn(variants);
+        Map<Long, List<ProductVariantAttribute>> pvasByVariant = pvas.stream()
+                .collect(Collectors.groupingBy(pva -> pva.getVariant().getProductVariantId()));
+
+        BigDecimal minPrice = variants.stream().map(ProductVariant::getPrice)
+                .min(Comparator.naturalOrder()).orElse(null);
+        BigDecimal minDiscountPrice = variants.stream()
+                .map(ProductVariant::getDiscountPrice).filter(java.util.Objects::nonNull)
+                .min(Comparator.naturalOrder()).orElse(null);
+
+        List<AdminProductByIdDTO.VariantDTO> variantDTOs = variants.stream()
+                .map(v -> AdminProductByIdDTO.VariantDTO.builder()
+                        .productVariantId(v.getProductVariantId())
+                        .sku(v.getSku())
+                        .price(v.getPrice())
+                        .discountPrice(v.getDiscountPrice())
+                        .stock(v.getStock())
+                        .weightGrams(v.getWeightGrams())
+                        .attributeValues(pvasByVariant.getOrDefault(v.getProductVariantId(), List.of())
+                                .stream().map(pva -> AdminProductByIdDTO.AttributeValueDTO.builder()
+                                        .attributeValueId(pva.getAttributeValue().getAttributeValueId())
+                                        .value(pva.getAttributeValue().getValue()).build())
+                                .toList())
+                        .build())
+                .toList();
+
+        List<ProductMaterial> productMaterials =
+                productMaterialRepository.findByProductProductId(p.getProductId());
+        List<AdminProductByIdDTO.MaterialRef> materialRefs = productMaterials.stream()
+                .map(pm -> AdminProductByIdDTO.MaterialRef.builder()
+                        .materialId(pm.getMaterial().getMaterialId())
+                        .name(pm.getMaterial().getName()).build())
+                .toList();
+
+        return AdminProductByIdDTO.builder()
+                .productId(p.getProductId())
+                .name(p.getName())
+                .shortDescription(p.getShortDescription())
+                .longDescription(p.getLongDescription())
+                .featured(Boolean.TRUE.equals(p.getFeatured()))
+                .status(p.getStatus())
+                .category(p.getCategory() == null ? null : AdminProductByIdDTO.CategoryRef.builder()
+                        .categoryId(p.getCategory().getCategoryId())
+                        .name(p.getCategory().getName()).build())
+                .brand(p.getBrand() == null ? null : AdminProductByIdDTO.BrandRef.builder()
+                        .brandId(p.getBrand().getBrandId())
+                        .name(p.getBrand().getName()).build())
+                .imageUrl(p.getFileUrl())
+                .mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(p.getFileUrl()))
+                .smallThumbnailUrl(FileUtils.toSmallThumbnailKey(p.getFileUrl()))
+                .minPrice(minPrice)
+                .minDiscountPrice(minDiscountPrice)
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
+                .materials(materialRefs)
+                .variants(variantDTOs)
+                .build();
+    }
 
     private Category resolveCategory(Long categoryId) {
         if (categoryId == null) return null;

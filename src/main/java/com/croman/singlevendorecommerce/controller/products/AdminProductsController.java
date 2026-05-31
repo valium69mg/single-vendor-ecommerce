@@ -1,7 +1,10 @@
 package com.croman.singlevendorecommerce.controller.products;
 
 
+import java.time.LocalDateTime;
 import java.util.UUID;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.List;
 
@@ -30,10 +33,14 @@ import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
+import com.croman.singlevendorecommerce.dto.products.AdminProductByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.AdminProductDTO;
+import com.croman.singlevendorecommerce.dto.products.AdminProductsPageResponse;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
 import com.croman.singlevendorecommerce.dto.products.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.MaterialDTO;
 import com.croman.singlevendorecommerce.dto.products.MaterialsPageResponse;
+import com.croman.singlevendorecommerce.dto.products.ProductStatus;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
@@ -72,6 +79,65 @@ public class AdminProductsController {
 	private final ProductService productService;
 	private final ApiResponseService apiResponseService;
 	private final MessageService messageService;
+
+	@GetMapping
+	@Operation(summary = "Get products (admin)", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = AdminProductsPageResponse.class)))
+		})
+	public ResponseEntity<PageResponse<AdminProductDTO>> getProducts(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size,
+			@RequestParam(defaultValue = "newest") String sortBy,
+			@RequestParam(defaultValue = "") @Valid @Size(min = 0, max = 200) String term,
+			@RequestParam(required = false) Long categoryId,
+			@RequestParam(required = false) Long brandId,
+			@RequestParam(required = false) Long materialId,
+			@RequestParam(defaultValue = "false") boolean featured,
+			@RequestParam(required = false) ProductStatus status,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtStart,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtEnd) {
+		return ResponseEntity.ok(productService.getAdminProducts(
+				page, size, sortBy, term, categoryId, brandId, materialId,
+				featured, status, createdAtStart, createdAtEnd));
+	}
+
+	@GetMapping("{productId}")
+	@Operation(summary = "Get product by id (admin)", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = AdminProductByIdDTO.class))),
+		    @ApiResponse(responseCode = "404", description = "Product not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<AdminProductByIdDTO> getProductById(@PathVariable UUID productId) {
+		return ResponseEntity.ok(productService.getAdminProductById(productId));
+	}
+
+	@PostMapping("{productId}/image")
+	@Operation(summary = "Upload product image", responses = {
+		    @ApiResponse(responseCode = "200", description = "Upload successful",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))),
+		    @ApiResponse(responseCode = "400", description = "Bad request",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))),
+		    @ApiResponse(responseCode = "404", description = "Product not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<DefaultApiResponse> uploadProductImage(
+			@PathVariable UUID productId,
+			@RequestParam("file") MultipartFile file) {
+		productService.uploadProductImage(file, productId);
+		DefaultApiResponse response = DefaultApiResponse.builder()
+				.status(HttpStatus.OK.value())
+				.message(messageService.getMessage("image_uploaded", LocaleUtils.getDefaultLocale()))
+				.build();
+		return ResponseEntity.ok(response);
+	}
 
 	@PostMapping
 	@Operation(summary = "Create product", responses = {

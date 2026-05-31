@@ -2,6 +2,7 @@ package com.croman.singlevendorecommerce.repository.products;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,5 +14,10 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     @Query("SELECT v.sku FROM ProductVariant v WHERE v.sku IN :skus")
     List<String> findExistingSkus(@Param("skus") Collection<String> skus);
+
+    List<ProductVariant> findByProductProductId(UUID productId);
+
+    @Query("SELECT v FROM ProductVariant v WHERE v.product.productId IN :productIds")
+    List<ProductVariant> findByProductIds(@Param("productIds") List<UUID> productIds);
 
 }
