@@ -16,9 +16,9 @@ import com.croman.singlevendorecommerce.dto.products.AttributesDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandDTO;
 import com.croman.singlevendorecommerce.dto.products.BrandPageResponse;
-import com.croman.singlevendorecommerce.dto.products.CategoriesPageResponse;
-import com.croman.singlevendorecommerce.dto.products.CategoryByIdDTO;
-import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoriesPageResponse;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoryByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.MaterialByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.MaterialDTO;
 import com.croman.singlevendorecommerce.dto.products.MaterialsPageResponse;
@@ -56,12 +56,12 @@ public class ProductsController {
 	            description = "Content successfully returned",
 	            content = @Content(
 	                mediaType = "application/json",
-	                schema = @Schema(implementation = CategoriesPageResponse.class)
+	                schema = @Schema(implementation = PublicCategoriesPageResponse.class)
 	            )
 	        )
 	    }
 	)
-	public ResponseEntity<PageResponse<CategoryDTO>> getCategories(
+	public ResponseEntity<PageResponse<PublicCategoryDTO>> getCategories(
 	        @RequestParam(defaultValue = "0") int page,
 	        @RequestParam(defaultValue = "50") int size,
 	        @RequestParam(defaultValue = "")
@@ -69,17 +69,11 @@ public class ProductsController {
 	        @Size(min = 0, max = 60, message = "Search term must max of 60 characters")
 	        String term
 	) {
-
 	    return ResponseEntity.status(HttpStatus.OK)
-	            .body(categoryService.getCategories(
-	                    page,
-	                    size,
-	                    term
-	            ));
+	            .body(categoryService.getPublicCategories(page, size, term));
 	}
-	
-	@GetMapping("categories/{id}")
 
+	@GetMapping("categories/{id}")
 	@Operation(
 		    summary = "Get category by id",
 		    responses = {
@@ -88,7 +82,7 @@ public class ProductsController {
 		            description = "Content successfully returned",
 		            content = @Content(
 		                mediaType = "application/json",
-		                schema = @Schema(implementation = CategoryByIdDTO.class)
+		                schema = @Schema(implementation = PublicCategoryByIdDTO.class)
 		            )
 		        ),
 		        @ApiResponse(
@@ -101,8 +95,8 @@ public class ProductsController {
 		        )
 		    }
 		)
-	public ResponseEntity<CategoryByIdDTO> getCategoryById(@PathVariable long id) {
-		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getCategoryById(id));
+	public ResponseEntity<PublicCategoryByIdDTO> getCategoryById(@PathVariable long id) {
+		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getPublicCategoryById(id));
 	}
 
 	@GetMapping("materials")

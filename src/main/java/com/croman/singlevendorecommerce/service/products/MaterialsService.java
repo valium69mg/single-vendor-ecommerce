@@ -70,6 +70,11 @@ public class MaterialsService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale())));
 
+		if (material.getDeletedAt() != null) {
+			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+					messageService.getMessage(MATERIAL_NOT_FOUND, LocaleUtils.getDefaultLocale()));
+		}
+
 		return mapMaterialToMaterialByIdDTO(material);
 
 	}

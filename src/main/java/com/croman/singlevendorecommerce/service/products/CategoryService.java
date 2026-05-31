@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.croman.singlevendorecommerce.dto.products.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoryByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
@@ -83,8 +85,72 @@ public class CategoryService {
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
 
+		if (category.getDeletedAt() != null) {
+			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+					messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale()));
+		}
+
 		return mapCategoryToByIdDTO(category);
 
+	}
+
+	@Transactional(readOnly = true)
+	public PageResponse<PublicCategoryDTO> getPublicCategories(int page, int size, String term) {
+
+		Page<Category> categoryPage;
+
+		if (!term.isBlank()) {
+			Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
+			categoryPage = categoryRepository.searchByName(term, pageable);
+		} else {
+			Pageable pageable = PaginationUtils.getPageable(page, size, "categoryId");
+			categoryPage = categoryRepository.findAllNotDeleted(pageable);
+		}
+
+		List<PublicCategoryDTO> categoryDTOs = categoryPage.getContent().stream()
+				.map(this::mapCategoryToPublicDTO)
+				.toList();
+
+		return PageResponse.<PublicCategoryDTO>builder()
+				.content(categoryDTOs)
+				.page(categoryPage.getNumber())
+				.size(categoryPage.getSize())
+				.totalElements(categoryPage.getTotalElements())
+				.totalPages(categoryPage.getTotalPages())
+				.last(categoryPage.isLast())
+				.build();
+	}
+
+	@Transactional(readOnly = true)
+	public PublicCategoryByIdDTO getPublicCategoryById(Long categoryId) {
+
+		Category category = categoryRepository.findById(categoryId)
+				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+						messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale())));
+
+		if (category.getDeletedAt() != null) {
+			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+					messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale()));
+		}
+
+		return mapCategoryToPublicByIdDTO(category);
+
+	}
+
+	private PublicCategoryDTO mapCategoryToPublicDTO(Category category) {
+		return PublicCategoryDTO.builder().categoryId(category.getCategoryId()).name(category.getName())
+				.products(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
+				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
+				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
+				.build();
+	}
+
+	private PublicCategoryByIdDTO mapCategoryToPublicByIdDTO(Category category) {
+		return PublicCategoryByIdDTO.builder().categoryId(category.getCategoryId()).name(category.getName())
+				.products(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
+				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
+				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
+				.build();
 	}
 
 	private CategoryDTO mapCategoryToDTO(Category category) {

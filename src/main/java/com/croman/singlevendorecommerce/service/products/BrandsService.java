@@ -70,6 +70,12 @@ public class BrandsService {
 		Brand brand = brandRepository.findById(brandId)
 				.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
 						messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale())));
+
+		if (brand.getDeletedAt() != null) {
+			throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+					messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
+		}
+
 		return mapBrandTBrandByIdDTO(brand);
 	}
 

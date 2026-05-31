@@ -3,6 +3,8 @@ package com.croman.singlevendorecommerce.service.products;
 import com.croman.singlevendorecommerce.dto.products.CategoryByIdDTO;
 import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoryByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.PublicCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
@@ -138,6 +140,84 @@ class CategoryServiceTest {
 
 		assertThatThrownBy(() -> categoryService.getCategoryById(CATEGORY_ID)).isInstanceOf(ApiServiceException.class)
 				.hasMessageContaining("Category not found");
+	}
+
+	@Test
+	void testGetCategoryByIdThrowsWhenCategorySoftDeleted() {
+		category.setDeletedAt(LocalDateTime.now());
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
+
+		assertThatThrownBy(() -> categoryService.getCategoryById(CATEGORY_ID)).isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("Category not found");
+	}
+
+	// ─── getPublicCategories ─────────────────────────────────────────────────────
+
+	@Test
+	void testGetPublicCategoriesReturnsNames() {
+		Page<Category> page = new PageImpl<>(List.of(category));
+		when(categoryRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(page);
+
+		PageResponse<PublicCategoryDTO> response = categoryService.getPublicCategories(0, 10, "");
+
+		List<PublicCategoryDTO> result = response.getContent();
+
+		assertThat(result).hasSize(1);
+		assertThat(result.get(0).getCategoryId()).isEqualTo(CATEGORY_ID);
+		assertThat(result.get(0).getName()).isEqualTo(NAME);
+	}
+
+	@Test
+	void testGetPublicCategoriesReturnsEmptyListWhenNoCategoriesExist() {
+		when(categoryRepository.findAllNotDeleted(any(Pageable.class))).thenReturn(Page.empty());
+
+		PageResponse<PublicCategoryDTO> response = categoryService.getPublicCategories(0, 10, "");
+
+		assertThat(response.getContent()).isEmpty();
+	}
+
+	@Test
+	void testGetPublicCategoriesWithSearchTermUsesSearchQuery() {
+		Page<Category> page = new PageImpl<>(List.of(category));
+		when(categoryRepository.searchByName(eq("anillo"), any(Pageable.class))).thenReturn(page);
+
+		PageResponse<PublicCategoryDTO> response = categoryService.getPublicCategories(0, 10, "anillo");
+
+		assertThat(response.getContent()).hasSize(1);
+		assertThat(response.getContent().get(0).getName()).isEqualTo(NAME);
+		verify(categoryRepository).searchByName(eq("anillo"), any(Pageable.class));
+	}
+
+	// ─── getPublicCategoryById ────────────────────────────────────────────────────
+
+	@Test
+	void testGetPublicCategoryByIdReturnsData() {
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+
+		PublicCategoryByIdDTO result = categoryService.getPublicCategoryById(CATEGORY_ID);
+
+		assertThat(result.getCategoryId()).isEqualTo(CATEGORY_ID);
+		assertThat(result.getName()).isEqualTo(NAME);
+	}
+
+	@Test
+	void testGetPublicCategoryByIdThrowsWhenNotFound() {
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
+		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
+
+		assertThatThrownBy(() -> categoryService.getPublicCategoryById(CATEGORY_ID))
+				.isInstanceOf(ApiServiceException.class).hasMessageContaining("Category not found");
+	}
+
+	@Test
+	void testGetPublicCategoryByIdThrowsWhenSoftDeleted() {
+		category.setDeletedAt(LocalDateTime.now());
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
+
+		assertThatThrownBy(() -> categoryService.getPublicCategoryById(CATEGORY_ID))
+				.isInstanceOf(ApiServiceException.class).hasMessageContaining("Category not found");
 	}
 
 	// ─── createCategoryDTO ───────────────────────────────────────────────────

@@ -3,9 +3,12 @@ package com.croman.singlevendorecommerce.controller.products;
 
 import java.util.UUID;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,10 +19,22 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
+import com.croman.singlevendorecommerce.dto.products.AttributeByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.AttributesDTO;
+import com.croman.singlevendorecommerce.dto.products.BrandByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.BrandDTO;
+import com.croman.singlevendorecommerce.dto.products.BrandPageResponse;
+import com.croman.singlevendorecommerce.dto.products.CategoriesPageResponse;
+import com.croman.singlevendorecommerce.dto.products.CategoryByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.CategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateAttributeDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.CreateMaterialDTO;
+import com.croman.singlevendorecommerce.dto.products.MaterialByIdDTO;
+import com.croman.singlevendorecommerce.dto.products.MaterialDTO;
+import com.croman.singlevendorecommerce.dto.products.MaterialsPageResponse;
+import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.dto.products.CreateProductDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductBasicInfoDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateProductMaterialsDTO;
@@ -37,7 +52,9 @@ import com.croman.singlevendorecommerce.utils.ApiResponseService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -136,6 +153,118 @@ public class AdminProductsController {
 			@Valid @RequestBody UpdateProductMaterialsDTO dto) {
 		productService.updateMaterials(productId, dto.getMaterialIds());
 		return ResponseEntity.ok(apiResponseService.getApiResponseMessage("product_materials_updated", HttpStatus.OK));
+	}
+
+	@GetMapping("categories")
+	@Operation(summary = "Get categories by offset pagination", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = CategoriesPageResponse.class)))
+		})
+	public ResponseEntity<PageResponse<CategoryDTO>> getCategories(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size,
+			@RequestParam(defaultValue = "")
+			@Valid
+			@Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+			String term) {
+		return ResponseEntity.ok(categoryService.getCategories(page, size, term));
+	}
+
+	@GetMapping("categories/{id}")
+	@Operation(summary = "Get category by id", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = CategoryByIdDTO.class))),
+		    @ApiResponse(responseCode = "404", description = "Category not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<CategoryByIdDTO> getCategoryById(@PathVariable long id) {
+		return ResponseEntity.ok(categoryService.getCategoryById(id));
+	}
+
+	@GetMapping("materials")
+	@Operation(summary = "Get materials by offset pagination", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = MaterialsPageResponse.class)))
+		})
+	public ResponseEntity<PageResponse<MaterialDTO>> getMaterials(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size,
+			@RequestParam(defaultValue = "")
+			@Valid
+			@Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+			String term) {
+		return ResponseEntity.ok(materialsService.getMaterials(page, size, term));
+	}
+
+	@GetMapping("materials/{id}")
+	@Operation(summary = "Get material by id", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = MaterialByIdDTO.class))),
+		    @ApiResponse(responseCode = "404", description = "Material not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<MaterialByIdDTO> getMaterialById(@PathVariable long id) {
+		return ResponseEntity.ok(materialsService.getMaterialById(id));
+	}
+
+	@GetMapping("brands")
+	@Operation(summary = "Get brands by offset pagination", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            array = @ArraySchema(schema = @Schema(implementation = BrandPageResponse.class))))
+		})
+	public ResponseEntity<PageResponse<BrandDTO>> getBrands(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size,
+			@RequestParam(defaultValue = "")
+			@Valid
+			@Size(min = 0, max = 60, message = "Search term must max of 60 characters")
+			String term) {
+		return ResponseEntity.ok(brandsService.getBrands(page, size, term));
+	}
+
+	@GetMapping("brands/{id}")
+	@Operation(summary = "Get brand by id", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = BrandByIdDTO.class))),
+		    @ApiResponse(responseCode = "404", description = "Brand not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<BrandByIdDTO> getBrandById(@PathVariable long id) {
+		return ResponseEntity.ok(brandsService.getBrandById(id));
+	}
+
+	@GetMapping("attributes")
+	@Operation(summary = "Get attributes by offset pagination", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            array = @ArraySchema(schema = @Schema(implementation = AttributesDTO.class))))
+		})
+	public ResponseEntity<List<AttributesDTO>> getAttributes(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return ResponseEntity.ok(attributesService.getAttributes(page, size));
+	}
+
+	@GetMapping("attributes/{id}")
+	@Operation(summary = "Get attribute by id", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = AttributeByIdDTO.class))),
+		    @ApiResponse(responseCode = "404", description = "Attribute not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<AttributeByIdDTO> getAttributeById(@PathVariable long id) {
+		return ResponseEntity.ok(attributesService.getAttributeById(id));
 	}
 
 	@PostMapping("categories")

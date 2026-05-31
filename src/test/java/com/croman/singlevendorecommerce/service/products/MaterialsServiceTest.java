@@ -150,6 +150,18 @@ class MaterialsServiceTest {
                 .hasMessageContaining("Material not found");
     }
 
+    @Test
+    void testGetMaterialByIdThrowsWhenSoftDeleted() {
+        Material deleted = Material.builder().materialId(MATERIAL_ID).name(NAME).deletedAt(NOW).build();
+        when(materialRepository.findById(MATERIAL_ID)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq("material_not_found"), any(Locale.class)))
+                .thenReturn("Material not found");
+
+        assertThatThrownBy(() -> materialsService.getMaterialById(MATERIAL_ID))
+                .isInstanceOf(ApiServiceException.class)
+                .hasMessageContaining("Material not found");
+    }
+
     // ─── createMaterial ───────────────────────────────────────────────────────
 
     @Test

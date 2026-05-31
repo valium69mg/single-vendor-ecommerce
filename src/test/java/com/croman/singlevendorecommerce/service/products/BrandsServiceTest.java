@@ -135,6 +135,18 @@ class BrandsServiceTest {
                 .hasMessageContaining(BRAND_NOT_EXISTS_MESSAGE);
     }
 
+    @Test
+    void testGetBrandByIdThrowsWhenSoftDeleted() {
+        Brand deleted = Brand.builder().brandId(BRAND_ID).name(BRAND_NAME).deletedAt(NOW).build();
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
+
+        assertThatThrownBy(() -> brandsService.getBrandById(BRAND_ID))
+                .isInstanceOf(ApiServiceException.class)
+                .hasMessageContaining(BRAND_NOT_EXISTS_MESSAGE);
+    }
+
     // ─── createBrand ─────────────────────────────────────────────────────────
 
     @Test
