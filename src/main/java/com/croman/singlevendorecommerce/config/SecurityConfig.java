@@ -16,6 +16,9 @@ public class SecurityConfig {
 	
 	private static final String[] SWAGGER_WHITELIST = { "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs",
 			"/v3/api-docs/**", "/v3/api-docs.yaml" };
+	
+	private static final String[] ECOMMERCE_WHITELIST = { "/api/v1/products/*", "/api/v1/file/**", 
+			"/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin", "/health"};
 
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -30,13 +33,10 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(SWAGGER_WHITELIST)
 						.permitAll()
-						.requestMatchers("/health")
+						.requestMatchers(ECOMMERCE_WHITELIST)
 						.permitAll()
-						.requestMatchers("/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin")
-						.permitAll()
-						.requestMatchers("/api/v1/file/**")
-						.permitAll()
-						.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+						.requestMatchers("/api/v1/admin/**")
+						.hasRole("ADMIN")
 						.anyRequest().authenticated())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
