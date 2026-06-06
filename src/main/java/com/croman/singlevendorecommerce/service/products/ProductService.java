@@ -349,6 +349,11 @@ public class ProductService {
                 .min(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
     }
 
+    private BigDecimal maxPrice(List<ProductVariant> variants) {
+        return variants.stream().map(ProductVariant::getPrice)
+                .max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+    }
+
     private BigDecimal minDiscountPrice(List<ProductVariant> variants) {
         return variants.stream().map(ProductVariant::getDiscountPrice)
                 .filter(java.util.Objects::nonNull)
@@ -395,6 +400,7 @@ public class ProductService {
                 .mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(p.getFileUrl()))
                 .smallThumbnailUrl(FileUtils.toSmallThumbnailKey(p.getFileUrl()))
                 .minPrice(minPrice(variants))
+                .maxPrice(maxPrice(variants))
                 .minDiscountPrice(minDiscountPrice(variants))
                 .totalStock(variants.stream().mapToInt(ProductVariant::getStock).sum())
                 .variantCount(variants.size())

@@ -26,6 +26,7 @@ public class AdminProductDTO {
     private String mediumThumbnailUrl;
     private String smallThumbnailUrl;
     private BigDecimal minPrice;
+    private BigDecimal maxPrice;
     private BigDecimal minDiscountPrice;
     private int totalStock;
     private int variantCount;
