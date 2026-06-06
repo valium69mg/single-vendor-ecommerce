@@ -17,7 +17,7 @@ public class SecurityConfig {
 	private static final String[] SWAGGER_WHITELIST = { "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs",
 			"/v3/api-docs/**", "/v3/api-docs.yaml" };
 	
-	private static final String[] ECOMMERCE_WHITELIST = { "/api/v1/products/**", "/api/v1/file/**",
+	private static final String[] ECOMMERCE_WHITELIST = { "/api/v1/products", "/api/v1/products/**", "/api/v1/file/**",
 			"/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/register/admin", "/health"};
 
 
