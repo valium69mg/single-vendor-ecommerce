@@ -1,6 +1,7 @@
 package com.croman.singlevendorecommerce.dto.products;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,5 +24,7 @@ public class CategoryDTO {
 	private String imageUrl;
 	private String mediumThumbnailUrl;
 	private String smallThumbnailUrl;
-	
+	private LocalDateTime createdAt;
+	private LocalDateTime updatedAt;
+
 }

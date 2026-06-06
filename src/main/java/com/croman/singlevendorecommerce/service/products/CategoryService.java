@@ -160,6 +160,8 @@ public class CategoryService {
 				.stock(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
 				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
+				.createdAt(category.getCreatedAt())
+				.updatedAt(category.getUpdatedAt())
 				.build();
 	}
 
