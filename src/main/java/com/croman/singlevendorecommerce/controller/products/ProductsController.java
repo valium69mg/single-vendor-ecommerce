@@ -51,7 +51,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/products/")
+@RequestMapping("/api/v1/products")
 public class ProductsController {
 
 	private final CategoryService categoryService;
