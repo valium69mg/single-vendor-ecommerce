@@ -366,6 +366,12 @@ public class ProductService {
                 .min(Comparator.naturalOrder()).orElse(null);
     }
 
+    private BigDecimal maxDiscountPrice(List<ProductVariant> variants) {
+        return variants.stream().map(ProductVariant::getDiscountPrice)
+                .filter(java.util.Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null);
+    }
+
     private PublicProductDTO mapToPublicProductDTO(Product p, Map<UUID, List<ProductVariant>> variantsByProduct) {
         List<ProductVariant> variants = variantsByProduct.getOrDefault(p.getProductId(), List.of());
         return PublicProductDTO.builder()
@@ -408,6 +414,7 @@ public class ProductService {
                 .minPrice(minPrice(variants))
                 .maxPrice(maxPrice(variants))
                 .minDiscountPrice(minDiscountPrice(variants))
+                .maxDiscountPrice(maxDiscountPrice(variants))
                 .totalStock(variants.stream().mapToInt(ProductVariant::getStock).sum())
                 .variantCount(variants.size())
                 .createdAt(p.getCreatedAt())

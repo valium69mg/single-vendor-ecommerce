@@ -1170,6 +1170,54 @@ class ProductServiceTest {
         assertThat(dto.getVariantCount()).isEqualTo(1);
     }
 
+    @Test
+    void testGetAdminProductsIncludesMaxDiscountPriceWhenVariantsHaveDiscountPrices() {
+        ProductVariant cheap = new ProductVariant();
+        cheap.setProductVariantId(1L);
+        cheap.setProduct(savedProduct);
+        cheap.setPrice(BigDecimal.valueOf(200));
+        cheap.setDiscountPrice(BigDecimal.valueOf(150));
+        cheap.setStock(3);
+
+        ProductVariant expensive = new ProductVariant();
+        expensive.setProductVariantId(2L);
+        expensive.setProduct(savedProduct);
+        expensive.setPrice(BigDecimal.valueOf(500));
+        expensive.setDiscountPrice(BigDecimal.valueOf(400));
+        expensive.setStock(2);
+
+        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(savedProduct)));
+        when(productVariantRepository.findByProductIds(anyList())).thenReturn(List.of(cheap, expensive));
+
+        PageResponse<AdminProductDTO> result = productService.getAdminProducts(
+                0, 10, "newest", "", null, null, null, false, null, null, null);
+
+        AdminProductDTO dto = result.getContent().get(0);
+        assertThat(dto.getMinDiscountPrice()).isEqualByComparingTo(BigDecimal.valueOf(150));
+        assertThat(dto.getMaxDiscountPrice()).isEqualByComparingTo(BigDecimal.valueOf(400));
+    }
+
+    @Test
+    void testGetAdminProductsMaxDiscountPriceIsNullWhenNoVariantsHaveDiscountPrice() {
+        ProductVariant variant = new ProductVariant();
+        variant.setProductVariantId(1L);
+        variant.setProduct(savedProduct);
+        variant.setPrice(BigDecimal.valueOf(300));
+        variant.setDiscountPrice(null);
+        variant.setStock(5);
+
+        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(savedProduct)));
+        when(productVariantRepository.findByProductIds(anyList())).thenReturn(List.of(variant));
+
+        PageResponse<AdminProductDTO> result = productService.getAdminProducts(
+                0, 10, "newest", "", null, null, null, false, null, null, null);
+
+        AdminProductDTO dto = result.getContent().get(0);
+        assertThat(dto.getMaxDiscountPrice()).isNull();
+    }
+
     // ─── getAdminProductById ──────────────────────────────────────────────────
 
     @Test

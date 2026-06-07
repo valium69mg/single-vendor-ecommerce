@@ -28,6 +28,7 @@ public class AdminProductDTO {
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private BigDecimal minDiscountPrice;
+    private BigDecimal maxDiscountPrice;
     private int totalStock;
     private int variantCount;
     private LocalDateTime createdAt;
