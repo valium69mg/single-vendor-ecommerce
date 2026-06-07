@@ -372,6 +372,21 @@ public class ProductService {
                 .max(Comparator.naturalOrder()).orElse(null);
     }
 
+    private BigDecimal avgPrice(List<ProductVariant> variants) {
+        if (variants.isEmpty()) return BigDecimal.ZERO;
+        return variants.stream().map(ProductVariant::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(variants.size()), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal avgDiscountPrice(List<ProductVariant> variants) {
+        List<BigDecimal> prices = variants.stream().map(ProductVariant::getDiscountPrice)
+                .filter(java.util.Objects::nonNull).toList();
+        if (prices.isEmpty()) return null;
+        return prices.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(prices.size()), 2, java.math.RoundingMode.HALF_UP);
+    }
+
     private PublicProductDTO mapToPublicProductDTO(Product p, Map<UUID, List<ProductVariant>> variantsByProduct) {
         List<ProductVariant> variants = variantsByProduct.getOrDefault(p.getProductId(), List.of());
         return PublicProductDTO.builder()
@@ -411,10 +426,8 @@ public class ProductService {
                 .imageUrl(p.getFileUrl())
                 .mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(p.getFileUrl()))
                 .smallThumbnailUrl(FileUtils.toSmallThumbnailKey(p.getFileUrl()))
-                .minPrice(minPrice(variants))
-                .maxPrice(maxPrice(variants))
-                .minDiscountPrice(minDiscountPrice(variants))
-                .maxDiscountPrice(maxDiscountPrice(variants))
+                .avgPrice(avgPrice(variants))
+                .avgDiscountPrice(avgDiscountPrice(variants))
                 .totalStock(variants.stream().mapToInt(ProductVariant::getStock).sum())
                 .variantCount(variants.size())
                 .createdAt(p.getCreatedAt())

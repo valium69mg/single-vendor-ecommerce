@@ -1171,7 +1171,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void testGetAdminProductsIncludesMaxDiscountPriceWhenVariantsHaveDiscountPrices() {
+    void testGetAdminProductsIncludesAvgPriceAndAvgDiscountPriceWhenVariantsHaveDiscountPrices() {
         ProductVariant cheap = new ProductVariant();
         cheap.setProductVariantId(1L);
         cheap.setProduct(savedProduct);
@@ -1194,12 +1194,14 @@ class ProductServiceTest {
                 0, 10, "newest", "", null, null, null, false, null, null, null);
 
         AdminProductDTO dto = result.getContent().get(0);
-        assertThat(dto.getMinDiscountPrice()).isEqualByComparingTo(BigDecimal.valueOf(150));
-        assertThat(dto.getMaxDiscountPrice()).isEqualByComparingTo(BigDecimal.valueOf(400));
+        // avg price: (200 + 500) / 2 = 350.00
+        assertThat(dto.getAvgPrice()).isEqualByComparingTo(BigDecimal.valueOf(350));
+        // avg discount price: (150 + 400) / 2 = 275.00
+        assertThat(dto.getAvgDiscountPrice()).isEqualByComparingTo(BigDecimal.valueOf(275));
     }
 
     @Test
-    void testGetAdminProductsMaxDiscountPriceIsNullWhenNoVariantsHaveDiscountPrice() {
+    void testGetAdminProductsAvgDiscountPriceIsNullWhenNoVariantsHaveDiscountPrice() {
         ProductVariant variant = new ProductVariant();
         variant.setProductVariantId(1L);
         variant.setProduct(savedProduct);
@@ -1215,7 +1217,9 @@ class ProductServiceTest {
                 0, 10, "newest", "", null, null, null, false, null, null, null);
 
         AdminProductDTO dto = result.getContent().get(0);
-        assertThat(dto.getMaxDiscountPrice()).isNull();
+        // avg price: 300 / 1 = 300.00
+        assertThat(dto.getAvgPrice()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        assertThat(dto.getAvgDiscountPrice()).isNull();
     }
 
     // ─── getAdminProductById ──────────────────────────────────────────────────
