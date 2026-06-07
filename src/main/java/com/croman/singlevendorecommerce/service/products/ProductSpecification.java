@@ -26,6 +26,8 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            predicates.add(cb.isNull(root.get("deletedAt")));
+
             if (term != null && !term.isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("name")),
                         "%" + term.toLowerCase() + "%"));

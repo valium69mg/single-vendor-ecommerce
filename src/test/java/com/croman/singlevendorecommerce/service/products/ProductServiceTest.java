@@ -160,7 +160,9 @@ class ProductServiceTest {
      * Only call this in tests where the full service flow completes successfully.
      */
     private void stubMinimalHappyPath() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
@@ -171,11 +173,13 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductSavesProductSuccessfullyWithAllRelationships() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
         when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
         when(materialRepository.findAllById(anyList())).thenReturn(List.of(material));
         when(attributeValueRepository.findAllById(anyList())).thenReturn(List.of(attributeValue));
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
@@ -222,8 +226,10 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductMapsProductFieldsCorrectlyOntoSavedEntity() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
@@ -254,7 +260,9 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductMapsVariantFieldsCorrectlyOntoSavedEntity() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
@@ -285,7 +293,9 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductCallsSaveAllOnceForVariantsRegardlessOfVariantCount() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
         when(productMaterialRepository.saveAll(anyList())).thenReturn(List.of());
@@ -303,8 +313,10 @@ class ProductServiceTest {
     @Test
     void testCreateProductCallsSaveAllOnceForProductMaterialsRegardlessOfMaterialCount() {
         Material material2 = Material.builder().materialId(5L).name("Silver").build();
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(materialRepository.findAllById(anyList())).thenReturn(List.of(material, material2));
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
@@ -326,8 +338,10 @@ class ProductServiceTest {
     void testCreateProductCallsSaveAllOnceForProductVariantAttributes() {
         AttributeValue attributeValue2 = new AttributeValue();
         attributeValue2.setAttributeValueId(5L);
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(attributeValueRepository.findAllById(anyList())).thenReturn(List.of(attributeValue, attributeValue2));
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
@@ -341,8 +355,10 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductDeduplicatesAttributeValueIdsAcrossAllVariantsBeforeQuerying() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(attributeValueRepository.findAllById(anyList())).thenReturn(List.of(attributeValue));
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
         when(productMaterialRepository.saveAll(anyList())).thenReturn(List.of());
@@ -364,6 +380,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsNotFoundWhenCategoryIdProvidedButNotFound() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
         when(messageService.getMessage(eq("category_not_found"), any(Locale.class)))
                 .thenReturn(CATEGORY_NOT_FOUND_MSG);
@@ -395,6 +412,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsNotFoundWhenBrandIdProvidedButNotFound() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.empty());
         when(messageService.getMessage(eq("brand_does_not_exists"), any(Locale.class)))
                 .thenReturn(BRAND_NOT_FOUND_MSG);
@@ -426,6 +444,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsNotFoundWhenAllMaterialsNotFound() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(materialRepository.findAllById(anyList())).thenReturn(List.of());
         when(messageService.getMessage(eq("material_not_found"), any(Locale.class)))
                 .thenReturn(MATERIAL_NOT_FOUND_MSG);
@@ -446,6 +465,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsNotFoundWhenSomeMaterialsNotFound() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(materialRepository.findAllById(anyList())).thenReturn(List.of(material)); // 1 of 2 found
         when(messageService.getMessage(eq("material_not_found"), any(Locale.class)))
                 .thenReturn(MATERIAL_NOT_FOUND_MSG);
@@ -489,6 +509,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsNotFoundWhenAllAttributeValuesNotFound() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(attributeValueRepository.findAllById(anyList())).thenReturn(List.of());
         when(messageService.getMessage(eq("attribute_value_not_found"), any(Locale.class)))
                 .thenReturn(ATTRIBUTE_VALUE_NOT_FOUND_MSG);
@@ -505,6 +526,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsNotFoundWhenSomeAttributeValuesNotFound() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(attributeValueRepository.findAllById(anyList())).thenReturn(List.of(attributeValue)); // 1 of 2 found
         when(messageService.getMessage(eq("attribute_value_not_found"), any(Locale.class)))
                 .thenReturn(ATTRIBUTE_VALUE_NOT_FOUND_MSG);
@@ -544,6 +566,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsBadRequestWhenDuplicateSkuWithinRequest() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(messageService.getMessage(eq("sku_already_exists"), any(Locale.class)))
                 .thenReturn(SKU_EXISTS_MSG);
 
@@ -561,6 +584,7 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductThrowsBadRequestWhenSkuAlreadyExistsInDb() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of(SKU));
         when(messageService.getMessage(eq("sku_already_exists"), any(Locale.class)))
                 .thenReturn(SKU_EXISTS_MSG);
@@ -577,7 +601,9 @@ class ProductServiceTest {
 
     @Test
     void testCreateProductUsesSingleDbQueryToValidateAllSkusRegardlessOfVariantCount() {
+        when(productRepository.findByName(any())).thenReturn(Optional.empty());
         when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
         when(productRepository.save(any())).thenReturn(savedProduct);
         when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
         when(productMaterialRepository.saveAll(anyList())).thenReturn(List.of());
@@ -820,6 +846,190 @@ class ProductServiceTest {
 
         verify(productMaterialRepository, never()).saveAll(anyList());
         verify(productMaterialRepository, never()).deleteByProductAndMaterialIn(any(), anyList());
+    }
+
+    // ─── createProduct – name conflict ────────────────────────────────────────
+
+    @Test
+    void testCreateProductThrowsBadRequestWhenNameAlreadyExistsInActiveProduct() {
+        Product existing = Product.builder()
+                .productId(UUID.randomUUID())
+                .name(PRODUCT_NAME)
+                .status(ProductStatus.ACTIVE)
+                .featured(false)
+                .build();
+
+        when(productRepository.findByName(PRODUCT_NAME)).thenReturn(Optional.of(existing));
+        when(messageService.getMessage(eq("product_already_exists"), any(Locale.class)))
+                .thenReturn("Product already exists");
+
+        CreateProductDTO dto = minimalProductDTO(List.of(variantDTO(SKU, null)));
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.createProduct(dto));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void testCreateProductThrowsConflictWhenNameMatchesDeletedProduct() {
+        UUID deletedId = UUID.randomUUID();
+        Product deleted = Product.builder()
+                .productId(deletedId)
+                .name(PRODUCT_NAME)
+                .status(ProductStatus.INACTIVE)
+                .featured(false)
+                .deletedAt(LocalDateTime.now())
+                .build();
+
+        when(productRepository.findByName(PRODUCT_NAME)).thenReturn(Optional.of(deleted));
+        when(messageService.getMessage(eq("product_was_deleted"), any(Locale.class)))
+                .thenReturn("Product was deleted");
+
+        CreateProductDTO dto = minimalProductDTO(List.of(variantDTO(SKU, null)));
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.createProduct(dto));
+
+        assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
+        assertEquals(deletedId, ex.getMetadata().get("productId"));
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void testCreateProductThrowsConflictWhenSkuBelongsToDeletedProduct() {
+        UUID deletedProductId = UUID.randomUUID();
+        Product deletedProduct = Product.builder()
+                .productId(deletedProductId)
+                .name("Deleted Product")
+                .status(ProductStatus.INACTIVE)
+                .featured(false)
+                .deletedAt(LocalDateTime.now())
+                .build();
+
+        ProductVariant deletedVariant = new ProductVariant();
+        deletedVariant.setProductVariantId(99L);
+        deletedVariant.setSku(SKU);
+        deletedVariant.setProduct(deletedProduct);
+
+        when(productRepository.findByName(PRODUCT_NAME)).thenReturn(Optional.empty());
+        when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection()))
+                .thenReturn(List.of(deletedVariant));
+        when(messageService.getMessage(eq("product_was_deleted"), any(Locale.class)))
+                .thenReturn("Product was deleted");
+
+        CreateProductDTO dto = minimalProductDTO(List.of(variantDTO(SKU, null)));
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.createProduct(dto));
+
+        assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
+        assertEquals(deletedProductId, ex.getMetadata().get("productId"));
+        verify(productRepository, never()).save(any());
+    }
+
+    // ─── deleteProduct ────────────────────────────────────────────────────────
+
+    @Test
+    void testDeleteProductSetsDeletedAt() {
+        when(productRepository.findById(savedProduct.getProductId()))
+                .thenReturn(Optional.of(savedProduct));
+
+        productService.deleteProduct(savedProduct.getProductId());
+
+        verify(productRepository).save(argThat(p -> p.getDeletedAt() != null));
+    }
+
+    @Test
+    void testDeleteProductThrowsNotFoundWhenProductDoesNotExist() {
+        UUID unknownId = UUID.randomUUID();
+        when(productRepository.findById(unknownId)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.deleteProduct(unknownId));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    // ─── restoreProduct ───────────────────────────────────────────────────────
+
+    @Test
+    void testRestoreProductClearsDeletedAt() {
+        savedProduct.setDeletedAt(LocalDateTime.now());
+        when(productRepository.findById(savedProduct.getProductId()))
+                .thenReturn(Optional.of(savedProduct));
+
+        productService.restoreProduct(savedProduct.getProductId());
+
+        verify(productRepository).save(argThat(p -> p.getDeletedAt() == null));
+    }
+
+    @Test
+    void testRestoreProductThrowsNotFoundWhenProductDoesNotExist() {
+        UUID unknownId = UUID.randomUUID();
+        when(productRepository.findById(unknownId)).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.restoreProduct(unknownId));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void testRestoreProductThrowsBadRequestWhenProductIsNotDeleted() {
+        when(productRepository.findById(savedProduct.getProductId()))
+                .thenReturn(Optional.of(savedProduct));
+        when(messageService.getMessage(eq("product_not_deleted"), any(Locale.class)))
+                .thenReturn("Product is not deleted");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.restoreProduct(savedProduct.getProductId()));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    // ─── resolveProduct (used by updateProduct / uploadImage) – deleted guard ──
+
+    @Test
+    void testUpdateProductThrowsNotFoundWhenProductIsDeleted() {
+        savedProduct.setDeletedAt(LocalDateTime.now());
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name(PRODUCT_NAME).status(ProductStatus.ACTIVE).build();
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.updateProduct(savedProduct.getProductId(), dto));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+        verify(productRepository, never()).save(any());
+    }
+
+    // ─── getAdminProductById – deleted guard ──────────────────────────────────
+
+    @Test
+    void testGetAdminProductByIdThrowsWhenProductIsDeleted() {
+        savedProduct.setDeletedAt(LocalDateTime.now());
+        when(productRepository.findById(savedProduct.getProductId()))
+                .thenReturn(Optional.of(savedProduct));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.getAdminProductById(savedProduct.getProductId()));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
     }
 
     // ─── getPublicProducts ────────────────────────────────────────────────────

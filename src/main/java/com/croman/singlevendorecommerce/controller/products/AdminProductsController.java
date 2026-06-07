@@ -194,6 +194,35 @@ public class AdminProductsController {
 				.body(apiResponseService.getApiResponseMessage("product_updated", HttpStatus.OK));
 	}
 
+	@DeleteMapping("{productId}")
+	@Operation(summary = "Delete product (soft delete)", responses = {
+		    @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
+		    @ApiResponse(responseCode = "404", description = "Product not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<Void> deleteProduct(@PathVariable UUID productId) {
+		productService.deleteProduct(productId);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("{productId}/restore")
+	@Operation(summary = "Restore deleted product", responses = {
+		    @ApiResponse(responseCode = "200", description = "Product restored successfully",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))),
+		    @ApiResponse(responseCode = "400", description = "Product is not deleted",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class))),
+		    @ApiResponse(responseCode = "404", description = "Product not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<DefaultApiResponse> restoreProduct(@PathVariable UUID productId) {
+		productService.restoreProduct(productId);
+		return ResponseEntity.ok(apiResponseService.getApiResponseMessage("product_restored", HttpStatus.OK));
+	}
+
 	@PatchMapping("{productId}/materials")
 	@Operation(summary = "Update product materials", responses = {
 		    @ApiResponse(

@@ -80,6 +80,7 @@ public class ProductService {
 
     @Transactional
     public void createProduct(CreateProductDTO dto) {
+        validateProductName(dto.getName());
         Category category = resolveCategory(dto.getCategoryId());
         Brand brand = resolveBrand(dto.getBrandId());
         List<Material> materials = resolveMaterials(dto.getMaterialIds());
@@ -256,6 +257,11 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
                         messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
+
+        if (product.getDeletedAt() != null) {
+            throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                    messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale()));
+        }
 
         return mapToAdminProductByIdDTO(product);
     }
@@ -542,11 +548,49 @@ public class ProductService {
     }
     
     private Product resolveProduct(UUID productId) {
-    	if (productId == null) return null;
-    	return productRepository.findById(productId)
-    			.orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+        if (productId == null) return null;
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
                         messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
-    	
+        if (product.getDeletedAt() != null) {
+            throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                    messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale()));
+        }
+        return product;
+    }
+
+    @Transactional
+    public void deleteProduct(UUID productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                        messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
+        product.setDeletedAt(LocalDateTime.now());
+        productRepository.save(product);
+    }
+
+    @Transactional
+    public void restoreProduct(UUID productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                        messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
+        if (product.getDeletedAt() == null) {
+            throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+                    messageService.getMessage("product_not_deleted", LocaleUtils.getDefaultLocale()));
+        }
+        product.setDeletedAt(null);
+        productRepository.save(product);
+    }
+
+    private void validateProductName(String name) {
+        productRepository.findByName(name).ifPresent(existing -> {
+            if (existing.getDeletedAt() != null) {
+                throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+                        messageService.getMessage("product_was_deleted", LocaleUtils.getDefaultLocale()),
+                        Map.of("productId", existing.getProductId()));
+            }
+            throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+                    messageService.getMessage("product_already_exists", LocaleUtils.getDefaultLocale()));
+        });
     }
 
     private List<Material> resolveMaterials(List<Long> materialIds) {
@@ -587,6 +631,14 @@ public class ProductService {
         if (!existing.isEmpty()) {
             throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
                     messageService.getMessage("sku_already_exists", LocaleUtils.getDefaultLocale()));
+        }
+
+        List<ProductVariant> deletedVariants = productVariantRepository.findVariantsFromDeletedProducts(skus);
+        if (!deletedVariants.isEmpty()) {
+            UUID deletedProductId = deletedVariants.get(0).getProduct().getProductId();
+            throw new ApiServiceException(HttpStatus.CONFLICT.value(),
+                    messageService.getMessage("product_was_deleted", LocaleUtils.getDefaultLocale()),
+                    Map.of("productId", deletedProductId));
         }
     }
 

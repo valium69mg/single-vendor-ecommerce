@@ -66,6 +66,9 @@ public class Product {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
     
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id")
     private Brand brand;

@@ -12,8 +12,11 @@ import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long> {
 
-    @Query("SELECT v.sku FROM ProductVariant v WHERE v.sku IN :skus")
+    @Query("SELECT v.sku FROM ProductVariant v WHERE v.sku IN :skus AND v.product.deletedAt IS NULL")
     List<String> findExistingSkus(@Param("skus") Collection<String> skus);
+
+    @Query("SELECT v FROM ProductVariant v JOIN FETCH v.product p WHERE v.sku IN :skus AND p.deletedAt IS NOT NULL")
+    List<ProductVariant> findVariantsFromDeletedProducts(@Param("skus") Collection<String> skus);
 
     List<ProductVariant> findByProductProductId(UUID productId);
 
