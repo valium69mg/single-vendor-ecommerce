@@ -95,6 +95,7 @@ public class ProductService {
                 .status(dto.getStatus())
                 .featured(dto.isFeatured())
                 .category(category)
+                .unitsSold(0)
                 .brand(brand)
                 .build());
 
