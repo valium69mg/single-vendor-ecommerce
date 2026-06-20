@@ -1,0 +1,50 @@
+# Java / Maven build artifacts
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.classpath
+.factorypath
+.project
+.springBeans
+.sts4-cache
+.apt_generated
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+# Environment & secrets
+.env
+*.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven wrapper binary
+.mvn/wrapper/maven-wrapper.jar
+
+# Generated OpenAPI / Swagger docs (runtime artifacts)
+src/main/resources/static/
+
+# File storage (runtime uploads, not code)
+uploads/
+files/

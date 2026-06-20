@@ -2,15 +2,15 @@
 
 ## Commit conventions
 
-Never include references to Claude, Sonnet, Anthropic, or any AI model in commit messages (no `Co-Authored-By` lines, no model names).
+Use conventional commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`). Never include references to AI tools, models, or companies in commit messages — no "Claude", "Anthropic", "Sonnet", "GPT", "Co-Authored-By AI", or any equivalent.
 
 ---
 
 ## Project overview
 
-Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Built as a monolithic layered application using Spring Boot 3.x + Java 21. The full system also includes a React frontend; this repo is the backend only.
+Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Spring Boot 3.x + Java 21 monolith. Full requirements: `../requerimientos-ecommerce-joyeria.md`
 
-Full requirements document: `../requerimientos-ecommerce-joyeria.md`
+Intelligence layer: see `.claude/` directory.
 
 ---
 
@@ -22,204 +22,89 @@ Full requirements document: `../requerimientos-ecommerce-joyeria.md`
 | Framework | Spring Boot 3.x (Web, Data JPA, Security, Validation, Mail) |
 | Database | PostgreSQL 16 |
 | ORM | Hibernate / Spring Data JPA |
-| Migrations | Flyway (`src/main/resources/db/migration/`) |
-| Image processing | Thumbnailator (synchronous in-process resize to 200×200 and 400×400) |
-| Auth | JWT (HS256, custom `JwtUtil`) |
-| API docs | Springdoc OpenAPI / Swagger UI (`/swagger-ui.html`) |
-| Build | Maven (`target/single-vendor-ecommerce.jar`) |
-| Containerization | Docker + Docker Compose |
+| Migrations | Flyway — `src/main/resources/db/migration/` — **never modify existing files** |
+| Image processing | Thumbnailator (synchronous, in-process) |
+| Auth | JWT HS256, custom `JwtUtil` |
+| API docs | Springdoc OpenAPI → `/swagger-ui.html` |
+| Build | Maven → `target/single-vendor-ecommerce.jar` |
+| Container | Docker + Docker Compose |
 
 ---
 
-## Running locally
+## Commands
 
-### Prerequisites
-- Docker + Docker Compose
-- Java 21 + Maven (for building only)
-- Copy `.env.example` → `.env` and adjust values
-
-### Start infrastructure (Postgres, pgAdmin)
 ```bash
+# Infrastructure (Postgres + pgAdmin)
 docker compose up postgres pgadmin -d
-```
 
-### Build and run the backend
-```bash
+# Build
 ./mvnw clean package -DskipTests
-docker compose up backend -d
-# OR run directly:
+
+# Run
 java -jar target/single-vendor-ecommerce.jar
-```
+# or
+docker compose up backend -d
 
-### Full stack (including frontend)
-```bash
+# Full stack
 docker compose up -d
+
+# Tests
+./mvnw test
 ```
 
-### Health check
-```
-GET http://localhost:8080/health
-```
+Health: `GET http://localhost:8080/health`
+Swagger: `http://localhost:8080/swagger-ui.html`
 
-### Swagger UI
-```
-http://localhost:8080/swagger-ui.html
-```
-
----
-
-## Environment variables
-
-Key vars (see `.env.example` for all):
-
-| Variable | Description |
-|---|---|
-| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` | PostgreSQL connection |
-| `JWT_SECRET` | HMAC secret for JWT signing |
-| `JWT_EXPIRATION` | Token TTL in milliseconds (default 3600000 = 1h) |
-| `FILE_DIRECTORY` | Absolute path on host for file storage (must match volume mount) |
-| `CORS_ORIGIN` | Allowed CORS origin (e.g. `http://frontend:80`) |
-| `SPRING_PROFILES_ACTIVE` | `dev` or `prod` |
-
----
-
-## Project structure
-
-```
-src/main/java/com/croman/singlevendorecommerce/
-├── config/          # Spring beans: SecurityConfig, WebConfig, MessageConfig
-├── controller/      # REST controllers grouped by domain
-│   ├── auth/        # AuthController  → /api/v1/auth/
-│   ├── products/    # ProductsController (public) + AdminProductsController (admin)
-│   ├── storage/     # FileController  → /api/v1/file/
-│   ├── users/       # UserController  → /api/v1/users/
-│   └── health/      # HealthController → /health
-├── dto/             # Request/Response DTOs (no domain logic)
-├── entity/          # JPA entities grouped by domain
-├── repository/      # Spring Data JPA repositories
-├── service/         # Business logic grouped by domain
-└── utils/           # Cross-cutting: JWT, exceptions, pagination, file utils, etc.
-
-src/main/resources/
-├── application.yaml              # All config with env-var placeholders
-├── db/migration/                 # Flyway scripts (V1__ … V21__)
-├── messages.properties           # system/error message keys (English base/fallback)
-└── messages_es.properties        # system/error message keys (Spanish, default locale)
-```
-
----
-
-## Architecture patterns
-
-### Layered monolith
-`Controller → Service → Repository → Entity`
-
-- **Controllers** only handle HTTP (parsing, status codes, calling services). No business logic.
-- **Services** contain all business logic and throw `ApiServiceException` for domain errors.
-- **Repositories** are Spring Data JPA interfaces; custom queries use JPQL.
-- **DTOs** are separate from entities; always map entities → DTOs in the service layer.
-
-### API versioning
-All endpoints are prefixed `/api/v1/`.
-
-### Response format
-Success responses return the DTO directly (no wrapper). Error responses go through `GlobalExceptionHandler`:
-- `ApiServiceException` → `{ "status": <code>, "error": "<message>" }`
-- `MethodArgumentNotValidException` → `{ "status": 400, "errors": { "<field>": "<msg>" } }`
-- `ConstraintViolationException` → same shape as above
-
-`DefaultApiResponse` (`{ status, message }`) is used for mutation operations (create/update/delete).
-
-### Internationalization
-All user-facing strings come from `MessageService` (delegates to Spring's `MessageSource`). Always use `LocaleUtils.getDefaultLocale()` (currently `es`). Never hardcode Spanish strings in Java code.
-
-### File storage
-`StorageService` (interface) → `LocalStorageService` (implementation). Files are stored at `FILE_DIRECTORY` on disk; the path is persisted in the DB. After upload, `ThumbnailService` synchronously generates 200×200 and 400×400 variants in-process using Thumbnailator and writes them back to the same storage directory with `_200` and `_400` suffixes before the filename extension (e.g. `categories/uuid_200.jpg`). Key helpers live in `FileUtils.toSmallThumbnailKey()` and `FileUtils.toMediumThumbnailKey()`.
-
-### JWT authentication
-`JwtUtil` signs/verifies tokens. `JwtAuthenticationFilter` extracts the token from the `Authorization: Bearer <token>` header and sets the `SecurityContext`. Roles come from the `user_roles` table and are used for Spring Security `hasRole()` checks.
+Setup: copy `.env.example` → `.env`.
 
 ---
 
 ## Security model
 
-| Role | Description |
+| Role | Access |
 |---|---|
-| `ADMIN` | Single administrator; accesses `/api/v1/admin/**` |
-| `USER` | Registered and verified customer |
-| `GUEST` | Unauthenticated user (cart managed client-side) |
+| `ADMIN` | `/api/v1/admin/**` |
+| `USER` | Authenticated endpoints (JWT required) |
+| `GUEST` | Public endpoints only |
 
-Public (no JWT required):
-- `/health`, `/swagger-ui/**`, `/v3/api-docs/**`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/users/register`, `POST /api/v1/users/register/admin`
-- `GET /api/v1/file/**`
+**Public (no JWT):** `/health`, `/swagger-ui/**`, `/v3/api-docs/**`, `POST /api/v1/auth/login`, `POST /api/v1/users/register`, `POST /api/v1/users/register/admin`, `GET /api/v1/file/**`
 
-Admin-only: `/api/v1/admin/**`
-
-Everything else requires a valid JWT.
-
-Login lockout: 5 failed attempts within the last 1 hour → HTTP 423 Locked.
-
----
-
-## Database migrations (Flyway)
-
-Migrations live in `src/main/resources/db/migration/` and run automatically on startup. **Never modify an existing migration.** Always create a new `V<n>__description.sql` file.
-
-Current schema includes: `users`, `refresh_tokens`, `login_attempts`, `user_roles`, `categories`, `brands`, `materials`, `attributes`, `attribute_values`, `products`, `product_materials`, `product_variants`, `product_variant_attributes`.
-
-Catalog language: the store is **Spanish-only**. Category, material, and attribute display names — and color attribute values — are stored directly in Spanish in each entity's own column (`categories.name`, `materials.name`, `attributes.name`, `attribute_values.value`). `attributes.attribute_type` remains an internal code (`COLOR`/`SIZE`/`CARAT`). The former translation subsystem (`languages`/`translations` tables, `Language`/`Translation` entities, `TranslationService`/`LanguageService`, `TranslatorPropertyType`) was removed in migration `V21`. Do not reintroduce per-entity translation tables; add columns to the entity instead.
-
----
-
-## Testing
-
-Tests are in `src/test/java/` mirroring the main package structure. Run with:
-```bash
-./mvnw test
-```
-
-Tests use Mockito (`@ExtendWith(MockitoExtension.class)`). Integration tests are not yet written — only unit tests for services and utils. Target coverage: 70%.
+Login lockout: 5 failed attempts in the last 1 hour → HTTP 423 Locked.
 
 ---
 
 ## What is implemented
 
-- Authentication: login with email/password, JWT issuance, login-attempt tracking, account lockout
-- User registration (email/password), role assignment
-- Categories: CRUD (admin) with soft delete + restore, paginated list with search (Spanish name), image upload with synchronous thumbnail generation (200×200 and 400×400)
-- Materials: CRUD (admin), paginated list with search (Spanish name)
-- Brands: CRUD (admin), paginated list with search
-- Attributes & AttributeValues: read-only endpoints (SIZE, COLOR, CARAT seeded); attribute create/update accept a single Spanish `name`
-- Product entity + variants + product_materials schema (migrations done)
-- File storage service (local disk) + synchronous in-process thumbnail generation via Thumbnailator
-- Swagger/OpenAPI documentation on all existing endpoints
+- Auth: login, JWT, login-attempt tracking, account lockout
+- Users: registration, role assignment
+- Categories: CRUD + soft-delete + restore + image upload + thumbnails (admin)
+- Materials, Brands: CRUD + soft-delete (admin)
+- Attributes + AttributeValues: seeded (COLOR/SIZE/CARAT); create/update name (admin)
+- Products: CRUD + soft-delete + restore + image upload (admin); public list + detail
+- File storage: local disk + synchronous thumbnail generation (200×200, 400×400)
+- Swagger/OpenAPI docs on all endpoints
 
-## What is NOT yet implemented (pending per requirements)
+## What is NOT yet implemented
 
-- Product CRUD endpoints (entity/migration exists, no service/controller yet)
-- Auth: refresh tokens, logout, email verification, password recovery, OAuth (Google/Facebook), CAPTCHA
-- User profile management, addresses, wishlist
+- Auth: refresh tokens, logout, email verification, password recovery, OAuth, CAPTCHA
+- User profile, addresses, wishlist
 - Cart (authenticated + guest)
 - Orders, checkout, payments (Stripe, PayPal)
-- Inventory management
-- Shipping management
-- Coupons
+- Inventory, shipping, coupons
 - Reviews/ratings
-- Search & filtering
 - Admin dashboard KPIs and reports
 - Email notifications (Brevo/Sendinblue)
 - Returns/refunds
 
 ---
 
-## Coding conventions
+## Non-negotiable rules (apply every session)
 
-- Use Lombok (`@Data`, `@Builder`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`) on DTOs and entities.
-- Inject dependencies via constructor (Lombok `@RequiredArgsConstructor`), never `@Autowired` on fields.
-- Throw `ApiServiceException(int statusCode, String message)` for all domain errors. Do not catch and re-wrap unless adding context.
-- Use `ApiResponseService.getApiResponseMessage(String key, HttpStatus)` for mutation success responses.
-- Paginated responses use the generic `PageResponse<T>` DTO; domain-specific page response classes exist for Swagger schema documentation only (e.g., `CategoriesPageResponse`).
-- Controller methods return `ResponseEntity<T>` explicitly with the correct HTTP status.
-- Do not add `try/catch` blocks in controllers; let `GlobalExceptionHandler` handle exceptions.
+1. **Flyway**: never edit existing `V<n>__*.sql` files — always create a new one. Current high-water mark: **V26**.
+2. **No Spanish strings in Java**: all user-facing text through `MessageService` + `messages_es.properties`.
+3. **No translation tables**: the translation subsystem was removed in V21. Store Spanish directly on entity columns.
+4. **Soft-delete guard**: after `findById`, always check `deletedAt != null` before returning the entity.
+5. **No try/catch in controllers**: let `GlobalExceptionHandler` handle all exceptions.
+6. **Product PKs are UUID** (`UUID` type in Java), not `Long`. All other entity PKs are `Long`.
+
+For conventions, patterns, and task how-tos — see `.claude/`.
