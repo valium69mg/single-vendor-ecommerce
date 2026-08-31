@@ -81,6 +81,8 @@ services:
     image: single-vendor-ecommerce-frontend:local
     container_name: singlevendor_frontend
     restart: always
+    env_file:
+      - .env
     ports:
       - "80:80"
     networks:
