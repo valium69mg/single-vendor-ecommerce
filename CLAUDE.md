@@ -100,7 +100,7 @@ Login lockout: 5 failed attempts in the last 1 hour → HTTP 423 Locked.
 
 ## Non-negotiable rules (apply every session)
 
-1. **Flyway**: never edit existing `V<n>__*.sql` files — always create a new one. Current high-water mark: **V26**.
+1. **Flyway**: never edit existing `V<n>__*.sql` files — always create a new one. Current high-water mark: **V27**.
 2. **No Spanish strings in Java**: all user-facing text through `MessageService` + `messages_es.properties`.
 3. **No translation tables**: the translation subsystem was removed in V21. Store Spanish directly on entity columns.
 4. **Soft-delete guard**: after `findById`, always check `deletedAt != null` before returning the entity.

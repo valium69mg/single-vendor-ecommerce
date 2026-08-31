@@ -15,6 +15,7 @@ src/main/java/com/croman/singlevendorecommerce/
 │   │   ├── AdminProductsController.java  # /api/v1/admin/products/** (ADMIN)
 │   │   └── ProductsController.java       # /api/v1/products/** (public/USER)
 │   ├── storage/FileController.java # GET /api/v1/file/** (serves stored files)
+│   ├── cart/CartController.java    # /api/v1/cart/** (authenticated USER)
 │   └── users/UserController.java   # /api/v1/users/**
 ├── dto/
 │   ├── DefaultApiResponse.java     # { status, message } for mutations
@@ -34,6 +35,7 @@ src/main/java/com/croman/singlevendorecommerce/
 │   │   ├── ProductVariant.java     # SKU, price, discount_price, stock, weight_grams
 │   │   └── ProductVariantAttribute.java  # M:N variant↔attribute_value join
 │   ├── roles/UserRole.java
+│   ├── cart/Cart.java, CartItem.java  # one cart per user (user_id UNIQUE), lazy-created
 │   └── users/User.java
 ├── repository/                     # Spring Data JPA interfaces, JPQL custom queries
 ├── service/
@@ -46,6 +48,8 @@ src/main/java/com/croman/singlevendorecommerce/
 │   │   ├── MaterialsService.java
 │   │   └── ProductService.java
 │   ├── roles/RolesService.java
+│   ├── cart/CartService.java       # get/add/update/remove; live totals; read-only stock guard
+│   ├── users/CurrentUserService.java # SecurityContextHolder → email principal → User (401 guard)
 │   ├── storage/
 │   │   ├── StorageService.java     # Interface
 │   │   └── LocalStorageService.java# Implementation: writes to FILE_DIRECTORY on disk
@@ -67,7 +71,7 @@ src/main/java/com/croman/singlevendorecommerce/
 
 src/main/resources/
 ├── application.yaml
-├── db/migration/V1__…V26__*.sql   # Flyway (auto-run on startup)
+├── db/migration/V1__…V27__*.sql   # Flyway (auto-run on startup); V27 = carts + cart_items
 ├── messages.properties             # English fallback keys
 └── messages_es.properties          # Spanish keys (default locale)
 ```
@@ -89,6 +93,8 @@ src/main/resources/
 | `product_materials` | BIGSERIAL | product_id, material_id | UNIQUE(product_id, material_id) |
 | `product_variants` | BIGSERIAL | product_id, sku (UNIQUE), price, discount_price, stock, weight_grams | |
 | `product_variant_attributes` | BIGSERIAL | product_variant_id, attribute_value_id | UNIQUE per pair |
+| `carts` | BIGSERIAL | user_id (UNIQUE) | one per user, lazy-created; FK → users |
+| `cart_items` | BIGSERIAL | cart_id, product_variant_id, quantity | UNIQUE(cart_id, product_variant_id); FK cart_id ON DELETE CASCADE; CHECK quantity > 0; no price snapshot |
 
 ## Key routes
 
@@ -110,6 +116,10 @@ src/main/resources/
 | DELETE | /api/v1/admin/products/categories/{id} | ADMIN | AdminProductsController |
 | PATCH | /api/v1/admin/products/categories/{id}/restore | ADMIN | AdminProductsController |
 | (same pattern) | /admin/products/materials, /brands, /attributes | ADMIN | AdminProductsController |
+| GET | /api/v1/cart | USER (JWT) | CartController |
+| POST | /api/v1/cart/items | USER (JWT) | CartController |
+| PATCH | /api/v1/cart/items/{cartItemId} | USER (JWT) | CartController |
+| DELETE | /api/v1/cart/items/{cartItemId} | USER (JWT) | CartController — returns updated CartDTO (200) |
 
 ## External integrations
 
