@@ -1603,6 +1603,81 @@
 			]
 		},
 		{
+			"name": "cart",
+			"item": [
+				{
+					"name": "cart (get current)",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/cart",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "cart"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "cart/items (add)",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"productVariantId\": 1,\r\n    \"quantity\": 1\r\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/cart/items",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "cart", "items"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "cart/items/:cartItemId (update quantity)",
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"quantity\": 2\r\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/cart/items/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "cart", "items", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "cart/items/:cartItemId (remove)",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{jwt-token}}", "type": "text"}],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/cart/items/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "cart", "items", "1"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "files",
 			"item": [
 				{
