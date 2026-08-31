@@ -34,3 +34,5 @@ build/
 
 # env
 .env
+# workspace-level skill registry (not per-repo)
+.atl/

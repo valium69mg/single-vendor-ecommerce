@@ -1,14 +1,28 @@
-# Dockerfile
+# ───────────────────────────────────────
+# Build stage (Maven / JDK 21)
+# ───────────────────────────────────────
+FROM maven:3.9-eclipse-temurin-21 AS builder
+
+WORKDIR /build
+
+# Cache dependencies on pom.xml alone
+COPY pom.xml .
+RUN mvn -B -q dependency:go-offline
+
+# Build the jar
+COPY src ./src
+RUN mvn -B -q clean package -DskipTests
+
+# ───────────────────────────────────────
+# Runtime stage (JRE 21)
+# ───────────────────────────────────────
 FROM eclipse-temurin:21-jdk-alpine
 
-# Directorio de la app dentro del contenedor
 WORKDIR /app
 
-# Copia el jar generado por Maven
-COPY target/single-vendor-ecommerce.jar app.jar
+# Jar produced by the build stage
+COPY --from=builder /build/target/single-vendor-ecommerce.jar app.jar
 
-# Exponer el puerto de Spring Boot
 EXPOSE 8080
 
-# Comando para ejecutar la app
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
