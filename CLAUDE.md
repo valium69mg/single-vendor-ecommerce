@@ -8,7 +8,7 @@ Use conventional commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs
 
 ## Project overview
 
-Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Spring Boot 3.x + Java 21 monolith. Full requirements: `../requerimientos-ecommerce-joyeria.md`
+Backend REST API for a single-vendor jewelry e-commerce platform (Mexico only, MXN currency). Spring Boot 4.0.2 + Java 21 monolith. Full requirements: `../requerimientos-ecommerce-joyeria.md`
 
 Intelligence layer: see `.claude/` directory.
 
@@ -19,7 +19,7 @@ Intelligence layer: see `.claude/` directory.
 | Layer | Technology |
 |---|---|
 | Language | Java 21 (eclipse-temurin:21 in Docker) |
-| Framework | Spring Boot 3.x (Web, Data JPA, Security, Validation, Mail) |
+| Framework | Spring Boot 4.0.2 (Web, Data JPA, Security, Validation, Mail) |
 | Database | PostgreSQL 16 |
 | ORM | Hibernate / Spring Data JPA |
 | Migrations | Flyway — `src/main/resources/db/migration/` — **never modify existing files** |
