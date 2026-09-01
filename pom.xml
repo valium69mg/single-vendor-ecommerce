@@ -30,12 +30,14 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.1.0</spring-cloud.version>
-		<!-- Measured floors: BUNDLE LINE 0.8731, BRANCH 0.8535 (target/site/jacoco/jacoco.csv,
+		<!-- Measured floors: BUNDLE LINE 0.8800, BRANCH 0.8766 (target/site/jacoco/jacoco.csv,
 		     rows minus **/*Application.*, **/dto/**, **/entity/**, **/*Exception.*);
 		     each set to measured actual minus 0.02, truncated to 2 decimals.
-		     config/** is now measured (SecurityConfig, WebConfig, MessageConfig, AdminBootstrapRunner). -->
+		     Raised by the T2 public catalog list/detail integration tests
+		     (ProductListIntegrationTest, ProductByIdIntegrationTest) exercising
+		     ProductsController + ProductService.fetchPage/ProductSpecification. -->
 		<jacoco.line.min>0.85</jacoco.line.min>
-		<jacoco.branch.min>0.83</jacoco.branch.min>
+		<jacoco.branch.min>0.85</jacoco.branch.min>
 	</properties>
 	<dependencies>
 		<dependency>

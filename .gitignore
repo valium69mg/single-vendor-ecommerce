@@ -36,3 +36,6 @@ build/
 .env
 # workspace-level skill registry (not per-repo)
 .atl/
+
+# codegraph index
+.codegraph/
