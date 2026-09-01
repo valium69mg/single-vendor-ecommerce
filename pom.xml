@@ -30,10 +30,12 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.1.0</spring-cloud.version>
-		<!-- Measured floors: full-report LINE 0.8524, BRANCH 0.8217 (target/site/jacoco/jacoco.csv);
-		     each set to measured actual minus 0.02, truncated to 2 decimals. -->
-		<jacoco.line.min>0.83</jacoco.line.min>
-		<jacoco.branch.min>0.80</jacoco.branch.min>
+		<!-- Measured floors: BUNDLE LINE 0.8731, BRANCH 0.8535 (target/site/jacoco/jacoco.csv,
+		     rows minus **/*Application.*, **/dto/**, **/entity/**, **/*Exception.*);
+		     each set to measured actual minus 0.02, truncated to 2 decimals.
+		     config/** is now measured (SecurityConfig, WebConfig, MessageConfig, AdminBootstrapRunner). -->
+		<jacoco.line.min>0.85</jacoco.line.min>
+		<jacoco.branch.min>0.83</jacoco.branch.min>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -242,8 +244,6 @@
 							<excludes>
 								<exclude>**/*Application.*</exclude>
 								<exclude>**/dto/**</exclude>
-								<exclude>**/config/**</exclude>
-								<exclude>**/*Config.*</exclude>
 								<exclude>**/entity/**</exclude>
 								<exclude>**/*Exception.*</exclude>
 							</excludes>
