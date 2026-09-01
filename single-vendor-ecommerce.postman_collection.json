@@ -78,38 +78,6 @@
 					"response": []
 				},
 				{
-					"name": "register/admin",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"carlostranquilino.cr@gmail.com\",\r\n    \"password\": \"Carlos123$\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8080/api/v1/users/register/admin",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"api",
-								"v1",
-								"users",
-								"register",
-								"admin"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "email",
 					"request": {
 						"method": "DELETE",

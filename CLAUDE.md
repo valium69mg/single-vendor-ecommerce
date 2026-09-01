@@ -67,16 +67,18 @@ Setup: copy `.env.example` → `.env`.
 | `USER` | Authenticated endpoints (JWT required) |
 | `GUEST` | Public endpoints only |
 
-**Public (no JWT):** `/health`, `/swagger-ui/**`, `/v3/api-docs/**`, `POST /api/v1/auth/login`, `POST /api/v1/users/register`, `POST /api/v1/users/register/admin`, `GET /api/v1/file/**`
+**Public (no JWT):** `/health`, `/swagger-ui/**`, `/v3/api-docs/**`, `POST /api/v1/auth/login`, `POST /api/v1/users/register`, `GET /api/v1/file/**`
 
 Login lockout: 5 failed attempts in the last 1 hour → HTTP 423 Locked.
+
+**Admin bootstrap:** the first `ADMIN` account is seeded at startup by `AdminBootstrapRunner` from `APP_ADMIN_EMAIL` / `APP_ADMIN_PASSWORD` when no admin exists — there is no public admin-registration endpoint. Idempotent: a no-op once an admin row exists.
 
 ---
 
 ## What is implemented
 
 - Auth: login, JWT, login-attempt tracking, account lockout
-- Users: registration, role assignment
+- Users: registration, role assignment, startup admin bootstrap (`AdminBootstrapRunner`)
 - Categories: CRUD + soft-delete + restore + image upload + thumbnails (admin)
 - Materials, Brands: CRUD + soft-delete (admin)
 - Attributes + AttributeValues: seeded (COLOR/SIZE/CARAT); create/update name (admin)

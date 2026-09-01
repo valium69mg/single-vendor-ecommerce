@@ -71,26 +71,5 @@ public class UserController {
 		DefaultApiResponse response = apiResponseService.getApiResponseMessage("user_deleted", HttpStatus.NO_CONTENT);
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
 	}
-	
-	@PostMapping("register/admin")
-	@Operation(summary = "Register the admin of the app (One time only)", responses = {
-		    @ApiResponse(
-		        responseCode = "201", 
-		        description = "User admin created successfully",
-		        content = @Content(mediaType = "application/json",
-		        schema = @Schema(implementation = DefaultApiResponse.class))
-		    ),
-		    @ApiResponse(
-		        responseCode = "400",
-		        description = "Bad request",
-		        content = @Content(mediaType = "application/json",
-		            schema = @Schema(implementation = DefaultApiResponse.class))
-		    )
-		})
-	public ResponseEntity<DefaultApiResponse> createSiteAdmin(@Valid @RequestBody CreateUserDTO dto) {
-		userService.createSiteAdmin(dto);
-		DefaultApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
-		return ResponseEntity.status(HttpStatus.CREATED).body(response);
-	}
 
 }

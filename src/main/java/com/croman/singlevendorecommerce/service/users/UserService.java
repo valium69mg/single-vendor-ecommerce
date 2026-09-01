@@ -165,7 +165,7 @@ public class UserService {
 
 	}
 	
-	private boolean adminPresent() {
+	public boolean adminPresent() {
 		return !userRepository.findAllByUserRole_RoleType(RoleType.ADMIN).isEmpty();
 	}
 	
