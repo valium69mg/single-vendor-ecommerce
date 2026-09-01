@@ -231,6 +231,11 @@ public class ProductService {
                 .orElseThrow(() -> new ApiServiceException(HttpStatus.NOT_FOUND.value(),
                         messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale())));
 
+        if (product.getDeletedAt() != null) {
+            throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                    messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale()));
+        }
+
         if (product.getStatus() != ProductStatus.ACTIVE) {
             throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
                     messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale()));

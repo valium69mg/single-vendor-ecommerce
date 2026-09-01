@@ -1139,6 +1139,20 @@ class ProductServiceTest {
         assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
     }
 
+    @Test
+    void testGetPublicProductByIdThrowsWhenProductIsSoftDeleted() {
+        savedProduct.setDeletedAt(LocalDateTime.now());
+        when(productRepository.findById(savedProduct.getProductId()))
+                .thenReturn(Optional.of(savedProduct));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.getPublicProductById(savedProduct.getProductId()));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
     // ─── getAdminProducts ─────────────────────────────────────────────────────
 
     @Test
