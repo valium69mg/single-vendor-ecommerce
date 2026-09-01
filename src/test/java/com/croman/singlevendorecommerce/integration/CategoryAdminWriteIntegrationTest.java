@@ -159,4 +159,57 @@ class CategoryAdminWriteIntegrationTest extends AbstractIntegrationTest {
 
 		assertThat(categoryRepository.count()).isEqualTo(preSeedCount);
 	}
+
+	// ---------------------------------------------------------------------
+	// Update-name validation (Phase 3)
+	// ---------------------------------------------------------------------
+
+	@Test
+	void updateWithBlankNameReturns400AndLeavesNameUnchanged() throws Exception {
+		Category target = CategoryFixtures.seedCategory(categoryRepository, "IT Update Blank Target");
+
+		mockMvc.perform(patch(BASE_URL + "/" + target.getCategoryId())
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(nameBody("\"   \"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.errors.name").exists());
+
+		assertThat(categoryRepository.findById(target.getCategoryId()).orElseThrow().getName())
+				.isEqualTo("IT Update Blank Target");
+	}
+
+	@Test
+	void updateWithTooShortNameReturns400AndLeavesNameUnchanged() throws Exception {
+		Category target = CategoryFixtures.seedCategory(categoryRepository, "IT Update Short Target");
+
+		mockMvc.perform(patch(BASE_URL + "/" + target.getCategoryId())
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(nameBody("\"ab\"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.errors.name").exists());
+
+		assertThat(categoryRepository.findById(target.getCategoryId()).orElseThrow().getName())
+				.isEqualTo("IT Update Short Target");
+	}
+
+	@Test
+	void updateWithTooLongNameReturns400AndLeavesNameUnchanged() throws Exception {
+		Category target = CategoryFixtures.seedCategory(categoryRepository, "IT Update Long Target");
+		String sixtyOneChars = "a".repeat(61);
+
+		mockMvc.perform(patch(BASE_URL + "/" + target.getCategoryId())
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(nameBody("\"" + sixtyOneChars + "\"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.errors.name").exists());
+
+		assertThat(categoryRepository.findById(target.getCategoryId()).orElseThrow().getName())
+				.isEqualTo("IT Update Long Target");
+	}
 }

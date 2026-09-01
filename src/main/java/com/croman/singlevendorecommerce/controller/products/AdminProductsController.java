@@ -444,8 +444,8 @@ public class AdminProductsController {
 		            schema = @Schema(implementation = DefaultApiResponse.class))
 		    )
 		})
-	public ResponseEntity<DefaultApiResponse> patchCategory(@PathVariable long id, 
-			@RequestBody UpdateCategoryDTO updateCategoryDTO) {
+	public ResponseEntity<DefaultApiResponse> patchCategory(@PathVariable long id,
+			@Valid @RequestBody UpdateCategoryDTO updateCategoryDTO) {
 		categoryService.updateCategory(id, updateCategoryDTO);
 		return ResponseEntity.status(HttpStatus.OK)
 				.body(apiResponseService.getApiResponseMessage("category_updated", HttpStatus.OK));
