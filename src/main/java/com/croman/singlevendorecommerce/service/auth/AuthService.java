@@ -41,7 +41,7 @@ public class AuthService {
 			boolean existsByEmail = userService.existsByEmail(email);
 
 			if (!existsByEmail) {
-				throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+				throw new ApiServiceException(HttpStatus.UNAUTHORIZED.value(),
 						messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
 			}
 					
@@ -53,7 +53,7 @@ public class AuthService {
 
 			if (!passwordMatches) {
 				registerLoginAttempt(loginContextDTO, false);
-				throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+				throw new ApiServiceException(HttpStatus.UNAUTHORIZED.value(),
 						messageService.getMessage("invalid_credentials", LocaleUtils.getDefaultLocale()));
 			}
 			

@@ -70,6 +70,7 @@ class AuthServiceTest {
 
         ApiServiceException ex = assertThrows(ApiServiceException.class, () -> authService.login(ctx));
         assertEquals("Invalid credentials", ex.getMessage());
+        assertEquals(401, ex.getStatusCode());
     }
 
     @Test
@@ -98,6 +99,7 @@ class AuthServiceTest {
 
         ApiServiceException ex = assertThrows(ApiServiceException.class, () -> authService.login(ctx));
         assertEquals("Invalid credentials", ex.getMessage());
+        assertEquals(401, ex.getStatusCode());
         verify(loginAttemptRepository).save(any(LoginAttempt.class));
     }
 }
