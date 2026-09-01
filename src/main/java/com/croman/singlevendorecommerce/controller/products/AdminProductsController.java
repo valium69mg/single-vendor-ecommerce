@@ -377,7 +377,7 @@ public class AdminProductsController {
 		            schema = @Schema(implementation = DefaultApiResponse.class))
 		    )
 		})
-	public ResponseEntity<DefaultApiResponse> createCategory(@RequestBody CreateCategoryDTO createCategoryDTO) {
+	public ResponseEntity<DefaultApiResponse> createCategory(@Valid @RequestBody CreateCategoryDTO createCategoryDTO) {
 		categoryService.createCategoryDTO(createCategoryDTO);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(apiResponseService.getApiResponseMessage("category_created", HttpStatus.CREATED));
