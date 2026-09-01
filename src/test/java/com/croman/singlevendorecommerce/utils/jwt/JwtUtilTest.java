@@ -36,6 +36,16 @@ class JwtUtilTest {
     }
 
     @Test
+    void testValidateTokenEmptyStringReturnsFalse() {
+        assertFalse(jwtUtil.validateToken(""));
+    }
+
+    @Test
+    void testValidateTokenBlankStringReturnsFalse() {
+        assertFalse(jwtUtil.validateToken("   "));
+    }
+
+    @Test
     void testTokenExpiration() {
         JwtUtil shortLivedJwtUtil = new JwtUtil("anothersecretkeyanothersecretkey", 1); // 1 ms
         String token = shortLivedJwtUtil.generateToken("expiringuser", "USER");

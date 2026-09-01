@@ -79,6 +79,18 @@ class JwtFilterIntegrationTest extends AbstractIntegrationTest {
 	}
 
 	@Test
+	void emptyBearerTokenReturns401() throws Exception {
+		mockMvc.perform(get(CART_URL).header(HttpHeaders.AUTHORIZATION, "Bearer "))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void blankBearerTokenReturns401() throws Exception {
+		mockMvc.perform(get(CART_URL).header(HttpHeaders.AUTHORIZATION, "Bearer    "))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	void expiredTokenReturns401() throws Exception {
 		String expired = new JwtUtil(jwtSecret, -1000L).generateToken(EMAIL, "USER");
 
