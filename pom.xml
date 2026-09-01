@@ -30,6 +30,10 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.1.0</spring-cloud.version>
+		<!-- Measured floors: full-report LINE 0.8524, BRANCH 0.8217 (target/site/jacoco/jacoco.csv);
+		     each set to measured actual minus 0.02, truncated to 2 decimals. -->
+		<jacoco.line.min>0.83</jacoco.line.min>
+		<jacoco.branch.min>0.80</jacoco.branch.min>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -99,6 +103,21 @@
 		<dependency>
 			<groupId>org.springframework.restdocs</groupId>
 			<artifactId>spring-restdocs-mockmvc</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -195,6 +214,40 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.line.min}</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.branch.min}</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<excludes>
+								<exclude>**/*Application.*</exclude>
+								<exclude>**/dto/**</exclude>
+								<exclude>**/config/**</exclude>
+								<exclude>**/*Config.*</exclude>
+								<exclude>**/entity/**</exclude>
+								<exclude>**/*Exception.*</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

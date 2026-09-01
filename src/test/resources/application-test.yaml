@@ -1,0 +1,16 @@
+# Test profile — activated by @ActiveProfiles("test") on AbstractIntegrationTest.
+# Merges over src/main/resources/application.yaml. The datasource is replaced at
+# runtime by the Testcontainers @ServiceConnection on the PostgreSQL 16 container.
+FILE_DIRECTORY: ${java.io.tmpdir}/svec-it
+JWT_SECRET: integration-test-secret-please-do-not-use-in-production-0123456789
+
+app:
+  admin:
+    email: ""
+    password: ""
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
