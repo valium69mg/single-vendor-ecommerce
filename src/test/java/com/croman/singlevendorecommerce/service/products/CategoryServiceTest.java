@@ -9,6 +9,7 @@ import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
+import com.croman.singlevendorecommerce.repository.products.CategorySlugHistoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
@@ -57,6 +58,9 @@ class CategoryServiceTest {
 
 	@Mock
 	private MultipartFile multipartFile;
+
+	@Mock
+	private CategorySlugHistoryRepository categorySlugHistoryRepository;
 
 	@InjectMocks
 	private CategoryService categoryService;
@@ -231,6 +235,60 @@ class CategoryServiceTest {
 		categoryService.createCategoryDTO(dto);
 
 		verify(categoryRepository).save(argThat(c -> NAME.equals(c.getName())));
+	}
+
+	@Test
+	void testCreateCategoryDTODerivesSlugFromName() {
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name("Necklaces").build();
+		when(categoryRepository.findByName("Necklaces")).thenReturn(Optional.empty());
+
+		categoryService.createCategoryDTO(dto);
+
+		verify(categoryRepository).save(argThat(c -> "necklaces".equals(c.getSlug())));
+	}
+
+	@Test
+	void testCreateCategoryDTOAppendsCounterWhenSlugCollidesWithActiveColumn() {
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name("Necklaces").build();
+		when(categoryRepository.findByName("Necklaces")).thenReturn(Optional.empty());
+		when(categoryRepository.existsBySlug("necklaces")).thenReturn(true);
+
+		categoryService.createCategoryDTO(dto);
+
+		verify(categoryRepository).save(argThat(c -> "necklaces-2".equals(c.getSlug())));
+	}
+
+	@Test
+	void testCreateCategoryDTONeverReusesASlugThatOnlyExistsInHistory() {
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name("Necklaces").build();
+		when(categoryRepository.findByName("Necklaces")).thenReturn(Optional.empty());
+		when(categorySlugHistoryRepository.existsBySlug("necklaces")).thenReturn(true);
+
+		categoryService.createCategoryDTO(dto);
+
+		verify(categoryRepository).save(argThat(c -> "necklaces-2".equals(c.getSlug())));
+	}
+
+	@Test
+	void testCreateCategoryDTOFallsBackToCategoryIdSlugWhenNameYieldsNoSlug() {
+		CreateCategoryDTO dto = CreateCategoryDTO.builder().name(null).build();
+		List<String> slugsAtSave = new java.util.ArrayList<>();
+		when(categoryRepository.findByName(null)).thenReturn(Optional.empty());
+		when(categoryRepository.save(any())).thenAnswer(invocation -> {
+			Category saved = invocation.getArgument(0);
+			slugsAtSave.add(saved.getSlug());
+			if (saved.getCategoryId() == null) {
+				saved.setCategoryId(7L);
+			}
+			return saved;
+		});
+
+		categoryService.createCategoryDTO(dto);
+
+		verify(categoryRepository, times(2)).save(any());
+		assertThat(slugsAtSave).hasSize(2);
+		assertThat(slugsAtSave.get(0)).isNotBlank();
+		assertThat(slugsAtSave.get(1)).isEqualTo("category-7");
 	}
 
 	@Test

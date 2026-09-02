@@ -25,12 +25,14 @@ import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
+import com.croman.singlevendorecommerce.repository.products.CategorySlugHistoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
 import com.croman.singlevendorecommerce.utils.FileUtils;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
+import com.croman.singlevendorecommerce.utils.SlugUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,8 @@ public class CategoryService {
 	private final MessageService messageService;
 	private final StorageService storageService;
 	private final ThumbnailService thumbnailService;
+	private final CategorySlugHistoryRepository categorySlugHistoryRepository;
+	private static final String CATEGORY_SLUG_PREFIX = "category";
 	private static final String CATEGORY_NOT_FOUND_CODE = "category_not_found";
 	private static final String CATEGORY_SUB_DIRECTORY = "categories/";
 	private static final Random RANDOM = new Random();
@@ -194,8 +198,38 @@ public class CategoryService {
 
 		Category category = Category.builder().name(name).build();
 
-		categoryRepository.save(category);
+		String base = SlugUtils.slugify(name);
+		if (base.isEmpty()) {
+			// No usable slug from the name yet: persist once to obtain the id, then
+			// derive the deterministic "category-{id}" fallback and persist again.
+			category.setSlug(CATEGORY_SLUG_PREFIX + "-" + UUID.randomUUID());
+			categoryRepository.save(category);
+			category.setSlug(generateUniqueSlug(null, category.getCategoryId()));
+			categoryRepository.save(category);
+		} else {
+			category.setSlug(generateUniqueSlug(name, null));
+			categoryRepository.save(category);
+		}
 
+	}
+
+	/**
+	 * Derives a slug from {@code name} (or the {@code category-{id}} fallback when
+	 * the name yields nothing) and appends {@code -2}, {@code -3}, ... until the
+	 * candidate collides with neither an active {@code slug} column nor a
+	 * {@code category_slug_history} row.
+	 */
+	private String generateUniqueSlug(String name, Long idOrNull) {
+		String base = SlugUtils.slugify(name);
+		if (base.isEmpty()) {
+			base = SlugUtils.fallback(CATEGORY_SLUG_PREFIX, idOrNull);
+		}
+		String candidate = base;
+		int counter = 2;
+		while (categoryRepository.existsBySlug(candidate) || categorySlugHistoryRepository.existsBySlug(candidate)) {
+			candidate = SlugUtils.withCounter(base, counter++);
+		}
+		return candidate;
 	}
 
 	@Transactional
