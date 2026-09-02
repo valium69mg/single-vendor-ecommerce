@@ -52,6 +52,22 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).containsEntry("error", "Invalid input");
     }
 
+    // ─── handleMovedPermanently ─────────────────────────────────────────────
+
+    @Test
+    void testHandleMovedPermanentlyReturns301WithLocationHeaderAndCanonicalSlugBody() {
+        MovedPermanentlyException ex = new MovedPermanentlyException(
+                "gold-rings", "/api/v1/products/categories/by-slug/gold-rings");
+
+        ResponseEntity<Map<String, Object>> response = globalExceptionHandler.handleMovedPermanently(ex);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(HttpStatus.MOVED_PERMANENTLY.value());
+        assertThat(response.getHeaders().getLocation()).hasToString(
+                "/api/v1/products/categories/by-slug/gold-rings");
+        assertThat(response.getBody()).containsEntry("status", HttpStatus.MOVED_PERMANENTLY.value());
+        assertThat(response.getBody()).containsEntry("canonicalSlug", "gold-rings");
+    }
+
     // ─── handleValidationExceptions ──────────────────────────────────────────
 
     @Test

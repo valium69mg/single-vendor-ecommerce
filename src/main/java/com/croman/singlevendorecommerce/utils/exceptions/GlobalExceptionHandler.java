@@ -1,5 +1,6 @@
 package com.croman.singlevendorecommerce.utils.exceptions;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -23,6 +24,16 @@ public class GlobalExceptionHandler {
 		body.put("error", ex.getMessage());
 		body.putAll(ex.getMetadata());
 		return ResponseEntity.status(ex.getStatusCode()).body(body);
+	}
+
+	@ExceptionHandler(MovedPermanentlyException.class)
+	public ResponseEntity<Map<String, Object>> handleMovedPermanently(MovedPermanentlyException ex) {
+		Map<String, Object> body = new HashMap<>();
+		body.put(STATUS_FIELD, HttpStatus.MOVED_PERMANENTLY.value());
+		body.put("canonicalSlug", ex.getCanonicalSlug());
+		return ResponseEntity.status(HttpStatus.MOVED_PERMANENTLY)
+				.header(HttpHeaders.LOCATION, ex.getLocation())
+				.body(body);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
