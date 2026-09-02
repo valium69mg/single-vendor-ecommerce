@@ -62,6 +62,7 @@ import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.repository.products.MaterialRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductMaterialRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductRepository;
+import com.croman.singlevendorecommerce.repository.products.ProductSlugHistoryRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductVariantAttributeRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductVariantRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
@@ -82,6 +83,7 @@ class ProductServiceTest {
     @Mock private StorageService storageService;
     @Mock private ThumbnailService thumbnailService;
     @Mock private MultipartFile multipartFile;
+    @Mock private ProductSlugHistoryRepository productSlugHistoryRepository;
 
     @InjectMocks
     private ProductService productService;
@@ -287,6 +289,67 @@ class ProductServiceTest {
                     && v.getWeightGrams() == 5
                     && v.getProduct() == savedProduct;
         }));
+    }
+
+    // ─── createProduct – slug generation ─────────────────────────────────────
+
+    @Test
+    void testCreateProductDerivesSlugFromName() {
+        stubMinimalHappyPath();
+
+        productService.createProduct(minimalProductDTO(List.of(variantDTO(SKU, null))));
+
+        verify(productRepository).save(argThat(p -> "gold-ring".equals(p.getSlug())));
+    }
+
+    @Test
+    void testCreateProductAppendsCounterWhenSlugCollidesWithActiveColumn() {
+        stubMinimalHappyPath();
+        when(productRepository.existsBySlug("gold-ring")).thenReturn(true);
+
+        productService.createProduct(minimalProductDTO(List.of(variantDTO(SKU, null))));
+
+        verify(productRepository).save(argThat(p -> "gold-ring-2".equals(p.getSlug())));
+    }
+
+    @Test
+    void testCreateProductNeverReusesASlugThatOnlyExistsInHistory() {
+        stubMinimalHappyPath();
+        when(productSlugHistoryRepository.existsBySlug("gold-ring")).thenReturn(true);
+
+        productService.createProduct(minimalProductDTO(List.of(variantDTO(SKU, null))));
+
+        verify(productRepository).save(argThat(p -> "gold-ring-2".equals(p.getSlug())));
+    }
+
+    @Test
+    void testCreateProductFallsBackToProductIdSlugWhenNameYieldsNoSlug() {
+        java.util.List<String> slugsAtSave = new java.util.ArrayList<>();
+        when(productRepository.findByName("!!!")).thenReturn(Optional.empty());
+        when(productVariantRepository.findExistingSkus(anyCollection())).thenReturn(List.of());
+        when(productVariantRepository.findVariantsFromDeletedProducts(anyCollection())).thenReturn(List.of());
+        when(productRepository.save(any())).thenAnswer(invocation -> {
+            Product passed = invocation.getArgument(0);
+            slugsAtSave.add(passed.getSlug());
+            return savedProduct;
+        });
+        when(productVariantRepository.saveAll(anyList())).thenReturn(List.of(savedVariant));
+        when(productVariantAttributeRepository.saveAll(anyList())).thenReturn(List.of());
+        when(productMaterialRepository.saveAll(anyList())).thenReturn(List.of());
+
+        CreateProductDTO dto = CreateProductDTO.builder()
+                .name("!!!")
+                .status(ProductStatus.ACTIVE)
+                .featured(false)
+                .variants(List.of(variantDTO(SKU, null)))
+                .build();
+
+        productService.createProduct(dto);
+
+        verify(productRepository, times(2)).save(any());
+        assertThat(slugsAtSave).hasSize(2);
+        assertThat(slugsAtSave.get(0)).isNotBlank();
+        assertThat(slugsAtSave.get(1)).startsWith("product-");
     }
 
     // ─── createProduct – batch saves ──────────────────────────────────────────

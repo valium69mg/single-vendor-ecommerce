@@ -44,12 +44,14 @@ import com.croman.singlevendorecommerce.entity.products.ProductMaterial;
 import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 import com.croman.singlevendorecommerce.entity.products.ProductVariantAttribute;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
+import com.croman.singlevendorecommerce.utils.SlugUtils;
 import com.croman.singlevendorecommerce.repository.products.AttributeValueRepository;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.repository.products.MaterialRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductMaterialRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductRepository;
+import com.croman.singlevendorecommerce.repository.products.ProductSlugHistoryRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductVariantAttributeRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductVariantRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
@@ -63,6 +65,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductService {
 
     private static final String PRODUCT_SUB_DIRECTORY = "products/";
+    private static final String PRODUCT_SLUG_PREFIX = "product";
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp");
 
@@ -77,6 +80,7 @@ public class ProductService {
     private final MessageService messageService;
     private final StorageService storageService;
     private final ThumbnailService thumbnailService;
+    private final ProductSlugHistoryRepository productSlugHistoryRepository;
 
     @Transactional
     public void createProduct(CreateProductDTO dto) {
@@ -88,8 +92,14 @@ public class ProductService {
 
         validateSkus(dto.getVariants());
 
+        String slugBase = SlugUtils.slugify(dto.getName());
+        String initialSlug = slugBase.isEmpty()
+                ? PRODUCT_SLUG_PREFIX + "-" + UUID.randomUUID()
+                : generateUniqueSlug(dto.getName(), null);
+
         Product savedProduct = productRepository.save(Product.builder()
                 .name(dto.getName())
+                .slug(initialSlug)
                 .shortDescription(dto.getShortDescription())
                 .longDescription(dto.getLongDescription())
                 .status(dto.getStatus())
@@ -98,6 +108,13 @@ public class ProductService {
                 .unitsSold(0)
                 .brand(brand)
                 .build());
+
+        if (slugBase.isEmpty()) {
+            // The name produced no usable slug: now that the id exists, replace the
+            // placeholder with the deterministic "product-{id}" fallback.
+            savedProduct.setSlug(generateUniqueSlug(null, savedProduct.getProductId()));
+            productRepository.save(savedProduct);
+        }
 
         List<ProductVariant> variantEntities = dto.getVariants().stream()
                 .map(v -> {
@@ -605,6 +622,25 @@ public class ProductService {
         }
         product.setDeletedAt(null);
         productRepository.save(product);
+    }
+
+    /**
+     * Derives a slug from {@code name} (or the {@code product-{id}} fallback when
+     * the name yields nothing) and appends {@code -2}, {@code -3}, ... until the
+     * candidate collides with neither an active {@code slug} column nor a
+     * {@code product_slug_history} row.
+     */
+    private String generateUniqueSlug(String name, Object idOrNull) {
+        String base = SlugUtils.slugify(name);
+        if (base.isEmpty()) {
+            base = SlugUtils.fallback(PRODUCT_SLUG_PREFIX, idOrNull);
+        }
+        String candidate = base;
+        int counter = 2;
+        while (productRepository.existsBySlug(candidate) || productSlugHistoryRepository.existsBySlug(candidate)) {
+            candidate = SlugUtils.withCounter(base, counter++);
+        }
+        return candidate;
     }
 
     private void validateProductName(String name) {
