@@ -12,6 +12,7 @@ import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductVariantRepository;
+import com.croman.singlevendorecommerce.utils.SlugUtils;
 
 /**
  * Stateless construction helper for public-catalog integration-test product fixtures.
@@ -84,6 +85,7 @@ public final class ProductFixtures {
 
         Product inactive = productRepository.save(Product.builder()
                 .name("Catalog IT Inactive Ring")
+                .slug(SlugUtils.slugify("Catalog IT Inactive Ring"))
                 .status(ProductStatus.INACTIVE)
                 .featured(false)
                 .unitsSold(0)
@@ -93,6 +95,7 @@ public final class ProductFixtures {
 
         Product softDeleted = productRepository.save(Product.builder()
                 .name("Catalog IT Soft Deleted Ring")
+                .slug(SlugUtils.slugify("Catalog IT Soft Deleted Ring"))
                 .status(ProductStatus.ACTIVE)
                 .featured(false)
                 .unitsSold(0)
@@ -118,6 +121,7 @@ public final class ProductFixtures {
             BigDecimal price, int unitsSold) {
         Product product = productRepository.save(Product.builder()
                 .name(name)
+                .slug(SlugUtils.slugify(name))
                 .status(ProductStatus.ACTIVE)
                 .featured(false)
                 .unitsSold(unitsSold)

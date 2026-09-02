@@ -15,6 +15,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 	@Query("SELECT c FROM Category c WHERE LOWER(c.name) = LOWER(:name)")
 	Optional<Category> findByName(@Param("name") String name);
 
+	Optional<Category> findBySlug(String slug);
+
+	boolean existsBySlug(String slug);
+
 	@Query("SELECT c FROM Category c WHERE c.deletedAt IS NULL")
 	Page<Category> findAllNotDeleted(Pageable pageable);
 

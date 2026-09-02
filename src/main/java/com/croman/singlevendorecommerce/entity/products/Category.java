@@ -31,7 +31,10 @@ public class Category {
 	
 	@Column(name = "name", length = 255, unique = true)
 	private String name;
-	
+
+	@Column(name = "slug", length = 255, nullable = false, unique = true)
+	private String slug;
+
 	@Column(name = "file_url", length = 255)
 	private String fileUrl;
 	

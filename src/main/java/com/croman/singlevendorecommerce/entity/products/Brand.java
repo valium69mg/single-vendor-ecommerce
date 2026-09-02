@@ -31,7 +31,10 @@ public class Brand {
 	
 	@Column(name = "name", length = 255, unique = true)
 	private String name;
-	
+
+	@Column(name = "slug", length = 255, nullable = false, unique = true)
+	private String slug;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;

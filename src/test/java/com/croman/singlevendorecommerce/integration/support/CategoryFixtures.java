@@ -8,6 +8,7 @@ import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.entity.products.Product;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.repository.products.ProductRepository;
+import com.croman.singlevendorecommerce.utils.SlugUtils;
 
 /**
  * Stateless construction helper for admin-category integration-test fixtures.
@@ -51,7 +52,7 @@ public final class CategoryFixtures {
 	 * @return the persisted {@link Category} (id, {@code createdAt}, {@code updatedAt} populated)
 	 */
 	public static Category seedCategory(CategoryRepository categoryRepository, String name) {
-		return categoryRepository.save(Category.builder().name(name).build());
+		return categoryRepository.save(Category.builder().name(name).slug(SlugUtils.slugify(name)).build());
 	}
 
 	/**
@@ -63,7 +64,8 @@ public final class CategoryFixtures {
 	 * @return the persisted soft-deleted {@link Category}
 	 */
 	public static Category seedSoftDeletedCategory(CategoryRepository categoryRepository, String name) {
-		return categoryRepository.save(Category.builder().name(name).deletedAt(LocalDateTime.now()).build());
+		return categoryRepository.save(
+				Category.builder().name(name).slug(SlugUtils.slugify(name)).deletedAt(LocalDateTime.now()).build());
 	}
 
 	/**
@@ -79,9 +81,10 @@ public final class CategoryFixtures {
 	 */
 	public static SeededCategoryWithProduct seedCategoryWithProduct(CategoryRepository categoryRepository,
 			ProductRepository productRepository, String name) {
-		Category category = categoryRepository.save(Category.builder().name(name).build());
+		Category category = categoryRepository.save(Category.builder().name(name).slug(SlugUtils.slugify(name)).build());
 		Product product = productRepository.save(Product.builder()
 				.name(name + " Product")
+				.slug(SlugUtils.slugify(name + " Product"))
 				.status(ProductStatus.ACTIVE)
 				.featured(false)
 				.unitsSold(0)
