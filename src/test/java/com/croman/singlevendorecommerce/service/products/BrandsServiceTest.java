@@ -16,6 +16,7 @@ import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyExcepti
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -353,6 +354,49 @@ class BrandsServiceTest {
         brandsService.updateBrand(BRAND_ID, updateBrandDTO);
 
         verify(brandRepository, times(1)).save(any());
+    }
+
+    // ─── updateBrand – slug history on rename ────────────────────────────────
+
+    @Test
+    void testUpdateBrandWritesHistoryRowAndNewSlugWhenRenameChangesDerivedSlug() {
+        brand.setSlug("nike");
+        UpdateBrandDTO dto = UpdateBrandDTO.builder().name("Nike Air").build();
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(brandRepository.findByName("Nike Air")).thenReturn(Optional.empty());
+
+        brandsService.updateBrand(BRAND_ID, dto);
+
+        ArgumentCaptor<BrandSlugHistory> captor = ArgumentCaptor.forClass(BrandSlugHistory.class);
+        verify(brandSlugHistoryRepository).save(captor.capture());
+        assertThat(captor.getValue().getSlug()).isEqualTo("nike");
+        verify(brandRepository).save(argThat(b -> "nike-air".equals(b.getSlug())));
+    }
+
+    @Test
+    void testUpdateBrandDoesNotWriteHistoryWhenRenameLeavesDerivedSlugUnchanged() {
+        brand.setSlug("nike");
+        UpdateBrandDTO dto = UpdateBrandDTO.builder().name("NIKE.").build();
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(brandRepository.findByName("NIKE.")).thenReturn(Optional.empty());
+
+        brandsService.updateBrand(BRAND_ID, dto);
+
+        verify(brandSlugHistoryRepository, never()).save(any());
+        verify(brandRepository).save(argThat(b -> "nike".equals(b.getSlug())));
+    }
+
+    @Test
+    void testUpdateBrandSuffixesNewSlugWhenRenameDerivesAnAlreadyTakenSlug() {
+        brand.setSlug("nike");
+        UpdateBrandDTO dto = UpdateBrandDTO.builder().name("Nike Air").build();
+        when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
+        when(brandRepository.findByName("Nike Air")).thenReturn(Optional.empty());
+        when(brandRepository.existsBySlug("nike-air")).thenReturn(true);
+
+        brandsService.updateBrand(BRAND_ID, dto);
+
+        verify(brandRepository).save(argThat(b -> "nike-air-2".equals(b.getSlug())));
     }
 
     // ─── deleteBrand ─────────────────────────────────────────────────────────

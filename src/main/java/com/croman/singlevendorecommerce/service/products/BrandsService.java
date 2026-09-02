@@ -187,8 +187,29 @@ public class BrandsService {
 					messageService.getMessage(BRAND_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
 		}
 
+		recordSlugRename(brand, newName);
 		brand.setName(newName);
 		brandRepository.save(brand);
+	}
+
+	/**
+	 * When {@code newName} derives a different slug than the one currently on
+	 * {@code brand}, retires the old slug into {@code brand_slug_history} and
+	 * assigns the new (uniqueness-resolved) slug. A rename that leaves the derived
+	 * slug unchanged writes no history row.
+	 */
+	private void recordSlugRename(Brand brand, String newName) {
+		String oldSlug = brand.getSlug();
+		String derivedBase = SlugUtils.slugify(newName);
+		if (derivedBase.isEmpty()) {
+			derivedBase = SlugUtils.fallback(BRAND_SLUG_PREFIX, brand.getBrandId());
+		}
+		if (derivedBase.equals(oldSlug)) {
+			return;
+		}
+		String newSlug = generateUniqueSlug(newName, brand.getBrandId());
+		brandSlugHistoryRepository.save(new BrandSlugHistory(oldSlug, brand, LocalDateTime.now()));
+		brand.setSlug(newSlug);
 	}
 
 	@Transactional

@@ -164,6 +164,8 @@ public class ProductService {
 		Category category = resolveCategory(dto.getCategoryId());
 		Brand brand = resolveBrand(dto.getBrandId());
 		Product product = resolveProduct(productId);
+
+		recordSlugRename(product, dto.getName());
 		product.setName(dto.getName());
 		product.setShortDescription(dto.getShortDescription());
 		product.setLongDescription(dto.getLongDescription());
@@ -676,6 +678,26 @@ public class ProductService {
      * candidate collides with neither an active {@code slug} column nor a
      * {@code product_slug_history} row.
      */
+    /**
+     * When {@code newName} derives a different slug than the one currently on
+     * {@code product}, retires the old slug into {@code product_slug_history} and
+     * assigns the new (uniqueness-resolved) slug. A rename that leaves the derived
+     * slug unchanged writes no history row.
+     */
+    private void recordSlugRename(Product product, String newName) {
+        String oldSlug = product.getSlug();
+        String derivedBase = SlugUtils.slugify(newName);
+        if (derivedBase.isEmpty()) {
+            derivedBase = SlugUtils.fallback(PRODUCT_SLUG_PREFIX, product.getProductId());
+        }
+        if (derivedBase.equals(oldSlug)) {
+            return;
+        }
+        String newSlug = generateUniqueSlug(newName, product.getProductId());
+        productSlugHistoryRepository.save(new ProductSlugHistory(oldSlug, product, LocalDateTime.now()));
+        product.setSlug(newSlug);
+    }
+
     private String generateUniqueSlug(String name, Object idOrNull) {
         String base = SlugUtils.slugify(name);
         if (base.isEmpty()) {

@@ -330,8 +330,30 @@ public class CategoryService {
 			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
 					messageService.getMessage("name_already_taken", LocaleUtils.getDefaultLocale()));
 		}
+
+		recordSlugRename(category, name);
 		category.setName(name);
 		categoryRepository.save(category);
+	}
+
+	/**
+	 * When {@code newName} derives a different slug than the one currently on
+	 * {@code category}, retires the old slug into {@code category_slug_history} and
+	 * assigns the new (uniqueness-resolved) slug. A rename that leaves the derived
+	 * slug unchanged writes no history row.
+	 */
+	private void recordSlugRename(Category category, String newName) {
+		String oldSlug = category.getSlug();
+		String derivedBase = SlugUtils.slugify(newName);
+		if (derivedBase.isEmpty()) {
+			derivedBase = SlugUtils.fallback(CATEGORY_SLUG_PREFIX, category.getCategoryId());
+		}
+		if (derivedBase.equals(oldSlug)) {
+			return;
+		}
+		String newSlug = generateUniqueSlug(newName, category.getCategoryId());
+		categorySlugHistoryRepository.save(new CategorySlugHistory(oldSlug, category, LocalDateTime.now()));
+		category.setSlug(newSlug);
 	}
 
 	@Transactional

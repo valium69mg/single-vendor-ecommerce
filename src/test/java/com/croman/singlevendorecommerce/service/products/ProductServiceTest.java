@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -790,6 +791,53 @@ class ProductServiceTest {
         assertEquals(BRAND_NOT_FOUND_MSG, ex.getMessage());
         assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
         verify(productRepository, never()).save(any());
+    }
+
+    // ─── updateProduct – slug history on rename ───────────────────────────────
+
+    @Test
+    void testUpdateProductWritesHistoryRowAndNewSlugWhenRenameChangesDerivedSlug() {
+        savedProduct.setSlug("gold-ring");
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name("Platinum Ring").status(ProductStatus.ACTIVE).build();
+
+        productService.updateProduct(savedProduct.getProductId(), dto);
+
+        ArgumentCaptor<ProductSlugHistory> captor = ArgumentCaptor.forClass(ProductSlugHistory.class);
+        verify(productSlugHistoryRepository).save(captor.capture());
+        assertThat(captor.getValue().getSlug()).isEqualTo("gold-ring");
+        verify(productRepository).save(argThat(p -> "platinum-ring".equals(p.getSlug())));
+    }
+
+    @Test
+    void testUpdateProductDoesNotWriteHistoryWhenRenameLeavesDerivedSlugUnchanged() {
+        savedProduct.setSlug("gold-ring");
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name("Gold  RING!").status(ProductStatus.ACTIVE).build();
+
+        productService.updateProduct(savedProduct.getProductId(), dto);
+
+        verify(productSlugHistoryRepository, never()).save(any());
+        verify(productRepository).save(argThat(p -> "gold-ring".equals(p.getSlug())
+                && "Gold  RING!".equals(p.getName())));
+    }
+
+    @Test
+    void testUpdateProductSuffixesNewSlugWhenRenameDerivesAnAlreadyTakenSlug() {
+        savedProduct.setSlug("gold-ring");
+        when(productRepository.findById(savedProduct.getProductId())).thenReturn(Optional.of(savedProduct));
+        when(productRepository.existsBySlug("platinum-ring")).thenReturn(true);
+
+        ProductBasicInfoDTO dto = ProductBasicInfoDTO.builder()
+                .name("Platinum Ring").status(ProductStatus.ACTIVE).build();
+
+        productService.updateProduct(savedProduct.getProductId(), dto);
+
+        verify(productRepository).save(argThat(p -> "platinum-ring-2".equals(p.getSlug())));
     }
 
     // ─── updateMaterials – error paths ────────────────────────────────────────

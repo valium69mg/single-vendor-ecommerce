@@ -451,6 +451,50 @@ class CategoryServiceTest {
 				.isInstanceOf(ApiServiceException.class).hasMessageContaining("Category not found");
 	}
 
+	// ─── updateCategory – slug history on rename ─────────────────────────────
+
+	@Test
+	void testUpdateCategoryWritesHistoryRowAndNewSlugWhenRenameChangesDerivedSlug() {
+		category.setSlug("rings");
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name("Gold Rings").build();
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName("Gold Rings")).thenReturn(Optional.empty());
+
+		categoryService.updateCategory(CATEGORY_ID, dto);
+
+		ArgumentCaptor<CategorySlugHistory> captor = ArgumentCaptor.forClass(CategorySlugHistory.class);
+		verify(categorySlugHistoryRepository).save(captor.capture());
+		assertThat(captor.getValue().getSlug()).isEqualTo("rings");
+		verify(categoryRepository).save(argThat(c -> "gold-rings".equals(c.getSlug())
+				&& "Gold Rings".equals(c.getName())));
+	}
+
+	@Test
+	void testUpdateCategoryDoesNotWriteHistoryWhenRenameLeavesDerivedSlugUnchanged() {
+		category.setSlug("rings");
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name("Rings.").build();
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName("Rings.")).thenReturn(Optional.empty());
+
+		categoryService.updateCategory(CATEGORY_ID, dto);
+
+		verify(categorySlugHistoryRepository, never()).save(any());
+		verify(categoryRepository).save(argThat(c -> "rings".equals(c.getSlug()) && "Rings.".equals(c.getName())));
+	}
+
+	@Test
+	void testUpdateCategorySuffixesNewSlugWhenRenameDerivesAnAlreadyTakenSlug() {
+		category.setSlug("rings");
+		UpdateCategoryDTO dto = UpdateCategoryDTO.builder().name("Gold Rings").build();
+		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+		when(categoryRepository.findByName("Gold Rings")).thenReturn(Optional.empty());
+		when(categoryRepository.existsBySlug("gold-rings")).thenReturn(true);
+
+		categoryService.updateCategory(CATEGORY_ID, dto);
+
+		verify(categoryRepository).save(argThat(c -> "gold-rings-2".equals(c.getSlug())));
+	}
+
 	// ─── deleteCategory ──────────────────────────────────────────────────────
 
 	@Test
