@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class BrandByIdDTO {
 	private long brandId;
 	private String name;
+	private String slug;
 }

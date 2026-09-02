@@ -1099,6 +1099,11 @@ class ProductServiceTest {
 
     @Test
     void testGetPublicProductsReturnsPageOfActiveProducts() {
+        savedProduct.setSlug("gold-ring");
+        category.setSlug("rings");
+        brand.setSlug("tiffany");
+        savedProduct.setCategory(category);
+        savedProduct.setBrand(brand);
         when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(savedProduct)));
         when(productVariantRepository.findByProductIds(anyList())).thenReturn(List.of(savedVariant));
@@ -1109,6 +1114,9 @@ class ProductServiceTest {
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getProductId()).isEqualTo(savedProduct.getProductId());
         assertThat(result.getContent().get(0).getName()).isEqualTo(PRODUCT_NAME);
+        assertThat(result.getContent().get(0).getSlug()).isEqualTo("gold-ring");
+        assertThat(result.getContent().get(0).getCategory().getSlug()).isEqualTo("rings");
+        assertThat(result.getContent().get(0).getBrand().getSlug()).isEqualTo("tiffany");
     }
 
     @Test
@@ -1160,6 +1168,11 @@ class ProductServiceTest {
 
     @Test
     void testGetPublicProductByIdReturnsActiveProduct() {
+        savedProduct.setSlug("gold-ring");
+        category.setSlug("rings");
+        brand.setSlug("tiffany");
+        savedProduct.setCategory(category);
+        savedProduct.setBrand(brand);
         when(productRepository.findById(savedProduct.getProductId()))
                 .thenReturn(Optional.of(savedProduct));
         when(productVariantRepository.findByProductProductId(savedProduct.getProductId()))
@@ -1172,6 +1185,9 @@ class ProductServiceTest {
 
         assertThat(result.getProductId()).isEqualTo(savedProduct.getProductId());
         assertThat(result.getName()).isEqualTo(PRODUCT_NAME);
+        assertThat(result.getSlug()).isEqualTo("gold-ring");
+        assertThat(result.getCategory().getSlug()).isEqualTo("rings");
+        assertThat(result.getBrand().getSlug()).isEqualTo("tiffany");
         assertNotNull(result.getVariants());
     }
 

@@ -13,5 +13,6 @@ public class BrandDTO {
 
 	private long brandId;
 	private String name;
+	private String slug;
 
 }

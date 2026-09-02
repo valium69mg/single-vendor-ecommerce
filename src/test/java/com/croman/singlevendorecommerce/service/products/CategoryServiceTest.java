@@ -197,12 +197,14 @@ class CategoryServiceTest {
 
 	@Test
 	void testGetPublicCategoryByIdReturnsData() {
+		category.setSlug("electronica");
 		when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
 
 		PublicCategoryByIdDTO result = categoryService.getPublicCategoryById(CATEGORY_ID);
 
 		assertThat(result.getCategoryId()).isEqualTo(CATEGORY_ID);
 		assertThat(result.getName()).isEqualTo(NAME);
+		assertThat(result.getSlug()).isEqualTo("electronica");
 	}
 
 	@Test

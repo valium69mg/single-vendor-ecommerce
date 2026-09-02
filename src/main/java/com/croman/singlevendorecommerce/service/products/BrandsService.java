@@ -66,7 +66,7 @@ public class BrandsService {
 
 	private BrandDTO mapBrandToBrandDTO(Brand brand) {
 		return BrandDTO.builder().brandId(brand.getBrandId())
-				.name(brand.getName()).build();
+				.name(brand.getName()).slug(brand.getSlug()).build();
 	}
 
 	@Transactional(readOnly = true)
@@ -85,7 +85,7 @@ public class BrandsService {
 
 	private BrandByIdDTO mapBrandTBrandByIdDTO(Brand brand) {
 		return BrandByIdDTO.builder().brandId(brand.getBrandId())
-				.name(brand.getName()).build();
+				.name(brand.getName()).slug(brand.getSlug()).build();
 	}
 
 	@Transactional

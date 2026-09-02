@@ -120,12 +120,14 @@ class BrandsServiceTest {
 
     @Test
     void testGetBrandByIdReturnsBrandDTO() {
+        brand.setSlug("nike");
         when(brandRepository.findById(BRAND_ID)).thenReturn(Optional.of(brand));
 
         BrandByIdDTO result = brandsService.getBrandById(BRAND_ID);
 
         assertThat(result.getBrandId()).isEqualTo(BRAND_ID);
         assertThat(result.getName()).isEqualTo(BRAND_NAME);
+        assertThat(result.getSlug()).isEqualTo("nike");
     }
 
     @Test

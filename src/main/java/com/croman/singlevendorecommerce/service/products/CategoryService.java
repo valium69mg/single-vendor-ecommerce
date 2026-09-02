@@ -143,6 +143,7 @@ public class CategoryService {
 
 	private PublicCategoryDTO mapCategoryToPublicDTO(Category category) {
 		return PublicCategoryDTO.builder().categoryId(category.getCategoryId()).name(category.getName())
+				.slug(category.getSlug())
 				.products(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
 				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))
@@ -151,6 +152,7 @@ public class CategoryService {
 
 	private PublicCategoryByIdDTO mapCategoryToPublicByIdDTO(Category category) {
 		return PublicCategoryByIdDTO.builder().categoryId(category.getCategoryId()).name(category.getName())
+				.slug(category.getSlug())
 				.products(RANDOM.nextInt(101)).imageUrl(category.getFileUrl())
 				.mediumThumbnailUrl(FileUtils.toMediumThumbnailKey(category.getFileUrl()))
 				.smallThumbnailUrl(FileUtils.toSmallThumbnailKey(category.getFileUrl()))

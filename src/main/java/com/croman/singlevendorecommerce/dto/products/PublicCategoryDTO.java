@@ -13,6 +13,7 @@ public class PublicCategoryDTO {
 
 	private long categoryId;
 	private String name;
+	private String slug;
 	private int products;
 	private String imageUrl;
 	private String mediumThumbnailUrl;

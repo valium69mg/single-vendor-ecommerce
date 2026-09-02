@@ -18,6 +18,7 @@ public class PublicProductByIdDTO {
 
     private UUID productId;
     private String name;
+    private String slug;
     private String shortDescription;
     private String longDescription;
     private boolean featured;
@@ -39,6 +40,7 @@ public class PublicProductByIdDTO {
     public static class CategoryRef {
         private Long categoryId;
         private String name;
+        private String slug;
     }
 
     @Data
@@ -48,6 +50,7 @@ public class PublicProductByIdDTO {
     public static class BrandRef {
         private Long brandId;
         private String name;
+        private String slug;
     }
 
     @Data

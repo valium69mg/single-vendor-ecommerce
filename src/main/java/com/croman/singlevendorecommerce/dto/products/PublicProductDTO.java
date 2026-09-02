@@ -17,6 +17,7 @@ public class PublicProductDTO {
 
     private UUID productId;
     private String name;
+    private String slug;
     private String shortDescription;
     private boolean featured;
     private CategoryRef category;
@@ -35,6 +36,7 @@ public class PublicProductDTO {
     public static class CategoryRef {
         private Long categoryId;
         private String name;
+        private String slug;
     }
 
     @Data
@@ -44,5 +46,6 @@ public class PublicProductDTO {
     public static class BrandRef {
         private Long brandId;
         private String name;
+        private String slug;
     }
 }
