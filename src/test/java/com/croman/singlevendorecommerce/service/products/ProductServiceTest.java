@@ -55,6 +55,7 @@ import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.entity.products.Material;
 import com.croman.singlevendorecommerce.entity.products.Product;
 import com.croman.singlevendorecommerce.entity.products.ProductMaterial;
+import com.croman.singlevendorecommerce.entity.products.ProductSlugHistory;
 import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 import com.croman.singlevendorecommerce.repository.products.AttributeValueRepository;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
@@ -67,6 +68,7 @@ import com.croman.singlevendorecommerce.repository.products.ProductVariantAttrib
 import com.croman.singlevendorecommerce.repository.products.ProductVariantRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyException;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -1228,6 +1230,114 @@ class ProductServiceTest {
 
         ApiServiceException ex = assertThrows(ApiServiceException.class,
                 () -> productService.getPublicProductById(savedProduct.getProductId()));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    // ─── resolveProductBySlug ─────────────────────────────────────────────────
+
+    @Test
+    void testResolveProductBySlugReturnsDtoForActiveMatch() {
+        savedProduct.setSlug("gold-ring");
+        when(productRepository.findBySlug("gold-ring")).thenReturn(Optional.of(savedProduct));
+        when(productVariantRepository.findByProductProductId(savedProduct.getProductId()))
+                .thenReturn(List.of(savedVariant));
+        when(productVariantAttributeRepository.findByVariantIn(anyList())).thenReturn(List.of());
+        when(productMaterialRepository.findByProductProductId(savedProduct.getProductId())).thenReturn(List.of());
+
+        PublicProductByIdDTO result = productService.resolveProductBySlug("gold-ring");
+
+        assertThat(result.getProductId()).isEqualTo(savedProduct.getProductId());
+        assertThat(result.getSlug()).isEqualTo("gold-ring");
+    }
+
+    @Test
+    void testResolveProductBySlugThrowsMovedPermanentlyWhenSlugIsHistoricalAndCurrentProductIsLive() {
+        Product current = Product.builder().productId(UUID.randomUUID()).name("Gold Ring XL")
+                .slug("gold-ring-xl").status(ProductStatus.ACTIVE).featured(false).build();
+        when(productRepository.findBySlug("gold-ring")).thenReturn(Optional.empty());
+        when(productSlugHistoryRepository.findBySlug("gold-ring"))
+                .thenReturn(Optional.of(new ProductSlugHistory("gold-ring", current, LocalDateTime.now())));
+
+        assertThatThrownBy(() -> productService.resolveProductBySlug("gold-ring"))
+                .isInstanceOf(MovedPermanentlyException.class)
+                .satisfies(ex -> {
+                    MovedPermanentlyException moved = (MovedPermanentlyException) ex;
+                    assertThat(moved.getCanonicalSlug()).isEqualTo("gold-ring-xl");
+                    assertThat(moved.getLocation()).isEqualTo("/api/v1/products/by-slug/gold-ring-xl");
+                });
+    }
+
+    @Test
+    void testResolveProductBySlugThrows404WhenHistoricalSlugPointsToSoftDeletedProduct() {
+        Product current = Product.builder().productId(UUID.randomUUID()).name("Old Necklace")
+                .slug("old-necklace-v2").status(ProductStatus.ACTIVE).featured(false)
+                .deletedAt(LocalDateTime.now()).build();
+        when(productRepository.findBySlug("old-necklace")).thenReturn(Optional.empty());
+        when(productSlugHistoryRepository.findBySlug("old-necklace"))
+                .thenReturn(Optional.of(new ProductSlugHistory("old-necklace", current, LocalDateTime.now())));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.resolveProductBySlug("old-necklace"));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testResolveProductBySlugThrows404WhenHistoricalSlugPointsToInactiveProduct() {
+        Product current = Product.builder().productId(UUID.randomUUID()).name("Draft Ring")
+                .slug("draft-ring").status(ProductStatus.INACTIVE).featured(false).build();
+        when(productRepository.findBySlug("old-ring")).thenReturn(Optional.empty());
+        when(productSlugHistoryRepository.findBySlug("old-ring"))
+                .thenReturn(Optional.of(new ProductSlugHistory("old-ring", current, LocalDateTime.now())));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.resolveProductBySlug("old-ring"));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testResolveProductBySlugThrows404WhenActiveMatchIsInactive() {
+        savedProduct.setSlug("draft-ring");
+        savedProduct.setStatus(ProductStatus.INACTIVE);
+        when(productRepository.findBySlug("draft-ring")).thenReturn(Optional.of(savedProduct));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.resolveProductBySlug("draft-ring"));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testResolveProductBySlugThrows404WhenActiveMatchIsSoftDeleted() {
+        savedProduct.setSlug("old-ring");
+        savedProduct.setDeletedAt(LocalDateTime.now());
+        when(productRepository.findBySlug("old-ring")).thenReturn(Optional.of(savedProduct));
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.resolveProductBySlug("old-ring"));
+
+        assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
+    }
+
+    @Test
+    void testResolveProductBySlugThrows404WhenSlugUnknown() {
+        when(productRepository.findBySlug("nope")).thenReturn(Optional.empty());
+        when(productSlugHistoryRepository.findBySlug("nope")).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("product_not_found"), any(Locale.class)))
+                .thenReturn(PRODUCT_NOT_FOUND_MSG);
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> productService.resolveProductBySlug("nope"));
 
         assertEquals(HttpStatus.NOT_FOUND.value(), ex.getStatusCode());
     }

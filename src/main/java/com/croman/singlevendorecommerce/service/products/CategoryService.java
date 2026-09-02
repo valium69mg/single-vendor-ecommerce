@@ -24,8 +24,10 @@ import com.croman.singlevendorecommerce.dto.products.PublicCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
+import com.croman.singlevendorecommerce.entity.products.CategorySlugHistory;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.repository.products.CategorySlugHistoryRepository;
+import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyException;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
@@ -139,6 +141,30 @@ public class CategoryService {
 
 		return mapCategoryToPublicByIdDTO(category);
 
+	}
+
+	/**
+	 * Resolves a public category by its URL slug. An active (not soft-deleted)
+	 * match returns 200; a slug that only survives in {@code category_slug_history}
+	 * raises {@link MovedPermanentlyException} (HTTP 301) toward the current
+	 * canonical by-slug path; anything else is a 404.
+	 */
+	@Transactional(readOnly = true)
+	public PublicCategoryByIdDTO resolveCategoryBySlug(String slug) {
+		Optional<Category> active = categoryRepository.findBySlug(slug);
+		if (active.isPresent() && active.get().getDeletedAt() == null) {
+			return mapCategoryToPublicByIdDTO(active.get());
+		}
+
+		Optional<CategorySlugHistory> historical = categorySlugHistoryRepository.findBySlug(slug);
+		if (historical.isPresent()) {
+			String canonicalSlug = historical.get().getCategory().getSlug();
+			throw new MovedPermanentlyException(canonicalSlug,
+					"/api/v1/products/categories/by-slug/" + canonicalSlug);
+		}
+
+		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+				messageService.getMessage(CATEGORY_NOT_FOUND_CODE, LocaleUtils.getDefaultLocale()));
 	}
 
 	private PublicCategoryDTO mapCategoryToPublicDTO(Category category) {

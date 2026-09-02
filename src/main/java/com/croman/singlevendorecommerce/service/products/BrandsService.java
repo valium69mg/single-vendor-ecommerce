@@ -18,6 +18,7 @@ import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
+import com.croman.singlevendorecommerce.entity.products.BrandSlugHistory;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
 import com.croman.singlevendorecommerce.repository.products.BrandSlugHistoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
@@ -25,6 +26,7 @@ import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
 import com.croman.singlevendorecommerce.utils.SlugUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -81,6 +83,30 @@ public class BrandsService {
 		}
 
 		return mapBrandTBrandByIdDTO(brand);
+	}
+
+	/**
+	 * Resolves a public brand by its URL slug. An active (not soft-deleted) match
+	 * returns 200; a slug that only survives in {@code brand_slug_history} raises
+	 * {@link MovedPermanentlyException} (HTTP 301) toward the current canonical
+	 * by-slug path; anything else is a 404.
+	 */
+	@Transactional(readOnly = true)
+	public BrandByIdDTO resolveBrandBySlug(String slug) {
+		Optional<Brand> active = brandRepository.findBySlug(slug);
+		if (active.isPresent() && active.get().getDeletedAt() == null) {
+			return mapBrandTBrandByIdDTO(active.get());
+		}
+
+		Optional<BrandSlugHistory> historical = brandSlugHistoryRepository.findBySlug(slug);
+		if (historical.isPresent()) {
+			String canonicalSlug = historical.get().getBrand().getSlug();
+			throw new MovedPermanentlyException(canonicalSlug,
+					"/api/v1/products/brands/by-slug/" + canonicalSlug);
+		}
+
+		throw new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+				messageService.getMessage(BRAND_NOT_EXISTS_MESSAGE_KEY, LocaleUtils.getDefaultLocale()));
 	}
 
 	private BrandByIdDTO mapBrandTBrandByIdDTO(Brand brand) {

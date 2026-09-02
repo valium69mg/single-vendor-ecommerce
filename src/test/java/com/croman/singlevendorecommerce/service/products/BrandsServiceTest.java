@@ -6,10 +6,12 @@ import com.croman.singlevendorecommerce.dto.products.CreateBrandDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
+import com.croman.singlevendorecommerce.entity.products.BrandSlugHistory;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
 import com.croman.singlevendorecommerce.repository.products.BrandSlugHistoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,6 +151,60 @@ class BrandsServiceTest {
                 .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
 
         assertThatThrownBy(() -> brandsService.getBrandById(BRAND_ID))
+                .isInstanceOf(ApiServiceException.class)
+                .hasMessageContaining(BRAND_NOT_EXISTS_MESSAGE);
+    }
+
+    // ─── resolveBrandBySlug ──────────────────────────────────────────────────
+
+    @Test
+    void testResolveBrandBySlugReturnsDtoForActiveMatch() {
+        brand.setSlug("nike");
+        when(brandRepository.findBySlug("nike")).thenReturn(Optional.of(brand));
+
+        BrandByIdDTO result = brandsService.resolveBrandBySlug("nike");
+
+        assertThat(result.getBrandId()).isEqualTo(BRAND_ID);
+        assertThat(result.getSlug()).isEqualTo("nike");
+    }
+
+    @Test
+    void testResolveBrandBySlugThrowsMovedPermanentlyWhenSlugIsHistorical() {
+        Brand current = Brand.builder().brandId(BRAND_ID_2).name("Nike Air").slug("nike-air").build();
+        when(brandRepository.findBySlug("nike")).thenReturn(Optional.empty());
+        when(brandSlugHistoryRepository.findBySlug("nike"))
+                .thenReturn(Optional.of(new BrandSlugHistory("nike", current, LocalDateTime.now())));
+
+        assertThatThrownBy(() -> brandsService.resolveBrandBySlug("nike"))
+                .isInstanceOf(MovedPermanentlyException.class)
+                .satisfies(ex -> {
+                    MovedPermanentlyException moved = (MovedPermanentlyException) ex;
+                    assertThat(moved.getCanonicalSlug()).isEqualTo("nike-air");
+                    assertThat(moved.getLocation()).isEqualTo("/api/v1/products/brands/by-slug/nike-air");
+                });
+    }
+
+    @Test
+    void testResolveBrandBySlugThrows404WhenSlugUnknown() {
+        when(brandRepository.findBySlug("missing")).thenReturn(Optional.empty());
+        when(brandSlugHistoryRepository.findBySlug("missing")).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
+
+        assertThatThrownBy(() -> brandsService.resolveBrandBySlug("missing"))
+                .isInstanceOf(ApiServiceException.class)
+                .hasMessageContaining(BRAND_NOT_EXISTS_MESSAGE);
+    }
+
+    @Test
+    void testResolveBrandBySlugThrows404WhenActiveMatchIsSoftDeletedAndNotHistorical() {
+        Brand deleted = Brand.builder().brandId(BRAND_ID).name(BRAND_NAME).slug("nike").deletedAt(NOW).build();
+        when(brandRepository.findBySlug("nike")).thenReturn(Optional.of(deleted));
+        when(brandSlugHistoryRepository.findBySlug("nike")).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq(BRAND_NOT_EXISTS_MESSAGE_KEY), any(Locale.class)))
+                .thenReturn(BRAND_NOT_EXISTS_MESSAGE);
+
+        assertThatThrownBy(() -> brandsService.resolveBrandBySlug("nike"))
                 .isInstanceOf(ApiServiceException.class)
                 .hasMessageContaining(BRAND_NOT_EXISTS_MESSAGE);
     }

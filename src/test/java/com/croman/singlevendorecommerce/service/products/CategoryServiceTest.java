@@ -8,8 +8,10 @@ import com.croman.singlevendorecommerce.dto.products.PublicCategoryDTO;
 import com.croman.singlevendorecommerce.dto.products.UpdateCategoryDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Category;
+import com.croman.singlevendorecommerce.entity.products.CategorySlugHistory;
 import com.croman.singlevendorecommerce.repository.products.CategoryRepository;
 import com.croman.singlevendorecommerce.repository.products.CategorySlugHistoryRepository;
+import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyException;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.service.storage.StorageService;
 import com.croman.singlevendorecommerce.service.thumbnail.ThumbnailService;
@@ -224,6 +226,60 @@ class CategoryServiceTest {
 
 		assertThatThrownBy(() -> categoryService.getPublicCategoryById(CATEGORY_ID))
 				.isInstanceOf(ApiServiceException.class).hasMessageContaining("Category not found");
+	}
+
+	// ─── resolveCategoryBySlug ───────────────────────────────────────────────
+
+	@Test
+	void testResolveCategoryBySlugReturnsDtoForActiveMatch() {
+		category.setSlug("rings");
+		when(categoryRepository.findBySlug("rings")).thenReturn(Optional.of(category));
+
+		PublicCategoryByIdDTO result = categoryService.resolveCategoryBySlug("rings");
+
+		assertThat(result.getCategoryId()).isEqualTo(CATEGORY_ID);
+		assertThat(result.getSlug()).isEqualTo("rings");
+	}
+
+	@Test
+	void testResolveCategoryBySlugThrowsMovedPermanentlyWhenSlugIsHistorical() {
+		Category current = Category.builder().categoryId(2L).name("Gold Rings").slug("gold-rings").build();
+		when(categoryRepository.findBySlug("rings")).thenReturn(Optional.empty());
+		when(categorySlugHistoryRepository.findBySlug("rings"))
+				.thenReturn(Optional.of(new CategorySlugHistory("rings", current, LocalDateTime.now())));
+
+		assertThatThrownBy(() -> categoryService.resolveCategoryBySlug("rings"))
+				.isInstanceOf(MovedPermanentlyException.class)
+				.satisfies(ex -> {
+					MovedPermanentlyException moved = (MovedPermanentlyException) ex;
+					assertThat(moved.getCanonicalSlug()).isEqualTo("gold-rings");
+					assertThat(moved.getLocation())
+							.isEqualTo("/api/v1/products/categories/by-slug/gold-rings");
+				});
+	}
+
+	@Test
+	void testResolveCategoryBySlugThrows404WhenSlugUnknown() {
+		when(categoryRepository.findBySlug("missing")).thenReturn(Optional.empty());
+		when(categorySlugHistoryRepository.findBySlug("missing")).thenReturn(Optional.empty());
+		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
+
+		assertThatThrownBy(() -> categoryService.resolveCategoryBySlug("missing"))
+				.isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("Category not found");
+	}
+
+	@Test
+	void testResolveCategoryBySlugThrows404WhenActiveMatchIsSoftDeletedAndNotHistorical() {
+		category.setSlug("rings");
+		category.setDeletedAt(LocalDateTime.now());
+		when(categoryRepository.findBySlug("rings")).thenReturn(Optional.of(category));
+		when(categorySlugHistoryRepository.findBySlug("rings")).thenReturn(Optional.empty());
+		when(messageService.getMessage(eq("category_not_found"), any(Locale.class))).thenReturn("Category not found");
+
+		assertThatThrownBy(() -> categoryService.resolveCategoryBySlug("rings"))
+				.isInstanceOf(ApiServiceException.class)
+				.hasMessageContaining("Category not found");
 	}
 
 	// ─── createCategoryDTO ───────────────────────────────────────────────────

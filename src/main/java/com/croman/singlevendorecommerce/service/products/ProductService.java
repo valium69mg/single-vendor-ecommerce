@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -41,6 +42,7 @@ import com.croman.singlevendorecommerce.entity.products.Category;
 import com.croman.singlevendorecommerce.entity.products.Material;
 import com.croman.singlevendorecommerce.entity.products.Product;
 import com.croman.singlevendorecommerce.entity.products.ProductMaterial;
+import com.croman.singlevendorecommerce.entity.products.ProductSlugHistory;
 import com.croman.singlevendorecommerce.entity.products.ProductVariant;
 import com.croman.singlevendorecommerce.entity.products.ProductVariantAttribute;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
@@ -57,6 +59,7 @@ import com.croman.singlevendorecommerce.repository.products.ProductVariantReposi
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
+import com.croman.singlevendorecommerce.utils.exceptions.MovedPermanentlyException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -259,6 +262,43 @@ public class ProductService {
         }
 
         return mapToPublicProductByIdDTO(product);
+    }
+
+    /**
+     * Resolves a public product by its URL slug. Only a live product
+     * ({@code deletedAt == null} and {@code status == ACTIVE}) returns 200. A slug
+     * that only survives in {@code product_slug_history} raises
+     * {@link MovedPermanentlyException} (HTTP 301) toward the current canonical
+     * by-slug path — but only when the product it now points at is itself live;
+     * a soft-deleted or non-ACTIVE target is a 404, never a 301.
+     */
+    @Transactional(readOnly = true)
+    public PublicProductByIdDTO resolveProductBySlug(String slug) {
+        Optional<Product> active = productRepository.findBySlug(slug);
+        if (active.isPresent()) {
+            Product product = active.get();
+            if (product.getDeletedAt() == null && product.getStatus() == ProductStatus.ACTIVE) {
+                return mapToPublicProductByIdDTO(product);
+            }
+            throw productNotFound();
+        }
+
+        Optional<ProductSlugHistory> historical = productSlugHistoryRepository.findBySlug(slug);
+        if (historical.isPresent()) {
+            Product current = historical.get().getProduct();
+            if (current.getDeletedAt() == null && current.getStatus() == ProductStatus.ACTIVE) {
+                String canonicalSlug = current.getSlug();
+                throw new MovedPermanentlyException(canonicalSlug,
+                        "/api/v1/products/by-slug/" + canonicalSlug);
+            }
+        }
+
+        throw productNotFound();
+    }
+
+    private ApiServiceException productNotFound() {
+        return new ApiServiceException(HttpStatus.NOT_FOUND.value(),
+                messageService.getMessage("product_not_found", LocaleUtils.getDefaultLocale()));
     }
 
     @Transactional(readOnly = true)
