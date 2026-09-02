@@ -30,16 +30,16 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.1.0</spring-cloud.version>
-		<!-- Measured floors: BUNDLE LINE 0.8895, BRANCH 0.8766 (target/site/jacoco/jacoco.csv,
-		     37 classes = all rows minus **/*Application.*, **/dto/**, **/entity/**, **/*Exception.*);
+		<!-- Measured floors: BUNDLE LINE 0.9006, BRANCH 0.8974 (target/site/jacoco/jacoco.csv,
+		     38 classes = all rows minus **/*Application.*, **/dto/**, **/entity/**, **/*Exception.*);
 		     each set to measured actual minus 0.02, truncated to 2 decimals.
-		     LINE raised by the T3 admin category integration tests
-		     (CategoryAdminWriteIntegrationTest, CategoryAdminReadIntegrationTest)
-		     exercising AdminProductsController category handlers + CategoryService
-		     create/update/delete/get + ApiResponseService; BRANCH unchanged (those
-		     branches were already covered by CategoryServiceTest). -->
-		<jacoco.line.min>0.86</jacoco.line.min>
-		<jacoco.branch.min>0.85</jacoco.branch.min>
+		     LINE raised by the T4 cart integration tests exercising CartController
+		     (CartMutationIntegrationTest, CartErrorContractIntegrationTest,
+		     CartSecurityIntegrationTest) end-to-end through CartService; BRANCH was
+		     already largely covered by CartServiceTest, its measured rise reflects the
+		     wider suite, not new cart branch coverage. -->
+		<jacoco.line.min>0.88</jacoco.line.min>
+		<jacoco.branch.min>0.87</jacoco.branch.min>
 	</properties>
 	<dependencies>
 		<dependency>
