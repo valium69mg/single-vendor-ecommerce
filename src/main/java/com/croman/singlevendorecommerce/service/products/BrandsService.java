@@ -19,9 +19,11 @@ import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
+import com.croman.singlevendorecommerce.repository.products.BrandSlugHistoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.utils.LocaleUtils;
 import com.croman.singlevendorecommerce.utils.PaginationUtils;
+import com.croman.singlevendorecommerce.utils.SlugUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,8 @@ public class BrandsService {
 
 	private final BrandRepository brandRepository;
 	private final MessageService messageService;
+	private final BrandSlugHistoryRepository brandSlugHistoryRepository;
+	private static final String BRAND_SLUG_PREFIX = "brand";
 	private static final String BRAND_EXISTS_MESSAGE_KEY = "brand_exists";
 	private static final String BRAND_NOT_EXISTS_MESSAGE_KEY = "brand_does_not_exists";
 
@@ -103,7 +107,37 @@ public class BrandsService {
 
 		Brand brand = Brand.builder().name(name).build();
 
-		brandRepository.save(brand);
+		String base = SlugUtils.slugify(name);
+		if (base.isEmpty()) {
+			// No usable slug from the name yet: persist once to obtain the id, then
+			// derive the deterministic "brand-{id}" fallback and persist again.
+			brand.setSlug(BRAND_SLUG_PREFIX + "-" + java.util.UUID.randomUUID());
+			brandRepository.save(brand);
+			brand.setSlug(generateUniqueSlug(null, brand.getBrandId()));
+			brandRepository.save(brand);
+		} else {
+			brand.setSlug(generateUniqueSlug(name, null));
+			brandRepository.save(brand);
+		}
+	}
+
+	/**
+	 * Derives a slug from {@code name} (or the {@code brand-{id}} fallback when the
+	 * name yields nothing) and appends {@code -2}, {@code -3}, ... until the
+	 * candidate collides with neither an active {@code slug} column nor a
+	 * {@code brand_slug_history} row.
+	 */
+	private String generateUniqueSlug(String name, Long idOrNull) {
+		String base = SlugUtils.slugify(name);
+		if (base.isEmpty()) {
+			base = SlugUtils.fallback(BRAND_SLUG_PREFIX, idOrNull);
+		}
+		String candidate = base;
+		int counter = 2;
+		while (brandRepository.existsBySlug(candidate) || brandSlugHistoryRepository.existsBySlug(candidate)) {
+			candidate = SlugUtils.withCounter(base, counter++);
+		}
+		return candidate;
 	}
 
 	@Transactional

@@ -7,6 +7,7 @@ import com.croman.singlevendorecommerce.dto.products.UpdateBrandDTO;
 import com.croman.singlevendorecommerce.dto.utils.PageResponse;
 import com.croman.singlevendorecommerce.entity.products.Brand;
 import com.croman.singlevendorecommerce.repository.products.BrandRepository;
+import com.croman.singlevendorecommerce.repository.products.BrandSlugHistoryRepository;
 import com.croman.singlevendorecommerce.service.message.MessageService;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
@@ -42,6 +43,9 @@ class BrandsServiceTest {
 
     @Mock
     private MessageService messageService;
+
+    @Mock
+    private BrandSlugHistoryRepository brandSlugHistoryRepository;
 
     @InjectMocks
     private BrandsService brandsService;
@@ -158,6 +162,60 @@ class BrandsServiceTest {
         brandsService.createBrand(dto);
 
         verify(brandRepository).save(argThat(b -> BRAND_NAME.equals(b.getName())));
+    }
+
+    @Test
+    void testCreateBrandDerivesSlugFromName() {
+        CreateBrandDTO dto = CreateBrandDTO.builder().name("Gold Rings").build();
+        when(brandRepository.findByName("Gold Rings")).thenReturn(Optional.empty());
+
+        brandsService.createBrand(dto);
+
+        verify(brandRepository).save(argThat(b -> "gold-rings".equals(b.getSlug())));
+    }
+
+    @Test
+    void testCreateBrandAppendsCounterWhenSlugCollidesWithActiveColumn() {
+        CreateBrandDTO dto = CreateBrandDTO.builder().name("Gold Rings").build();
+        when(brandRepository.findByName("Gold Rings")).thenReturn(Optional.empty());
+        when(brandRepository.existsBySlug("gold-rings")).thenReturn(true);
+
+        brandsService.createBrand(dto);
+
+        verify(brandRepository).save(argThat(b -> "gold-rings-2".equals(b.getSlug())));
+    }
+
+    @Test
+    void testCreateBrandNeverReusesASlugThatOnlyExistsInHistory() {
+        CreateBrandDTO dto = CreateBrandDTO.builder().name("Gold Rings").build();
+        when(brandRepository.findByName("Gold Rings")).thenReturn(Optional.empty());
+        when(brandSlugHistoryRepository.existsBySlug("gold-rings")).thenReturn(true);
+
+        brandsService.createBrand(dto);
+
+        verify(brandRepository).save(argThat(b -> "gold-rings-2".equals(b.getSlug())));
+    }
+
+    @Test
+    void testCreateBrandFallsBackToBrandIdSlugWhenNameYieldsNoSlug() {
+        CreateBrandDTO dto = CreateBrandDTO.builder().name(null).build();
+        java.util.List<String> slugsAtSave = new java.util.ArrayList<>();
+        when(brandRepository.findByName(null)).thenReturn(Optional.empty());
+        when(brandRepository.save(any())).thenAnswer(invocation -> {
+            Brand saved = invocation.getArgument(0);
+            slugsAtSave.add(saved.getSlug());
+            if (saved.getBrandId() == null) {
+                saved.setBrandId(3L);
+            }
+            return saved;
+        });
+
+        brandsService.createBrand(dto);
+
+        verify(brandRepository, times(2)).save(any());
+        assertThat(slugsAtSave).hasSize(2);
+        assertThat(slugsAtSave.get(0)).isNotBlank();
+        assertThat(slugsAtSave.get(1)).isEqualTo("brand-3");
     }
 
     @Test
