@@ -112,6 +112,23 @@ public class ProductsController {
 		return ResponseEntity.status(HttpStatus.OK).body(categoryService.getPublicCategoryById(id));
 	}
 
+	@GetMapping("categories/by-slug/{slug}")
+	@Operation(
+		    summary = "Get category by slug",
+		    responses = {
+		        @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		            content = @Content(mediaType = "application/json",
+		                schema = @Schema(implementation = PublicCategoryByIdDTO.class))),
+		        @ApiResponse(responseCode = "301", description = "Slug superseded; Location points to the canonical slug"),
+		        @ApiResponse(responseCode = "404", description = "Category not found",
+		            content = @Content(mediaType = "application/json",
+		                schema = @Schema(implementation = DefaultApiResponse.class)))
+		    }
+		)
+	public ResponseEntity<PublicCategoryByIdDTO> getCategoryBySlug(@PathVariable String slug) {
+		return ResponseEntity.status(HttpStatus.OK).body(categoryService.resolveCategoryBySlug(slug));
+	}
+
 	@GetMapping("materials")
 	@Operation(summary = "Get materials by offset pagination", responses = {
 		    @ApiResponse(
@@ -194,6 +211,20 @@ public class ProductsController {
 	public ResponseEntity<BrandByIdDTO> getBrand(@PathVariable long id) {
 		return ResponseEntity.status(HttpStatus.OK).body(brandsService.getBrandById(id));
 	}
+
+	@GetMapping("brands/by-slug/{slug}")
+	@Operation(summary = "Get brand by slug", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = BrandByIdDTO.class))),
+		    @ApiResponse(responseCode = "301", description = "Slug superseded; Location points to the canonical slug"),
+		    @ApiResponse(responseCode = "404", description = "Brand not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<BrandByIdDTO> getBrandBySlug(@PathVariable String slug) {
+		return ResponseEntity.status(HttpStatus.OK).body(brandsService.resolveBrandBySlug(slug));
+	}
 	
 	@GetMapping("attributes")
 	@Operation(summary = "Get attributes by offset pagination", responses = {
@@ -255,6 +286,20 @@ public class ProductsController {
 		return ResponseEntity.ok(productService.getPublicProducts(
 				page, size, sortBy, term, categoryId, brandId, materialId,
 				featured, createdAtStart, createdAtEnd));
+	}
+
+	@GetMapping("by-slug/{slug}")
+	@Operation(summary = "Get product by slug (public)", responses = {
+		    @ApiResponse(responseCode = "200", description = "Content successfully returned",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = PublicProductByIdDTO.class))),
+		    @ApiResponse(responseCode = "301", description = "Slug superseded; Location points to the canonical slug"),
+		    @ApiResponse(responseCode = "404", description = "Product not found",
+		        content = @Content(mediaType = "application/json",
+		            schema = @Schema(implementation = DefaultApiResponse.class)))
+		})
+	public ResponseEntity<PublicProductByIdDTO> getProductBySlug(@PathVariable String slug) {
+		return ResponseEntity.ok(productService.resolveProductBySlug(slug));
 	}
 
 	@GetMapping("{productId}")
