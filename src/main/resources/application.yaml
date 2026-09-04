@@ -41,6 +41,9 @@ storage:
   local:
     base-path: "${FILE_DIRECTORY}"
 
+email:
+  provider: "${EMAIL_PROVIDER:logging}"
+
 server:
   address: 0.0.0.0
   port: "${SERVER_PORT:8080}"
