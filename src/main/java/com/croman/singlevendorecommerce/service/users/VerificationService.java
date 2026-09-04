@@ -20,11 +20,10 @@ import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Owns the email-verification-code issuance lifecycle: generation
- * (rate-limited), delivery via {@link EmailSender}, and resend
- * (anti-enumeration). Mirrors the {@code AuthService} login-attempt
- * rate-limit shape. Code verification (expiry / attempts / hash match)
- * is added on top of this class in a later slice.
+ * Owns the email-verification-code lifecycle: generation (rate-limited),
+ * delivery via {@link EmailSender}, verification (expiry / attempts /
+ * hash match), and resend (anti-enumeration). Mirrors the
+ * {@code AuthService} login-attempt rate-limit shape.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +32,7 @@ public class VerificationService {
 	private static final int MAX_CODES_PER_HOUR = 5;
 	private static final int RATE_WINDOW_HOURS = 1;
 	private static final int CODE_TTL_MINUTES = 15;
+	private static final int MAX_VERIFY_ATTEMPTS = 5;
 	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private final VerificationCodeRepository verificationCodeRepository;
@@ -54,6 +54,46 @@ public class VerificationService {
 		}
 		User user = userService.getUserByEmail(email);
 		issueForUnverifiedUser(user);
+	}
+
+	@Transactional
+	public void verify(String email, String code) {
+		if (!userService.existsByEmail(email)) {
+			throw invalidCodeException();
+		}
+
+		User user = userService.getUserByEmail(email);
+
+		if (user.isValidated()) {
+			// Already-verified accounts are idempotent: success, no code needed.
+			return;
+		}
+
+		VerificationCode verificationCode = verificationCodeRepository
+				.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId())
+				.orElseThrow(this::invalidCodeException);
+
+		if (verificationCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+			throw new ApiServiceException(HttpStatus.GONE.value(),
+					messageService.getMessage("verification_code_expired", LocaleUtils.getDefaultLocale()),
+					Map.of("errorCode", "verification_code_expired"));
+		}
+
+		if (verificationCode.getAttempts() >= MAX_VERIFY_ATTEMPTS) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage("verification_code_attempts_exceeded", LocaleUtils.getDefaultLocale()),
+					Map.of("errorCode", "verification_code_attempts_exceeded"));
+		}
+
+		if (!PasswordUtils.matches(code, verificationCode.getCodeHash())) {
+			verificationCode.setAttempts(verificationCode.getAttempts() + 1);
+			verificationCodeRepository.save(verificationCode);
+			throw invalidCodeException();
+		}
+
+		verificationCode.setConsumedAt(LocalDateTime.now());
+		verificationCodeRepository.save(verificationCode);
+		userService.markEmailVerified(email);
 	}
 
 	private void issueForUnverifiedUser(User user) {
@@ -87,6 +127,12 @@ public class VerificationService {
 
 	private String generateCode() {
 		return String.format("%06d", RANDOM.nextInt(1_000_000));
+	}
+
+	private ApiServiceException invalidCodeException() {
+		return new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+				messageService.getMessage("verification_code_invalid", LocaleUtils.getDefaultLocale()),
+				Map.of("errorCode", "verification_code_invalid"));
 	}
 
 }

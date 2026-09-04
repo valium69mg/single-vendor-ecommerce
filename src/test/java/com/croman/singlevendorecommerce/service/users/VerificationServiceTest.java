@@ -3,6 +3,7 @@ package com.croman.singlevendorecommerce.service.users;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -31,9 +33,8 @@ import com.croman.singlevendorecommerce.utils.PasswordUtils;
 import com.croman.singlevendorecommerce.utils.exceptions.ApiServiceException;
 
 /**
- * Covers {@code generateAndSend} and {@code resend} only. Verification
- * ({@code verify}) branch coverage is added in a later slice on top of
- * this class.
+ * Covers {@code generateAndSend}, {@code resend}, and {@code verify}
+ * (expiry / attempts / hash match / idempotent already-verified).
  */
 @ExtendWith(MockitoExtension.class)
 class VerificationServiceTest {
@@ -49,6 +50,11 @@ class VerificationServiceTest {
 
 	private User user(boolean validated) {
 		return User.builder().userId(UUID.randomUUID()).email(EMAIL).isValidated(validated).build();
+	}
+
+	private VerificationCode codeFor(User user, String rawCode, int attempts, LocalDateTime expiresAt) {
+		return VerificationCode.builder().user(user).codeHash(PasswordUtils.hashPassword(rawCode))
+				.createdAt(LocalDateTime.now().minusMinutes(1)).expiresAt(expiresAt).attempts(attempts).build();
 	}
 
 	// --- generateAndSend: happy path (task 2.6) ---
@@ -133,6 +139,158 @@ class VerificationServiceTest {
 		verificationService.generateAndSend(EMAIL);
 
 		verify(verificationCodeRepository).save(any(VerificationCode.class));
+	}
+
+	// --- verify: TTL/expiry branch pair (task 2.9) ---
+
+	@Test
+	void verify_expiredCode_throwsExpired() {
+		User user = user(false);
+		VerificationCode expired = codeFor(user, "123456", 0, LocalDateTime.now().minusMinutes(1));
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.of(expired));
+		when(messageService.getMessage(eq("verification_code_expired"), any())).thenReturn("Expired");
+
+		ApiServiceException ex = assertThrows(ApiServiceException.class, () -> verificationService.verify(EMAIL, "123456"));
+
+		assertEquals(410, ex.getStatusCode());
+		assertEquals("verification_code_expired", ex.getMetadata().get("errorCode"));
+		verify(verificationCodeRepository, never()).save(any(VerificationCode.class));
+	}
+
+	@Test
+	void verify_notExpired_proceedsPastExpiryCheck() {
+		User user = user(false);
+		VerificationCode notExpired = codeFor(user, "123456", 0, LocalDateTime.now().plusMinutes(10));
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.of(notExpired));
+
+		verificationService.verify(EMAIL, "123456");
+
+		verify(userService).markEmailVerified(EMAIL);
+	}
+
+	// --- verify: attempts >= 5 branch pair (task 2.10) ---
+
+	@Test
+	void verify_wrongCode_attemptsBelowMax_incrementsAndThrowsInvalid() {
+		User user = user(false);
+		VerificationCode code = codeFor(user, "111111", 4, LocalDateTime.now().plusMinutes(10));
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.of(code));
+		when(messageService.getMessage(eq("verification_code_invalid"), any())).thenReturn("Invalid");
+
+		ApiServiceException ex = assertThrows(ApiServiceException.class, () -> verificationService.verify(EMAIL, "000000"));
+
+		assertEquals(400, ex.getStatusCode());
+		assertEquals("verification_code_invalid", ex.getMetadata().get("errorCode"));
+		ArgumentCaptor<VerificationCode> captor = ArgumentCaptor.forClass(VerificationCode.class);
+		verify(verificationCodeRepository).save(captor.capture());
+		assertEquals(5, captor.getValue().getAttempts(), "wrong attempt must increment the counter");
+		verify(userService, never()).markEmailVerified(anyString());
+	}
+
+	@Test
+	void verify_attemptsAlreadyExhausted_throwsAttemptsExceeded_evenWithCorrectCode() {
+		User user = user(false);
+		VerificationCode burned = codeFor(user, "654321", 5, LocalDateTime.now().plusMinutes(10));
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.of(burned));
+		when(messageService.getMessage(eq("verification_code_attempts_exceeded"), any())).thenReturn("Burned");
+
+		ApiServiceException ex = assertThrows(ApiServiceException.class, () -> verificationService.verify(EMAIL, "654321"));
+
+		assertEquals(400, ex.getStatusCode());
+		assertEquals("verification_code_attempts_exceeded", ex.getMetadata().get("errorCode"));
+		verify(verificationCodeRepository, never()).save(any(VerificationCode.class));
+		verify(userService, never()).markEmailVerified(anyString());
+	}
+
+	// --- verify: match / mismatch branch pair (task 2.11) ---
+
+	@Test
+	void verify_correctCode_consumesCodeAndMarksVerified() {
+		User user = user(false);
+		VerificationCode code = codeFor(user, "246810", 0, LocalDateTime.now().plusMinutes(10));
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.of(code));
+
+		verificationService.verify(EMAIL, "246810");
+
+		ArgumentCaptor<VerificationCode> captor = ArgumentCaptor.forClass(VerificationCode.class);
+		verify(verificationCodeRepository).save(captor.capture());
+		assertNotNull(captor.getValue().getConsumedAt(), "matching code must be marked consumed");
+		verify(userService).markEmailVerified(EMAIL);
+	}
+
+	@Test
+	void verify_wrongCode_doesNotConsumeOrMarkVerified() {
+		User user = user(false);
+		VerificationCode code = codeFor(user, "999999", 0, LocalDateTime.now().plusMinutes(10));
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.of(code));
+		when(messageService.getMessage(eq("verification_code_invalid"), any())).thenReturn("Invalid");
+
+		assertThrows(ApiServiceException.class, () -> verificationService.verify(EMAIL, "000000"));
+
+		ArgumentCaptor<VerificationCode> captor = ArgumentCaptor.forClass(VerificationCode.class);
+		verify(verificationCodeRepository).save(captor.capture());
+		assertNull(captor.getValue().getConsumedAt(), "mismatched code must stay unconsumed");
+		verify(userService, never()).markEmailVerified(anyString());
+	}
+
+	// --- verify: unknown email / no unconsumed row (task 2.12) ---
+
+	@Test
+	void verify_unknownEmail_throwsInvalid() {
+		when(userService.existsByEmail(EMAIL)).thenReturn(false);
+		when(messageService.getMessage(eq("verification_code_invalid"), any())).thenReturn("Invalid");
+
+		ApiServiceException ex = assertThrows(ApiServiceException.class, () -> verificationService.verify(EMAIL, "123456"));
+
+		assertEquals(400, ex.getStatusCode());
+		assertEquals("verification_code_invalid", ex.getMetadata().get("errorCode"));
+	}
+
+	@Test
+	void verify_noUnconsumedCode_throwsInvalid() {
+		User user = user(false);
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+		when(verificationCodeRepository.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(user.getUserId()))
+				.thenReturn(Optional.empty());
+		when(messageService.getMessage(eq("verification_code_invalid"), any())).thenReturn("Invalid");
+
+		ApiServiceException ex = assertThrows(ApiServiceException.class, () -> verificationService.verify(EMAIL, "123456"));
+
+		assertEquals(400, ex.getStatusCode());
+	}
+
+	// --- verify: already-verified idempotent success (task 2.8b) ---
+
+	@Test
+	void verify_alreadyVerifiedAccount_isIdempotentSuccess() {
+		User user = user(true);
+		when(userService.existsByEmail(EMAIL)).thenReturn(true);
+		when(userService.getUserByEmail(EMAIL)).thenReturn(user);
+
+		assertDoesNotThrow(() -> verificationService.verify(EMAIL, "anything"));
+
+		verify(verificationCodeRepository, never())
+				.findFirstByUser_UserIdAndConsumedAtIsNullOrderByCreatedAtDesc(any(UUID.class));
+		verify(userService, never()).markEmailVerified(anyString());
 	}
 
 	// --- resend (task 2.13) ---
