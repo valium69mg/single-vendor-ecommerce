@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -45,6 +46,39 @@ class UserServiceTest {
         userService.register(dto);
 
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void register_createsUnvalidatedUserWithUserRole() {
+        CreateUserDTO dto = new CreateUserDTO("newuser@example.com", "password");
+        UserRole userRole = UserRole.builder().roleType(RoleType.USER).build();
+        when(userRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(rolesService.getUserRoleByRoleType(RoleType.USER)).thenReturn(userRole);
+
+        userService.register(dto);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertFalse(saved.isValidated(), "public registrants must start unverified");
+        assertEquals(RoleType.USER, saved.getUserRole().getRoleType());
+    }
+
+    @Test
+    void createSiteAdmin_createsValidatedAdmin() {
+        CreateUserDTO dto = new CreateUserDTO("admin@example.com", "password");
+        UserRole adminRole = UserRole.builder().roleType(RoleType.ADMIN).build();
+        when(userRepository.findAllByUserRole_RoleType(RoleType.ADMIN)).thenReturn(java.util.Collections.emptyList());
+        when(userRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(rolesService.getUserRoleByRoleType(RoleType.ADMIN)).thenReturn(adminRole);
+
+        userService.createSiteAdmin(dto);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertTrue(saved.isValidated(), "admin bootstrap path must create an already-verified account");
+        assertEquals(RoleType.ADMIN, saved.getUserRole().getRoleType());
     }
 
     @Test
