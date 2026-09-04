@@ -71,7 +71,7 @@ src/main/java/com/croman/singlevendorecommerce/
 
 src/main/resources/
 ├── application.yaml
-├── db/migration/V1__…V27__*.sql   # Flyway (auto-run on startup); V27 = carts + cart_items
+├── db/migration/V1__…V28__*.sql   # Flyway (auto-run on startup); V27 = carts + cart_items, V28 = slugs + slug history
 ├── messages.properties             # English fallback keys
 └── messages_es.properties          # Spanish keys (default locale)
 ```

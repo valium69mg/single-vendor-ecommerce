@@ -6,9 +6,9 @@
 ## Naming convention
 `V<n>__<short_description>.sql`
 
-- `<n>` is the next integer after the current high-water mark (currently **V26**, so next is **V27**)
+- `<n>` is the next integer after the current high-water mark (currently **V28**, so next is **V29**)
 - `<short_description>` uses underscores, lowercase, describes the change
-- Examples: `V27__add_slug_to_categories.sql`, `V27__add_orders_table.sql`
+- Examples: `V29__add_verification_codes_table.sql`, `V29__add_orders_table.sql`
 
 ## Steps to add a migration
 
