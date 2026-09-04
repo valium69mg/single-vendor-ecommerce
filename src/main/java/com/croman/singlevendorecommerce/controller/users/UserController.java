@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.dto.users.CreateUserDTO;
 import com.croman.singlevendorecommerce.service.users.UserService;
+import com.croman.singlevendorecommerce.service.users.VerificationService;
 import com.croman.singlevendorecommerce.utils.ApiResponseService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
 	private final UserService userService;
+	private final VerificationService verificationService;
 	private final ApiResponseService apiResponseService;
 
 	@PostMapping("register")
@@ -47,6 +49,7 @@ public class UserController {
 		})
 	public ResponseEntity<DefaultApiResponse> createUser(@Valid @RequestBody CreateUserDTO dto) {
 		userService.register(dto);
+		verificationService.generateAndSend(dto.getEmail());
 		DefaultApiResponse response = apiResponseService.getApiResponseMessage("user_created", HttpStatus.CREATED);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
