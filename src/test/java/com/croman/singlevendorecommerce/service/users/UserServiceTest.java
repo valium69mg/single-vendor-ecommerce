@@ -278,6 +278,29 @@ class UserServiceTest {
     }
     
     @Test
+    void markEmailVerified_success_flipsIsValidated() {
+        User user = User.builder().email("verify@example.com").isValidated(false).build();
+        when(userRepository.findByEmail("verify@example.com")).thenReturn(Optional.of(user));
+
+        userService.markEmailVerified("verify@example.com");
+
+        verify(userRepository).updateIsValidated("verify@example.com", true);
+    }
+
+    @Test
+    void markEmailVerified_userNotFound_throwsBadRequest() {
+        when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+        when(messageService.getMessage(eq("invalid_credentials"), any()))
+                .thenReturn("Invalid credentials");
+
+        ApiServiceException ex = assertThrows(ApiServiceException.class,
+                () -> userService.markEmailVerified("missing@example.com"));
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getStatusCode());
+        verify(userRepository, never()).updateIsValidated(anyString(), anyBoolean());
+    }
+
+    @Test
     void createSiteAdmin_emailAlreadyExists_throwsBadRequest() {
         CreateUserDTO dto = new CreateUserDTO("admin@example.com", "password");
 

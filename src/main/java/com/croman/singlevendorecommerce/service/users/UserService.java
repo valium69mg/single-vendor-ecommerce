@@ -138,6 +138,16 @@ public class UserService {
 	}
 
 	@Transactional
+	public void markEmailVerified(String email) {
+		Optional<User> userOpt = userRepository.findByEmail(email);
+		if (userOpt.isEmpty()) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
+		}
+		userRepository.updateIsValidated(email, true);
+	}
+
+	@Transactional
 	public void createSiteAdmin(CreateUserDTO dto) {
 		try {
 			
