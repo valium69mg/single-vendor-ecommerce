@@ -8,7 +8,7 @@
 ## Flyway migrations, never modify existing files
 **What:** All schema changes go in new `V<n>__description.sql` files. Existing migration files are immutable.
 **Why:** Flyway checksums existing files and will refuse to start if they change. Any modification breaks all deployments.
-**Consequence:** Mistakes in a migration require a new corrective migration. The current high-water mark is V26.
+**Consequence:** Mistakes in a migration require a new corrective migration. The current high-water mark is V28.
 
 ## Spanish-only content, no translation layer
 **What:** All user-facing strings (category names, material names, attribute names, attribute values) are stored directly in Spanish in each entity column.

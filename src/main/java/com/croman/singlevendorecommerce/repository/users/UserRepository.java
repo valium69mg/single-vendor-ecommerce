@@ -29,6 +29,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	@Modifying
 	@Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.email = :email")
 	int updateLastLogin(@Param("email") String email, @Param("lastLogin") LocalDateTime lastLogin);
+
+	@Modifying
+	@Query("UPDATE User u SET u.isValidated = :validated WHERE u.email = :email")
+	int updateIsValidated(@Param("email") String email, @Param("validated") boolean validated);
 	
 	
 	List<User> findAllByUserRole_RoleType(RoleType roleType);

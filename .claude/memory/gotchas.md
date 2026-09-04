@@ -8,7 +8,7 @@
 ## Flyway checksums block startup if you edit existing migrations
 **What happened:** Modifying any file under `db/migration/V<n>__*.sql` that Flyway has already applied causes a checksum mismatch and Flyway refuses to start the application.
 **Root cause:** Flyway records a checksum for each applied migration. Changes after application are detected as corruption.
-**How to avoid:** Always create a new `V<n+1>__description.sql`. Current high-water mark: V26. Next migration is V27.
+**How to avoid:** Always create a new `V<n+1>__description.sql`. Current high-water mark: V28. Next migration is V29.
 
 ## Product PKs are UUID, not Long — don't mix types
 **What happened:** Product-related path variables and service method signatures use `UUID`, not `Long`. Passing a `Long` category ID path variable pattern into product methods or vice versa causes type mismatch at runtime.

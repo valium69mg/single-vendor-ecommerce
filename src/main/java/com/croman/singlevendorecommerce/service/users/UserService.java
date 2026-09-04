@@ -44,8 +44,8 @@ public class UserService {
 						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 			}
 			
-			User newUser = create(dto, RoleType.USER);
-			
+			User newUser = create(dto, RoleType.USER, false);
+
 			userRepository.save(newUser);
 
 		} catch (ApiServiceException e) {
@@ -56,11 +56,11 @@ public class UserService {
 		}
 	}
 
-	private User create(CreateUserDTO dto, RoleType roleType) {
+	private User create(CreateUserDTO dto, RoleType roleType, boolean validated) {
 		roleType = roleType != null ? roleType : RoleType.USER;
 		return User.builder().email(dto.getEmail()).password(PasswordUtils.hashPassword(dto.getPassword()))
 				.username(dto.getEmail()).updatedAt(LocalDateTime.now()).createdAt(LocalDateTime.now()).isActive(true)
-				.isValidated(true).userRole(rolesService.getUserRoleByRoleType(roleType)).build();
+				.isValidated(validated).userRole(rolesService.getUserRoleByRoleType(roleType)).build();
 	}
 
 	public boolean existsByEmail(String email) {
@@ -138,6 +138,16 @@ public class UserService {
 	}
 
 	@Transactional
+	public void markEmailVerified(String email) {
+		Optional<User> userOpt = userRepository.findByEmail(email);
+		if (userOpt.isEmpty()) {
+			throw new ApiServiceException(HttpStatus.BAD_REQUEST.value(),
+					messageService.getMessage(INVALID_CREDENTIALS, LocaleUtils.getDefaultLocale()));
+		}
+		userRepository.updateIsValidated(email, true);
+	}
+
+	@Transactional
 	public void createSiteAdmin(CreateUserDTO dto) {
 		try {
 			
@@ -153,7 +163,7 @@ public class UserService {
 						messageService.getMessage("email_exists", LocaleUtils.getDefaultLocale()));
 			}
 
-			User newUser = create(dto, RoleType.ADMIN);
+			User newUser = create(dto, RoleType.ADMIN, true);
 			
 			userRepository.save(newUser);
 

@@ -18,7 +18,8 @@ public class SecurityConfig {
 			"/v3/api-docs/**", "/v3/api-docs.yaml" };
 	
 	private static final String[] ECOMMERCE_WHITELIST = { "/api/v1/products", "/api/v1/products/**", "/api/v1/file/**",
-			"/api/v1/auth/login", "/api/v1/users/register", "/health"};
+			"/api/v1/auth/login", "/api/v1/users/register", "/api/v1/users/verify", "/api/v1/users/verify/resend",
+			"/health"};
 
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {

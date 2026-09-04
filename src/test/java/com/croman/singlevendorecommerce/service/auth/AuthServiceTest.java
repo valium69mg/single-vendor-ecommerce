@@ -50,15 +50,37 @@ class AuthServiceTest {
         when(userService.getUserRoleNameByEmail("user@example.com")).thenReturn("ADMIN");
         when(jwtUtil.generateToken("user@example.com", "ADMIN")).thenReturn("jwt-token");
         when(userService.getUserDTOByEmail("user@example.com"))
-                .thenReturn(UserDTO.builder().userId("123").build());
+                .thenReturn(UserDTO.builder().userId("123").isValidated(true).build());
         when(userService.getUserByEmail("user@example.com")).thenReturn(new User());
 
         LoginResponseDTO response = authService.login(ctx);
 
         assertEquals("user@example.com", response.getEmail());
         assertEquals("jwt-token", response.getToken());
+        assertTrue(response.isVerified(), "verified account must report isVerified = true");
         verify(userService, times(1)).updateLastLogin("user@example.com");
         verify(loginAttemptRepository).save(any(LoginAttempt.class));
+    }
+
+    @Test
+    void login_unverifiedUser_succeedsWithIsVerifiedFalse() {
+        LoginContextDTO ctx = buildContext("unverified@example.com", "secret", "127.0.0.1");
+
+        when(userService.existsByEmail("unverified@example.com")).thenReturn(true);
+        when(loginAttemptRepository.countByEmailAndSuccessfulIsFalseAndAttemptedAtAfter(anyString(), any(LocalDateTime.class)))
+                .thenReturn(0L);
+        when(userService.passwordCorrect("unverified@example.com", "secret")).thenReturn(true);
+        doNothing().when(userService).updateLastLogin("unverified@example.com");
+        when(userService.getUserRoleNameByEmail("unverified@example.com")).thenReturn("USER");
+        when(jwtUtil.generateToken("unverified@example.com", "USER")).thenReturn("jwt-token");
+        when(userService.getUserDTOByEmail("unverified@example.com"))
+                .thenReturn(UserDTO.builder().userId("456").isValidated(false).build());
+        when(userService.getUserByEmail("unverified@example.com")).thenReturn(new User());
+
+        LoginResponseDTO response = authService.login(ctx);
+
+        assertEquals("jwt-token", response.getToken());
+        assertFalse(response.isVerified(), "unverified account must still log in but report isVerified = false");
     }
 
     @Test
