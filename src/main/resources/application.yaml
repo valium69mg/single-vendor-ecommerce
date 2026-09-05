@@ -41,6 +41,10 @@ storage:
   local:
     base-path: "${FILE_DIRECTORY}"
 
+app:
+  shipping:
+    flat-rate: "${APP_SHIPPING_FLAT_RATE:99.00}"
+
 email:
   provider: "${EMAIL_PROVIDER:logging}"
 
