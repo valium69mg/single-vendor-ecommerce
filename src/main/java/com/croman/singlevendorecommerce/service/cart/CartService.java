@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.croman.singlevendorecommerce.dto.cart.AddCartItemDTO;
 import com.croman.singlevendorecommerce.dto.cart.CartDTO;
 import com.croman.singlevendorecommerce.dto.cart.CartItemDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeAdjustmentDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartLineDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartResultDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeSkipDTO;
 import com.croman.singlevendorecommerce.dto.cart.UpdateCartItemDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductStatus;
 import com.croman.singlevendorecommerce.entity.cart.Cart;
@@ -99,6 +105,65 @@ public class CartService {
 		return toDTO(cart);
 	}
 
+	/**
+	 * Merges guest cart lines into the authenticated user's server cart. Unlike
+	 * {@link #addItem}, quantities are clamped to available stock instead of
+	 * rejected, and lines referencing an unknown/unavailable variant are skipped
+	 * instead of failing the whole request. {@code guardStock}/
+	 * {@code guardProductAvailable} are intentionally NOT reused here since they
+	 * throw; merge duplicates their conditions but reports outcomes instead.
+	 */
+	public MergeCartResultDTO merge(MergeCartDTO dto) {
+		User user = currentUserService.getCurrentUser();
+		Cart cart = cartRepository.findByUser_UserId(user.getUserId())
+				.orElseGet(() -> cartRepository.save(Cart.builder().user(user).items(new ArrayList<>()).build()));
+
+		List<MergeAdjustmentDTO> adjusted = new ArrayList<>();
+		List<MergeSkipDTO> skipped = new ArrayList<>();
+
+		for (MergeCartLineDTO line : dto.getItems()) {
+			Optional<ProductVariant> variantOpt = productVariantRepository.findByIdWithProduct(line.getProductVariantId());
+			if (variantOpt.isEmpty()) {
+				skipped.add(skip(line.getProductVariantId(), VARIANT_NOT_FOUND));
+				continue;
+			}
+			ProductVariant variant = variantOpt.get();
+			Product product = variant.getProduct();
+			if (product == null || product.getDeletedAt() != null || product.getStatus() != ProductStatus.ACTIVE) {
+				skipped.add(skip(line.getProductVariantId(), PRODUCT_UNAVAILABLE));
+				continue;
+			}
+
+			CartItem existing = findLine(cart, line.getProductVariantId());
+			int desiredQuantity = existing != null ? existing.getQuantity() + line.getQuantity() : line.getQuantity();
+			int finalQuantity = clampQuantityToStock(variant, desiredQuantity);
+
+			if (finalQuantity <= 0) {
+				// Out-of-stock variant: nothing to save, report as skipped (not "adjusted to 0").
+				skipped.add(skip(line.getProductVariantId(), STOCK_EXCEEDED));
+				continue;
+			}
+			if (finalQuantity < desiredQuantity) {
+				adjusted.add(MergeAdjustmentDTO.builder()
+						.productVariantId(line.getProductVariantId())
+						.requestedQuantity(desiredQuantity)
+						.finalQuantity(finalQuantity)
+						.build());
+			}
+
+			if (existing != null) {
+				existing.setQuantity(finalQuantity);
+				cartItemRepository.save(existing);
+			} else {
+				CartItem item = CartItem.builder().cart(cart).productVariant(variant).quantity(finalQuantity).build();
+				cart.getItems().add(item);
+				cartItemRepository.save(item);
+			}
+		}
+
+		return MergeCartResultDTO.builder().cart(toDTO(cart)).adjustedLines(adjusted).skippedLines(skipped).build();
+	}
+
 	public CartDTO removeItem(Long cartItemId) {
 		Cart cart = resolveCart();
 		CartItem item = cartItemRepository.findByCartItemIdAndCart_CartId(cartItemId, cart.getCartId())
@@ -141,6 +206,19 @@ public class CartService {
 					messageService.getMessage(STOCK_EXCEEDED, LocaleUtils.getDefaultLocale()),
 					Map.of("availableStock", stock));
 		}
+	}
+
+	private int clampQuantityToStock(ProductVariant variant, int desiredQuantity) {
+		Integer stock = variant.getStock();
+		int available = stock == null ? 0 : stock;
+		return Math.min(desiredQuantity, available);
+	}
+
+	private MergeSkipDTO skip(Long variantId, String messageKey) {
+		return MergeSkipDTO.builder()
+				.productVariantId(variantId)
+				.reason(messageService.getMessage(messageKey, LocaleUtils.getDefaultLocale()))
+				.build();
 	}
 
 	private ApiServiceException notFound(String messageKey) {
