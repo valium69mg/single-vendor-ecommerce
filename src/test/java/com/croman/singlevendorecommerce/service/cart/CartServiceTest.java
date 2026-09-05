@@ -6,7 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +24,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.croman.singlevendorecommerce.dto.cart.AddCartItemDTO;
 import com.croman.singlevendorecommerce.dto.cart.CartDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeAdjustmentDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartLineDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartResultDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeSkipDTO;
 import com.croman.singlevendorecommerce.dto.cart.UpdateCartItemDTO;
 import com.croman.singlevendorecommerce.dto.products.ProductStatus;
 import com.croman.singlevendorecommerce.entity.cart.Cart;
@@ -66,7 +77,11 @@ class CartServiceTest {
 	private static final UUID USER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 	private static final Long CART_ID = 1L;
 	private static final Long VARIANT_ID = 100L;
+	private static final Long OTHER_VARIANT_ID = 200L;
+	private static final Long MISSING_VARIANT_ID = 999L;
 	private static final Long CART_ITEM_ID = 500L;
+
+	private static Validator validator;
 
 	private User user;
 	private Product product;
@@ -75,6 +90,11 @@ class CartServiceTest {
 
 	@BeforeEach
 	void setUp() {
+		if (validator == null) {
+			ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+			validator = factory.getValidator();
+		}
+
 		user = User.builder().userId(USER_ID).email("shopper@example.com").username("shopper").build();
 
 		product = Product.builder()
@@ -385,5 +405,208 @@ class CartServiceTest {
 		assertThat(result.getItems()).hasSize(2);
 		assertThat(result.getSubtotal()).isEqualByComparingTo("400.00");
 		assertThat(result.getTotalItems()).isEqualTo(6);
+	}
+
+	// ─── merge (R2) ──────────────────────────────────────────────────────────
+
+	@Test
+	void testMergeLineWithNullQuantityFailsNotNullValidation() {
+		MergeCartLineDTO line = MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(null).build();
+
+		Set<ConstraintViolation<MergeCartLineDTO>> violations = validator.validate(line);
+
+		assertThat(violations).hasSize(1);
+		assertThat(violations.iterator().next().getPropertyPath().toString()).isEqualTo("quantity");
+		assertThat(violations.iterator().next().getConstraintDescriptor().getAnnotation())
+				.isInstanceOf(jakarta.validation.constraints.NotNull.class);
+	}
+
+	@Test
+	void testMergeLineWithZeroOrNegativeQuantityFailsMinValidation() {
+		MergeCartLineDTO zero = MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(0).build();
+		MergeCartLineDTO negative = MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(-3).build();
+
+		Set<ConstraintViolation<MergeCartLineDTO>> zeroViolations = validator.validate(zero);
+		Set<ConstraintViolation<MergeCartLineDTO>> negativeViolations = validator.validate(negative);
+
+		assertThat(zeroViolations).hasSize(1);
+		assertThat(zeroViolations.iterator().next().getConstraintDescriptor().getAnnotation())
+				.isInstanceOf(jakarta.validation.constraints.Min.class);
+		assertThat(negativeViolations).hasSize(1);
+		assertThat(negativeViolations.iterator().next().getConstraintDescriptor().getAnnotation())
+				.isInstanceOf(jakarta.validation.constraints.Min.class);
+	}
+
+	// ─── merge (R3, R4, R5, R6) ──────────────────────────────────────────────
+
+	@Test
+	void testMergeIntoExistingLineSumsQuantities() {
+		cart.getItems().add(lineFor(variant, 2));
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(3).build()))
+				.build());
+
+		ArgumentCaptor<CartItem> captor = ArgumentCaptor.forClass(CartItem.class);
+		verify(cartItemRepository).save(captor.capture());
+		assertThat(captor.getValue().getQuantity()).isEqualTo(5);
+		assertThat(result.getAdjustedLines()).isEmpty();
+		assertThat(result.getSkippedLines()).isEmpty();
+	}
+
+	@Test
+	void testMergeNewVariantLineCreatesNewCartLine() {
+		ProductVariant other = new ProductVariant();
+		other.setProductVariantId(OTHER_VARIANT_ID);
+		other.setProduct(product);
+		other.setSku("RING-14K-8");
+		other.setPrice(new BigDecimal("60.00"));
+		other.setStock(10);
+
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(OTHER_VARIANT_ID)).thenReturn(Optional.of(other));
+
+		cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(OTHER_VARIANT_ID).quantity(2).build()))
+				.build());
+
+		ArgumentCaptor<CartItem> captor = ArgumentCaptor.forClass(CartItem.class);
+		verify(cartItemRepository).save(captor.capture());
+		assertThat(captor.getValue().getQuantity()).isEqualTo(2);
+		assertThat(captor.getValue().getProductVariant()).isEqualTo(other);
+	}
+
+	@Test
+	void testMergeLazilyCreatesCartWhenUserHasNone() {
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.empty());
+		when(cartRepository.save(any(Cart.class))).thenAnswer(inv -> {
+			Cart c = inv.getArgument(0);
+			c.setCartId(CART_ID);
+			return c;
+		});
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(3).build()))
+				.build());
+
+		verify(cartRepository).save(any(Cart.class));
+		assertThat(result.getCart().getTotalItems()).isEqualTo(3);
+	}
+
+	@Test
+	void testMergeQuantityExceedingStockClampsToAvailable() {
+		variant.setStock(3);
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(5).build()))
+				.build());
+
+		ArgumentCaptor<CartItem> captor = ArgumentCaptor.forClass(CartItem.class);
+		verify(cartItemRepository).save(captor.capture());
+		assertThat(captor.getValue().getQuantity()).isEqualTo(3);
+		assertThat(result.getAdjustedLines()).hasSize(1);
+		MergeAdjustmentDTO adjustment = result.getAdjustedLines().get(0);
+		assertThat(adjustment.getProductVariantId()).isEqualTo(VARIANT_ID);
+		assertThat(adjustment.getRequestedQuantity()).isEqualTo(5);
+		assertThat(adjustment.getFinalQuantity()).isEqualTo(3);
+	}
+
+	@Test
+	void testMergeSumExceedingStockClampsToAvailable() {
+		variant.setStock(5);
+		cart.getItems().add(lineFor(variant, 4));
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(3).build()))
+				.build());
+
+		ArgumentCaptor<CartItem> captor = ArgumentCaptor.forClass(CartItem.class);
+		verify(cartItemRepository).save(captor.capture());
+		assertThat(captor.getValue().getQuantity()).isEqualTo(5);
+		assertThat(result.getAdjustedLines()).hasSize(1);
+		assertThat(result.getAdjustedLines().get(0).getRequestedQuantity()).isEqualTo(7);
+		assertThat(result.getAdjustedLines().get(0).getFinalQuantity()).isEqualTo(5);
+	}
+
+	@Test
+	void testMergeSkipsUnknownVariantButMergesValidLine() {
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+		when(productVariantRepository.findByIdWithProduct(MISSING_VARIANT_ID)).thenReturn(Optional.empty());
+		stubMessage("cart_variant_not_found", "Variant not found");
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(
+						MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(2).build(),
+						MergeCartLineDTO.builder().productVariantId(MISSING_VARIANT_ID).quantity(1).build()))
+				.build());
+
+		verify(cartItemRepository).save(any(CartItem.class));
+		assertThat(result.getSkippedLines()).hasSize(1);
+		MergeSkipDTO skip = result.getSkippedLines().get(0);
+		assertThat(skip.getProductVariantId()).isEqualTo(MISSING_VARIANT_ID);
+		assertThat(skip.getReason()).isEqualTo("Variant not found");
+	}
+
+	@Test
+	void testMergeWithAllInvalidVariantsSucceedsWithUnchangedCart() {
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(MISSING_VARIANT_ID)).thenReturn(Optional.empty());
+		stubMessage("cart_variant_not_found", "Variant not found");
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(MISSING_VARIANT_ID).quantity(1).build()))
+				.build());
+
+		verify(cartItemRepository, never()).save(any());
+		assertThat(result.getCart().getItems()).isEmpty();
+		assertThat(result.getSkippedLines()).hasSize(1);
+	}
+
+	@Test
+	void testMergeReportsAdjustmentsAndSkipsWhenPresent() {
+		variant.setStock(1);
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+		when(productVariantRepository.findByIdWithProduct(MISSING_VARIANT_ID)).thenReturn(Optional.empty());
+		stubMessage("cart_variant_not_found", "Variant not found");
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(
+						MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(5).build(),
+						MergeCartLineDTO.builder().productVariantId(MISSING_VARIANT_ID).quantity(1).build()))
+				.build());
+
+		assertThat(result.getAdjustedLines()).isNotEmpty();
+		assertThat(result.getSkippedLines()).isNotEmpty();
+	}
+
+	@Test
+	void testMergeWithAllCleanLinesReportsNoAdjustmentsOrSkips() {
+		when(currentUserService.getCurrentUser()).thenReturn(user);
+		when(cartRepository.findByUser_UserId(USER_ID)).thenReturn(Optional.of(cart));
+		when(productVariantRepository.findByIdWithProduct(VARIANT_ID)).thenReturn(Optional.of(variant));
+
+		MergeCartResultDTO result = cartService.merge(MergeCartDTO.builder()
+				.items(List.of(MergeCartLineDTO.builder().productVariantId(VARIANT_ID).quantity(2).build()))
+				.build());
+
+		assertThat(result.getAdjustedLines()).isEmpty();
+		assertThat(result.getSkippedLines()).isEmpty();
 	}
 }

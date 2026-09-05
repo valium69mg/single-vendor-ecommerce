@@ -53,6 +53,7 @@ class CartSecurityIntegrationTest extends AbstractIntegrationTest {
 
 	private static final String ITEMS_URL = "/api/v1/cart/items";
 	private static final String SOME_ITEM_URL = ITEMS_URL + "/1";
+	private static final String MERGE_URL = "/api/v1/cart/merge";
 	private static final String EMAIL_A = "cart-sec-a-it@test.com";
 	private static final String EMAIL_B = "cart-sec-b-it@test.com";
 	private static final String PASSWORD = "correct-horse-battery";
@@ -122,6 +123,10 @@ class CartSecurityIntegrationTest extends AbstractIntegrationTest {
 
 		mockMvc.perform(delete(SOME_ITEM_URL))
 				.andExpect(status().isForbidden());
+
+		mockMvc.perform(post(MERGE_URL).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"items\":[{\"productVariantId\":1,\"quantity\":1}]}"))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -137,6 +142,11 @@ class CartSecurityIntegrationTest extends AbstractIntegrationTest {
 				.andExpect(status().isUnauthorized());
 
 		mockMvc.perform(delete(SOME_ITEM_URL).header(AUTHORIZATION, malformed))
+				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(post(MERGE_URL).header(AUTHORIZATION, malformed)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"items\":[{\"productVariantId\":1,\"quantity\":1}]}"))
 				.andExpect(status().isUnauthorized());
 	}
 
@@ -154,6 +164,22 @@ class CartSecurityIntegrationTest extends AbstractIntegrationTest {
 
 		mockMvc.perform(delete(SOME_ITEM_URL).header(AUTHORIZATION, expired))
 				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(post(MERGE_URL).header(AUTHORIZATION, expired)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"items\":[{\"productVariantId\":1,\"quantity\":1}]}"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void mergeSucceedsForAuthenticatedUserAndReturnsUpdatedCart() throws Exception {
+		mockMvc.perform(post(MERGE_URL).header(AUTHORIZATION, "Bearer " + tokenB)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"items\":[]}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.cart.cartId").value(bCartId))
+				.andExpect(jsonPath("$.adjustedLines").isEmpty())
+				.andExpect(jsonPath("$.skippedLines").isEmpty());
 	}
 
 	@Test

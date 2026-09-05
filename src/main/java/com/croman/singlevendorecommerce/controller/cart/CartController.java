@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.croman.singlevendorecommerce.dto.DefaultApiResponse;
 import com.croman.singlevendorecommerce.dto.cart.AddCartItemDTO;
 import com.croman.singlevendorecommerce.dto.cart.CartDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartDTO;
+import com.croman.singlevendorecommerce.dto.cart.MergeCartResultDTO;
 import com.croman.singlevendorecommerce.dto.cart.UpdateCartItemDTO;
 import com.croman.singlevendorecommerce.service.cart.CartService;
 
@@ -64,6 +66,23 @@ public class CartController {
 	})
 	public ResponseEntity<CartDTO> addItem(@Valid @RequestBody AddCartItemDTO body) {
 		return ResponseEntity.status(HttpStatus.OK).body(cartService.addItem(body));
+	}
+
+	@PostMapping("/merge")
+	@Operation(summary = "Merge guest cart lines into the authenticated user's server cart", responses = {
+			@ApiResponse(responseCode = "200",
+					description = "Merge result with updated cart and adjustment/skip info",
+					content = @Content(mediaType = "application/json",
+							schema = @Schema(implementation = MergeCartResultDTO.class))),
+			@ApiResponse(responseCode = "400", description = "Invalid request body",
+					content = @Content(mediaType = "application/json",
+							schema = @Schema(implementation = DefaultApiResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Authentication required",
+					content = @Content(mediaType = "application/json",
+							schema = @Schema(implementation = DefaultApiResponse.class)))
+	})
+	public ResponseEntity<MergeCartResultDTO> merge(@Valid @RequestBody MergeCartDTO body) {
+		return ResponseEntity.status(HttpStatus.OK).body(cartService.merge(body));
 	}
 
 	@PatchMapping("/items/{cartItemId}")
